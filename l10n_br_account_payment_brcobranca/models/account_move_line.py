@@ -84,6 +84,7 @@ class AccountMoveLine(models.Model):
                     "%Y/%m/%d"
                 ),
                 "instrucao1": move_line.payment_mode_id.instructions or "",
+                "modelo": move_line.payment_mode_id.brcobranca_modelo or "",
             }
 
             # Instrução de Juros

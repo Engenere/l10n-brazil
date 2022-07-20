@@ -109,6 +109,7 @@
                             </group>
                         </page>
                         <page
+                            name="cnab_config"
                             string="Configuração dos Codigos CNAB"
                             attrs="{'invisible': [('payment_method_code', 'not in', ('240', '400', '500', 'manual_test'))]}"
                         >
