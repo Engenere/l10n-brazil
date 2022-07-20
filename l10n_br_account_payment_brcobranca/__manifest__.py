@@ -19,6 +19,7 @@
         "security/ir.model.access.csv",
         # Views
         "views/account_journal_view.xml",
+        "views/l10n_br_cnab_config_view.xml",
         # Wizard
         "wizard/import_statement_view.xml",
     ],

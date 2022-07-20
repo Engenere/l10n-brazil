@@ -237,7 +237,10 @@
                                     <field name="not_payment_account_id" />
                                 </group>
                             </page>
-                            <page string="Configuração dos Codigos CNAB">
+                            <page 
+                                name="cnab_config"
+                                string="Configuração dos Codigos CNAB"
+                            >
                                 <group
                                     name="return_move_code"
                                     string="Códigos de Retorno do Movimento"
