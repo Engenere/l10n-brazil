@@ -7,8 +7,8 @@
 
     <record model="ir.ui.view" id="nfe_dfe_form">
         <field name="name">l10n_br_nfe.dfe.form</field>
-        <field name="model">l10n_br_fiscal.dfe</field>
-        <field name="inherit_id" ref="l10n_br_fiscal_dfe.dfe_form" />
+        <field name="model">l10n_br_fiscal.dfe_monitor</field>
+        <field name="inherit_id" ref="l10n_br_fiscal_dfe.dfe_monitor_form" />
         <field name="arch" type="xml">
             <xpath expr="//button[@name='search_documents']" position="after">
                 <button
@@ -20,13 +20,102 @@
             </xpath>
 
             <xpath expr="//page[@id='documents']" position="after">
-                <page string="Manifestations">
-                    <field
-                        name="mde_ids"
-                        nolabel="1"
-                        readonly="1"
-                        context="{'tree_view_ref': 'l10n_br_fiscal.dfe_manifestacao_tree'}"
-                    />
+                <page string="NSU">
+                    <field name="dfe_ids" nolabel="1" readonly="1">
+                        <tree>
+                            <field name="nsu" />
+                            <field name="dfe_nfe_document_type" />
+                        </tree>
+                    </field>
+                </page>
+
+                <page string="NF-e Complete">
+                <field name="dfe_nfe_complete_ids" nolabel="1" readonly="1">
+                    <tree create="false">
+                        <field name="nsu" />
+                        <field name="cnpj_cpf" />
+                        <field name="emitter" />
+                        <field name="company_id" />
+                        <field name="emission_datetime" />
+                        <!-- <field name="state" readonly="1" /> -->
+                        <field name="document_value" />
+                        <field name="cfop_ids" widget="many2many_tags" />
+                        <!-- <button
+                                string="Download XML"
+                                name="action_download_xml"
+                                type="object"
+                            />
+                        <button
+                                name="import_document"
+                                string="Importar Documento"
+                                type="object"
+                                attrs="{'invisible': [['state', 'not in', ['ciente', 'pendente']]]}"
+                            /> -->
+                        <button
+                                string="Manifestar"
+                                name="create_mde_action"
+                                type="object"
+                            />
+                    </tree>
+                </field>
+            </page>
+
+                <page string="NF-e Summary">
+                    <field name="dfe_nfe_summary_ids" nolabel="1" readonly="1">
+                        <tree create="false" limit="5">
+                            <field name="nsu" />
+                            <field name="cnpj_cpf" />
+                            <field name="emitter" />
+                            <field name="company_id" />
+                            <field name="emission_datetime" />
+                            <!-- <field name="state" readonly="1" /> -->
+                            <field name="document_value" />
+                            <!-- <button
+                                string="Download XML"
+                                name="action_download_xml"
+                                type="object"
+                            />
+                            <button
+                                name="import_document"
+                                string="Importar Documento"
+                                type="object"
+                                attrs="{'invisible': [['state', 'not in', ['ciente', 'pendente']]]}"
+                            /> -->
+                            <button
+                                string="Manifestar"
+                                name="create_mde_action"
+                                type="object"
+                            />
+                        </tree>
+                    </field>
+                </page>
+
+                <page string="NF-e Event">
+                    <field name="dfe_nfe_event_ids" nolabel="1" readonly="1">
+                        <tree create="false" limit="5">
+                            <field name="nsu" />
+                            <field name="cnpj_cpf" />
+                            <field name="company_id" />
+                            <field name="emission_datetime" />
+                            <!-- <field name="state" readonly="1" /> -->
+                            <!-- <button
+                                string="Download XML"
+                                name="action_download_xml"
+                                type="object"
+                            />
+                        <button
+                                name="import_document"
+                                string="Importar Documento"
+                                type="object"
+                                attrs="{'invisible': [['state', 'not in', ['ciente', 'pendente']]]}"
+                            /> -->
+                        <button
+                                string="Manifestar"
+                                name="create_mde_action"
+                                type="object"
+                            />
+                        </tree>
+                    </field>
                 </page>
             </xpath>
         </field>

@@ -7,13 +7,6 @@ SIT_MANIF_CONFIRMADO = ("confirmado", "Confirmada operação")
 SIT_MANIF_DESCONHECIDO = ("desconhecido", "Desconhecimento")
 SIT_MANIF_NAO_REALIZADO = ("nao_realizado", "Não realizado")
 
-SCHEMA_RESNFE = ("resNFe", "NFe Resumida")
-SCHEMA_RESEVENTO = ("resEvento", "Evento de NFe Resumido")
-SCHEMA_PROCNFE = ("procNFe", "NFe Completa")
-SCHEMA_PROCEVENTONFE = ("procEventoNFe", "Evento de NFe Completo")
-
-SCHEMAS = [SCHEMA_RESNFE, SCHEMA_RESEVENTO, SCHEMA_PROCNFE, SCHEMA_PROCEVENTONFE]
-
 SITUACAO_MANIFESTACAO = [
     SIT_MANIF_PENDENTE,
     SIT_MANIF_CIENTE,
@@ -21,14 +14,3 @@ SITUACAO_MANIFESTACAO = [
     SIT_MANIF_DESCONHECIDO,
     SIT_MANIF_NAO_REALIZADO,
 ]
-
-SIT_NFE_AUTORIZADA = ("1", "Autorizada")
-SIT_NFE_CANCELADA = ("2", "Cancelada")
-SIT_NFE_DENEGADA = ("3", "Denegada")
-
-SITUACAO_NFE = [SIT_NFE_AUTORIZADA, SIT_NFE_CANCELADA, SIT_NFE_DENEGADA]
-
-OP_TYPE_ENTRADA = ("0", "Entrada")
-OP_TYPE_SAIDA = ("1", "Saída")
-
-OPERATION_TYPE = [OP_TYPE_ENTRADA, OP_TYPE_SAIDA]
