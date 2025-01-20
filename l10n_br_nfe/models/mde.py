@@ -2,7 +2,6 @@
 # License AGPL-3 or later (http://www.gnu.org/licenses/agpl)
 
 import base64
-import logging
 import re
 
 from erpbrasil.transmissao import TransmissaoSOAP
@@ -13,18 +12,13 @@ from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 from ..constants.mde import (
-    OPERATION_TYPE,
-    SCHEMAS,
     SIT_MANIF_CIENTE,
     SIT_MANIF_CONFIRMADO,
     SIT_MANIF_DESCONHECIDO,
     SIT_MANIF_NAO_REALIZADO,
     SIT_MANIF_PENDENTE,
     SITUACAO_MANIFESTACAO,
-    SITUACAO_NFE,
 )
-
-_logger = logging.getLogger(__name__)
 
 
 class MDe(models.Model):
@@ -37,63 +31,9 @@ class MDe(models.Model):
 
     serie = fields.Char(size=3, index=True)
 
-    number = fields.Float(string="Document Number", index=True, digits=(18, 0))
-
     document_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.document",
         string="Fiscal Document",
-    )
-
-    emitter = fields.Char(size=60)
-
-    cnpj_cpf = fields.Char(string="CNPJ/CPF", size=18)
-
-    nsu = fields.Char(string="NSU", size=25, index=True)
-
-    operation_type = fields.Selection(
-        selection=OPERATION_TYPE,
-    )
-
-    document_value = fields.Float(
-        string="Document Total Value",
-        readonly=True,
-        digits=(18, 2),
-    )
-
-    ie = fields.Char(string="Inscrição estadual", size=18)
-
-    partner_id = fields.Many2one(
-        comodel_name="res.partner",
-        string="Supplier (partner)",
-    )
-
-    emission_datetime = fields.Datetime(
-        string="Emission Date",
-        index=True,
-        default=fields.Datetime.now,
-    )
-
-    inclusion_datetime = fields.Datetime(
-        string="Inclusion Date",
-        index=True,
-        default=fields.Datetime.now,
-    )
-
-    authorization_datetime = fields.Datetime(string="Authorization Date", index=True)
-
-    cancellation_datetime = fields.Datetime(string="Cancellation Date", index=True)
-
-    digest_value = fields.Char(size=28)
-
-    inclusion_mode = fields.Char(size=255)
-
-    authorization_protocol = fields.Char(size=60)
-
-    cancellation_protocol = fields.Char(size=60)
-
-    document_state = fields.Selection(
-        selection=SITUACAO_NFE,
-        index=True,
     )
 
     state = fields.Selection(
@@ -104,15 +44,14 @@ class MDe(models.Model):
 
     dfe_id = fields.Many2one(string="DF-e", comodel_name="l10n_br_fiscal.dfe")
 
-    schema = fields.Selection(selection=SCHEMAS)
-
     attachment_id = fields.Many2one(comodel_name="ir.attachment")
 
     def name_get(self):
         return [
             (
                 rec.id,
-                f"NFº: {rec.number} ({rec.cnpj_cpf}): {rec.company_id.legal_name}",
+                f"NFº: {rec.dfe_id.number} ({rec.dfe_id.cnpj_cpf}): "
+                f"{rec.company_id.legal_name}",
             )
             for rec in self
         ]
@@ -125,7 +64,7 @@ class MDe(models.Model):
         return edoc_mde(
             TransmissaoSOAP(certificado, session),
             self.company_id.state_id.ibge_code,
-            ambiente=self.dfe_id.environment,
+            ambiente=self.dfe_id.dfe_monitor_id.environment,
         )
 
     @api.model

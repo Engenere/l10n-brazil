@@ -6,7 +6,7 @@
 <odoo>
 
     <menuitem
-        action="dfe_action"
+        action="dfe_monitor_action"
         id="dfe_consult_menu"
         name="DF-e"
         groups="l10n_br_fiscal.group_manager"
