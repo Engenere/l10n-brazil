@@ -25,6 +25,15 @@ class AccountJournal(models.Model):
         default=False,
     )
 
+    cnab_return_skip_fee_entry = fields.Boolean(
+        string="Skip Fee Entry",
+        help=(
+            "Enable to suppress the journal entry for the bank fee when processing "
+            "a CNAB return file. Useful when the fee is posted later via the bank‑"
+            "statement import."
+        ),
+    )
+
     def multi_move_import(self, file_stream, ftype="csv"):
         """Create multiple bank statements from values given by the parser for
         the given profile.
