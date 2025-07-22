@@ -538,43 +538,42 @@ class CNABFileParser(FileParser):
                 )
 
         # Valor Tarifa
-        if linha_cnab.get("valor_tarifa"):
-            valor_tarifa = self.cnab_str_to_float(linha_cnab["valor_tarifa"])
+        valor_tarifa = self.cnab_str_to_float(linha_cnab.get("valor_tarifa"))
+        if valor_tarifa > 0.0 and not self.journal.cnab_return_skip_fee_entry:
+            # Usado para Conciliar a Fatura
+            row_credito = {
+                "name": "Tarifas bancárias (boleto) "
+                + account_move_line.document_number,
+                "debit": 0.0,
+                "credit": valor_tarifa,
+                "account_id": self.journal.default_account_id.id,
+                "type": "tarifa",
+                "partner_id": account_move_line.company_id.partner_id.id,
+                "payment_line_ids": payment_lines.ids,
+                "cnab_returned_ref": account_move_line.document_number,
+            }
 
-            if valor_tarifa > 0.0:
-                row_credito = {
-                    "name": "Tarifas bancárias (boleto) "
-                    + account_move_line.document_number,
-                    "debit": 0.0,
-                    "credit": valor_tarifa,
-                    "account_id": self.journal.default_account_id.id,
-                    "type": "tarifa",
-                    "partner_id": account_move_line.company_id.partner_id.id,
-                    "payment_line_ids": payment_lines.ids,
-                    "cnab_returned_ref": account_move_line.document_number,
-                }
+            # Avoid error in pre commit
+            tariff_charge_account = cnab_config.tariff_charge_account_id
 
-                # Avoid error in pre commit
-                tariff_charge_account = cnab_config.tariff_charge_account_id
+            row_debito = {
+                "name": "Tarifas bancárias (boleto) "
+                + account_move_line.document_number,
+                "debit": valor_tarifa,
+                "credit": 0.0,
+                "type": "tarifa",
+                "account_id": tariff_charge_account.id,
+                "payment_line_ids": payment_lines.ids,
+                "cnab_returned_ref": account_move_line.document_number,
+            }
 
-                row_debito = {
-                    "name": "Tarifas bancárias (boleto) "
-                    + account_move_line.document_number,
-                    "debit": valor_tarifa,
-                    "credit": 0.0,
-                    "type": "tarifa",
-                    "account_id": tariff_charge_account.id,
-                    "payment_line_ids": payment_lines.ids,
-                    "cnab_returned_ref": account_move_line.document_number,
-                }
+            # Passa a chave 'date' APENAS se houver data_credito válida
+            if data_credito:
+                row_credito["date"] = data_credito
+                row_debito["date"] = data_credito
 
-                # Passa a chave 'date' APENAS se houver data_credito válida
-                if data_credito:
-                    row_credito["date"] = data_credito
-                    row_debito["date"] = data_credito
-
-                row_list.append(row_credito)
-                row_list.append(row_debito)
+            row_list.append(row_credito)
+            row_list.append(row_debito)
 
         # Valor Abatimento
         if linha_cnab.get("valor_abatimento"):
