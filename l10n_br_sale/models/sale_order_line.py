@@ -72,8 +72,8 @@ class SaleOrderLine(models.Model):
     price_gross = fields.Monetary(
         compute="_compute_amount",
         string="Gross Amount",
-        store=True,
-        precompute=True,
+        # store=True,
+        # precompute=True,
     )
 
     comment_ids = fields.Many2many(
@@ -89,15 +89,15 @@ class SaleOrderLine(models.Model):
     discount = fields.Float(
         compute="_compute_discounts",
         inverse="_inverse_discount",
-        store=True,
-        precompute=True,
+        # store=True,
+        # precompute=True,
     )
 
     discount_value = fields.Monetary(
         compute="_compute_discounts",
         inverse="_inverse_discount_value",
-        store=True,
-        precompute=True,
+        # store=True,
+        # precompute=True,
     )
 
     ind_final = fields.Selection(related="order_id.ind_final")
