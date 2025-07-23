@@ -1,0 +1,18 @@
+<odoo>
+    <record id="view_account_payment_form_inherited" model="ir.ui.view">
+        <field name="name">account.payment.form.inherited.brazil.check</field>
+        <field name="model">account.payment</field>
+        <field
+            name="inherit_id"
+            ref="l10n_latam_check.view_account_payment_form_inherited"
+        />
+        <field name="arch" type="xml">
+            <xpath
+                expr="//field[@name='l10n_latam_check_bank_id']"
+                position="attributes"
+            >
+                <attribute name="context">{'show_l10n_br_bank_code': True}</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
