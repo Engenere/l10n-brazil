@@ -11,12 +11,11 @@ from odoo.tools import frozendict
 class AccountMoveLine(models.Model):
     _name = "account.move.line"
     _fiscal_decorator_model = "l10n_br_fiscal.document.line"
-    _fiscal_decorator_compute_blacklist = ["_compute_fiscal_amounts"]
     _inherit = [
         _name,
-        "l10n_br_fiscal.document.line.mixin.methods",
         "l10n_br_account.decorator.mixin",
     ]
+    _fiscal_decorator_model = "l10n_br_fiscal.document.line"
     _inherits = {_fiscal_decorator_model: "fiscal_document_line_id"}
 
     fiscal_document_line_id = fields.Many2one(
@@ -25,6 +24,10 @@ class AccountMoveLine(models.Model):
         copy=False,
         ondelete="cascade",
     )
+
+    def _compute_fiscal_document_line_ids(self):
+        for line in self:
+            line.fiscal_document_line_ids = line.fiscal_document_line_id
 
     document_type_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.document.type",
@@ -111,6 +114,20 @@ class AccountMoveLine(models.Model):
         if other_lines:
             return super()._compute_name()
         return True
+
+    ####################################################
+    # ORM Overrides methods - Low-Level
+    ####################################################
+
+    @api.model
+    def new(self, values=None, origin=None, ref=None):
+        move_line = super().new(values=values, origin=origin, ref=ref)
+        self = self.with_context(move_line=move_line)
+        return super().new(values=values, origin=origin, ref=ref)
+
+    def onchange(self, values, field_name, field_onchange):
+        # TODO for debug only, remove later
+        return super().onchange(values, field_name, field_onchange)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -270,14 +287,6 @@ class AccountMoveLine(models.Model):
                     line.amount_currency / line.currency_rate
                 )
                 line.balance = balance
-
-        # Since this method is called during the sync,
-        # inside of `create`/`write`, these fields
-        # already have been computed and marked as so.
-        # But this method should re-trigger it since
-        # it changes the dependencies.
-        self.env.add_to_compute(self._fields["debit"], container["records"])
-        self.env.add_to_compute(self._fields["credit"], container["records"])
 
     @api.depends(
         "quantity",
@@ -487,16 +496,58 @@ class AccountMoveLine(models.Model):
                     "tax_tag_ids": [Command.set(compute_all_currency["base_tags"])],
                 }
 
-    @api.onchange("fiscal_document_line_id")
-    def _onchange_fiscal_document_line_id(self):
+    @api.onchange(
+        "cofins_tax_id",
+        "cofins_wh_tax_id",
+        "cofinsst_tax_id",
+        "csll_tax_id",
+        "csll_wh_tax_id",
+        "icms_tax_id",
+        "icmsfcp_tax_id",
+        "icmssn_tax_id",
+        "icmsst_tax_id",
+        "icmsfcpst_tax_id",
+        "ii_tax_id",
+        "inss_tax_id",
+        "inss_wh_tax_id",
+        "ipi_tax_id",
+        "irpj_tax_id",
+        "irpj_wh_tax_id",
+        "issqn_tax_id",
+        "issqn_wh_tax_id",
+        "pis_tax_id",
+        "pis_wh_tax_id",
+        "pisst_tax_id",
+    )
+    def _onchange_fiscal_taxes(self):
         if self.fiscal_document_line_id:
-            # do the onchange dance for fields with the same names:
-            self.product_id = self.fiscal_document_line_id.product_id.id
-            self.name = self.fiscal_document_line_id.name
-            self.quantity = self.fiscal_document_line_id.quantity
-            self.price_unit = self.fiscal_document_line_id.price_unit
-            # override the default product uom (set by the onchange):
-            self.product_uom_id = self.fiscal_document_line_id.uom_id.id
+            self.fiscal_document_line_id._onchange_fiscal_taxes()
+
+    @api.onchange("product_id")
+    def _onchange_product_id(self):
+        if self.fiscal_document_line_id:
+            self.fiscal_document_line_id._onchange_product_id_fiscal()
+
+    @api.onchange("price_unit")
+    def _onchange_price_unit(self):
+        if self.fiscal_document_line_id:
+            self.fiscal_document_line_id._onchange_price_unit_fiscal()
+
+    @api.onchange("quantity")
+    def _onchange_quantity(self):
+        if self.fiscal_document_line_id:
+            self.fiscal_document_line_id._onchange_quantity_fiscal()
+
+    # @api.onchange("fiscal_document_line_id")
+    # def _onchange_fiscal_document_line_id(self):
+    #     if self.fiscal_document_line_id:
+    #         # do the onchange dance for fields with the same names:
+    #         self.product_id = self.fiscal_document_line_id.product_id.id
+    #         self.name = self.fiscal_document_line_id.name
+    #         self.quantity = self.fiscal_document_line_id.quantity
+    #         self.price_unit = self.fiscal_document_line_id.price_unit
+    #         # override the default product uom (set by the onchange):
+    #         self.product_uom_id = self.fiscal_document_line_id.uom_id.id
 
     @api.depends("product_id", "product_uom_id", "fiscal_tax_ids")
     def _compute_tax_ids(self):
@@ -529,5 +580,7 @@ class AccountMoveLine(models.Model):
 
     @api.constrains("product_uom_id")
     def _check_product_uom_category_id(self):
-        not_imported = self.filtered(lambda line: not line._is_imported())
+        not_imported = self.filtered(
+            lambda line: not line.fiscal_document_line_id._is_imported()
+        )
         return super(AccountMoveLine, not_imported)._check_product_uom_category_id()

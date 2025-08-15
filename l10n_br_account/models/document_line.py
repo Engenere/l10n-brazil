@@ -15,6 +15,26 @@ class FiscalDocumentLine(models.Model):
         string="Invoice Lines",
     )
 
+    move_id = fields.Many2one(
+        comodel_name="account.move",
+        related="account_line_ids.move_id",
+        store=True,
+        precompute=True,
+        string="Invoice",
+    )
+
+    document_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.document",
+        string="Fiscal Document",
+        compute="_compute_document_id",
+        store=True,
+        readonly=False,
+        precompute=True,
+        index=True,
+        check_company=True,
+        ondelete="cascade",
+    )
+
     uom_id = fields.Many2one(
         compute="_compute_product_uom_id",
         store=True,
@@ -27,10 +47,83 @@ class FiscalDocumentLine(models.Model):
     # SHADOWED FIELDS SYNC
     # -------------------------------------------------------------------------
 
-    product_id = fields.Many2one(inverse="_inverse_product_id")
-    name = fields.Char(inverse="_inverse_name")
-    quantity = fields.Float(inverse="_inverse_quantity")
-    price_unit = fields.Float(inverse="_inverse_price_unit")
+    company_id = fields.Many2one(
+        compute="_compute_shadowed_fields",
+        inverse="_inverse_company_id",
+        store=True,
+        precompute=True,
+        readonly=False,
+    )
+    partner_id = fields.Many2one(
+        compute="_compute_shadowed_fields",
+        inverse="_inverse_partner_id",
+        store=True,
+        precompute=True,
+        readonly=False,
+    )
+    product_id = fields.Many2one(
+        compute="_compute_shadowed_fields",
+        inverse="_inverse_product_id",
+        store=True,
+        precompute=True,
+        readonly=False,
+    )
+    name = fields.Char(
+        compute="_compute_shadowed_fields",
+        inverse="_inverse_name",
+        store=True,
+        precompute=True,
+        readonly=False,
+    )
+    quantity = fields.Float(
+        compute="_compute_shadowed_fields",
+        inverse="_inverse_quantity",
+        store=True,
+        precompute=True,
+        readonly=False,
+    )
+    price_unit = fields.Float(
+        compute="_compute_shadowed_fields",
+        inverse="_inverse_price_unit",
+        store=True,
+        precompute=True,
+        readonly=False,
+    )
+
+    @api.depends(
+        "account_line_ids",
+        "account_line_ids.company_id",
+        "account_line_ids.partner_id",
+        "account_line_ids.product_id",
+        "account_line_ids.name",
+        "account_line_ids.quantity",
+        "account_line_ids.price_unit",
+    )
+    def _compute_shadowed_fields(self):
+        for line in self:
+            if line.account_line_ids:
+                line.company_id = line.account_line_ids.company_id
+                line.partner_id = line.account_line_ids.partner_id
+                line.product_id = line.account_line_ids.product_id
+                line.name = line.account_line_ids.name
+                line.quantity = line.account_line_ids.quantity
+                line.price_unit = line.account_line_ids.price_unit
+
+    @api.depends("move_id.fiscal_document_id")
+    def _compute_document_id(self):
+        """
+        Ensures that the `document_id` field is updated even when the document line is
+        a new record (NewId) and has not yet been saved.
+        """
+        for line in self:
+            is_draft = line.id != line._origin.id
+            if (
+                is_draft
+                and line.move_id
+                and line.move_id.fiscal_document_id
+                and not line.document_id
+            ):
+                line.document_id = line.move_id.fiscal_document_id
 
     @api.onchange("product_id")
     def _inverse_product_id(self):
@@ -80,6 +173,17 @@ class FiscalDocumentLine(models.Model):
                 line.uom_id = line.product_id.uom_po_id
             else:
                 line.uom_id = line.product_id.uom_id
+
+    @api.model
+    def new(self, values=None, origin=None, ref=None):
+        doc_line = super().new(values=values, origin=origin, ref=ref)
+        move_line = self.env.context.get("move_line")
+        # copy shadowed fields from the account.move.line
+        if move_line:
+            doc_line.company_id = move_line.company_id
+            doc_line.partner_id = move_line.partner_id
+            doc_line.product_id = move_line.product_id
+        return doc_line
 
     @api.model_create_multi
     def create(self, vals_list):
