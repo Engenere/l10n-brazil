@@ -115,13 +115,6 @@ class AccountMoveLine(models.Model):
             return super()._compute_name()
         return True
 
-    def onchange(self, values, field_name, field_onchange):
-        if values.get("partner_id"):
-            values["proxy_partner_id"] = values["partner_id"]
-        if values.get("company_id"):
-            values["proxy_company_id"] = values["company_id"]
-        return super().onchange(values, field_name, field_onchange)
-
     @api.model_create_multi
     def create(self, vals_list):
         for values in vals_list:
@@ -306,12 +299,14 @@ class AccountMoveLine(models.Model):
         "icmssn_range_id",
         "icms_origin",
         "ind_final",
+        "company_id",
     )
     def _compute_totals(self):
         """
         Overriden to pass all the Brazilian parameters we need
         to the account.tax#compute_all method.
         """
+
         if not self.move_id.fiscal_operation_id:
             result = super(
                 AccountMoveLine,

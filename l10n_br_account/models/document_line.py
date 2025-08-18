@@ -44,33 +44,39 @@ class FiscalDocumentLine(models.Model):
     )
 
     proxy_company_id = fields.Many2one(
+        related="document_id.company_id",
         comodel_name="res.company",
         readonly=False,
     )
 
     proxy_partner_id = fields.Many2one(
+        related="document_id.partner_id",
         comodel_name="res.partner",
         readonly=False,
+    )
+
+    partner_id = fields.Many2one(
+        related="proxy_partner_id",
+        comodel_name="res.partner",
+        string="Partner",
+        store=True,
+        readonly=False,
+        precompute=True,
+    )
+
+    company_id = fields.Many2one(
+        related="proxy_company_id",
+        comodel_name="res.company",
+        string="Company",
+        store=True,
+        readonly=False,
+        precompute=True,
     )
 
     # -------------------------------------------------------------------------
     # SHADOWED FIELDS SYNC
     # -------------------------------------------------------------------------
 
-    company_id = fields.Many2one(
-        compute="_compute_shadowed_fields",
-        inverse="_inverse_company_id",
-        store=True,
-        precompute=True,
-        readonly=False,
-    )
-    partner_id = fields.Many2one(
-        compute="_compute_shadowed_fields",
-        inverse="_inverse_partner_id",
-        store=True,
-        precompute=True,
-        readonly=False,
-    )
     product_id = fields.Many2one(
         compute="_compute_shadowed_fields",
         inverse="_inverse_product_id",
@@ -114,10 +120,6 @@ class FiscalDocumentLine(models.Model):
                 line.name = line.account_line_ids.name
                 line.quantity = line.account_line_ids.quantity
                 line.price_unit = line.account_line_ids.price_unit
-            if line.proxy_company_id:
-                line.company_id = line.proxy_company_id
-            if line.proxy_partner_id:
-                line.partner_id = line.proxy_partner_id
 
     @api.depends("move_id.fiscal_document_id")
     def _compute_document_id(self):

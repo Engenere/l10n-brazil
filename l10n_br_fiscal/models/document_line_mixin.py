@@ -1964,6 +1964,8 @@ class FiscalDocumentLineMixin(models.AbstractModel):
             "icms_relief_id",
             "fiscal_tax_ids",
             "fiscal_operation_line_id",
+            "company_id",
+            "partner_id",
         ]
 
     @api.depends(lambda self: self._get_tax_fields_dependencies())
@@ -1980,9 +1982,9 @@ class FiscalDocumentLineMixin(models.AbstractModel):
                 null_mask = self._build_null_mask_dict()
             to_update = null_mask.copy()
             if line.fiscal_operation_line_id:
-                assert line.proxy_company_id, "company is required"
+                assert line.company_id, "company is required"
                 compute_result = line.fiscal_tax_ids.compute_taxes(
-                    company=line.proxy_company_id,
+                    company=line.company_id,
                     partner=line._get_fiscal_partner(),
                     product=line.product_id,
                     price_unit=line.price_unit,
