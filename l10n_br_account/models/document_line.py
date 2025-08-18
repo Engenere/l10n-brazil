@@ -46,12 +46,14 @@ class FiscalDocumentLine(models.Model):
     proxy_company_id = fields.Many2one(
         related="document_id.company_id",
         comodel_name="res.company",
+        string="Company (proxy)",
         readonly=False,
     )
 
     proxy_partner_id = fields.Many2one(
         related="document_id.partner_id",
         comodel_name="res.partner",
+        string="Partner (proxy)",
         readonly=False,
     )
 
