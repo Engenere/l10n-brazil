@@ -115,20 +115,6 @@ class AccountMoveLine(models.Model):
             return super()._compute_name()
         return True
 
-    ####################################################
-    # ORM Overrides methods - Low-Level
-    ####################################################
-
-    @api.model
-    def new(self, values=None, origin=None, ref=None):
-        move_line = super().new(values=values, origin=origin, ref=ref)
-        self = self.with_context(move_line=move_line)
-        return super().new(values=values, origin=origin, ref=ref)
-
-    def onchange(self, values, field_name, field_onchange):
-        # TODO for debug only, remove later
-        return super().onchange(values, field_name, field_onchange)
-
     @api.model_create_multi
     def create(self, vals_list):
         for values in vals_list:

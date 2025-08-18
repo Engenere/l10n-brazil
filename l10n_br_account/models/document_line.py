@@ -174,17 +174,6 @@ class FiscalDocumentLine(models.Model):
             else:
                 line.uom_id = line.product_id.uom_id
 
-    @api.model
-    def new(self, values=None, origin=None, ref=None):
-        doc_line = super().new(values=values, origin=origin, ref=ref)
-        move_line = self.env.context.get("move_line")
-        # copy shadowed fields from the account.move.line
-        if move_line:
-            doc_line.company_id = move_line.company_id
-            doc_line.partner_id = move_line.partner_id
-            doc_line.product_id = move_line.product_id
-        return doc_line
-
     @api.model_create_multi
     def create(self, vals_list):
         """
