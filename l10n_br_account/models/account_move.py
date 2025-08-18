@@ -357,6 +357,13 @@ class AccountMove(models.Model):
         self.clear_caches()
         return result
 
+    @api.onchange("partner_id")
+    def _onchange_partner_id_fiscal(self):
+        if self.partner_id:
+            self.ind_final = self.partner_id.ind_final
+        else:
+            self.ind_final = "1"  # default is True
+
     @api.depends("move_type", "fiscal_operation_id")
     def _compute_journal_id(self):
         fisc_operation_driven = self.filtered(
