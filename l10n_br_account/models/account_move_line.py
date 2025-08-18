@@ -115,6 +115,13 @@ class AccountMoveLine(models.Model):
             return super()._compute_name()
         return True
 
+    def onchange(self, values, field_name, field_onchange):
+        if values.get("partner_id"):
+            values["proxy_partner_id"] = values["partner_id"]
+        if values.get("company_id"):
+            values["proxy_company_id"] = values["company_id"]
+        return super().onchange(values, field_name, field_onchange)
+
     @api.model_create_multi
     def create(self, vals_list):
         for values in vals_list:
@@ -305,13 +312,13 @@ class AccountMoveLine(models.Model):
         Overriden to pass all the Brazilian parameters we need
         to the account.tax#compute_all method.
         """
-        result = super(
-            AccountMoveLine,
-            self.with_context(
-                skip_compute_fiscal_tax_ids=True, skip_compute_tax_fields=True
-            ),
-        )._compute_totals()
         if not self.move_id.fiscal_operation_id:
+            result = super(
+                AccountMoveLine,
+                self.with_context(
+                    skip_compute_fiscal_tax_ids=True, skip_compute_tax_fields=True
+                ),
+            )._compute_totals()
             return result
 
         for line in self:
@@ -361,7 +368,6 @@ class AccountMoveLine(models.Model):
                 + line.freight_value
                 - line.icms_relief_value
             )
-        return result
 
     @api.depends(
         "tax_ids",

@@ -43,6 +43,16 @@ class FiscalDocumentLine(models.Model):
         ondelete="restrict",
     )
 
+    proxy_company_id = fields.Many2one(
+        comodel_name="res.company",
+        readonly=False,
+    )
+
+    proxy_partner_id = fields.Many2one(
+        comodel_name="res.partner",
+        readonly=False,
+    )
+
     # -------------------------------------------------------------------------
     # SHADOWED FIELDS SYNC
     # -------------------------------------------------------------------------
@@ -92,8 +102,6 @@ class FiscalDocumentLine(models.Model):
 
     @api.depends(
         "account_line_ids",
-        "account_line_ids.company_id",
-        "account_line_ids.partner_id",
         "account_line_ids.product_id",
         "account_line_ids.name",
         "account_line_ids.quantity",
@@ -102,12 +110,14 @@ class FiscalDocumentLine(models.Model):
     def _compute_shadowed_fields(self):
         for line in self:
             if line.account_line_ids:
-                line.company_id = line.account_line_ids.company_id
-                line.partner_id = line.account_line_ids.partner_id
                 line.product_id = line.account_line_ids.product_id
                 line.name = line.account_line_ids.name
                 line.quantity = line.account_line_ids.quantity
                 line.price_unit = line.account_line_ids.price_unit
+            if line.proxy_company_id:
+                line.company_id = line.proxy_company_id
+            if line.proxy_partner_id:
+                line.partner_id = line.proxy_partner_id
 
     @api.depends("move_id.fiscal_document_id")
     def _compute_document_id(self):

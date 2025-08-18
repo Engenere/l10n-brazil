@@ -246,6 +246,8 @@
                 <field name="document_type_id" invisible="1" />
                 <field name="fiscal_operation_type" invisible="1" />
                 <field name="tax_icms_or_issqn" invisible="1" />
+                <field name="proxy_company_id" force_save="1" invisible="1" />
+                <field name="proxy_partner_id" force_save="1" invisible="1" />
 
                 <field
                     name="tax_ids"
@@ -341,6 +343,8 @@
                 <field name="price_total" force_save="1" invisible="1" />
                 <field name="credit" invisible="1" />
                 <field name="debit" invisible="1" />
+                <field name="proxy_company_id" force_save="1" invisible="1" />
+                <field name="proxy_partner_id" force_save="1" invisible="1" />
             </xpath>
 
             <!-- The next fields are defined in a superficial way in the inherited

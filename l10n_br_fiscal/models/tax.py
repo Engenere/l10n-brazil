@@ -776,6 +776,7 @@ class Tax(models.Model):
         }
         taxes = {}
         sequence = self._compute_tax_sequence(taxes, **kwargs)
+        assert kwargs.get("company"), "company is required"
 
         for tax in self.sorted(key=lambda t: sequence.get(t.tax_domain)):
             taxes[tax.tax_domain] = dict(TAX_DICT_VALUES)
