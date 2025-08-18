@@ -256,11 +256,15 @@ class TestMoveEdition(TransactionCase):
         self.assertEqual(aml.quantity, fisc_line.quantity)
         self.assertEqual(aml.price_unit, fisc_line.price_unit)
 
+        # test product fiscal config:
+        fiscal_type_mercadoria_revenda = "00"
+        self.assertEqual(aml.product_id.fiscal_type, fiscal_type_mercadoria_revenda)
+
+        # test line fiscal taxes result:
         self.assertEqual(
             aml.fiscal_operation_line_id,
-            self.env.ref("l10n_br_fiscal.fo_venda_venda"),
+            self.env.ref("l10n_br_fiscal.fo_venda_revenda"),
         )
-
         self.assertEqual(
             aml.icms_tax_id.id,
             self.ref("l10n_br_fiscal.tax_icms_18"),
@@ -365,6 +369,10 @@ class TestMoveEdition(TransactionCase):
         self.assertEqual(aml.name, fisc_line.name)
         self.assertEqual(aml.quantity, fisc_line.quantity)
         self.assertEqual(aml.price_unit, fisc_line.price_unit)
+
+        # test product fiscal config:
+        fiscal_type_mercadoria_revenda = "00"
+        self.assertEqual(aml.product_id.fiscal_type, fiscal_type_mercadoria_revenda)
 
         self.assertEqual(
             aml.fiscal_operation_line_id,
