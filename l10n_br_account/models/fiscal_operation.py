@@ -70,9 +70,6 @@ class Operation(models.Model):
         action = super().open_action()
         return self._change_action_view(action)
 
-    def _fiscal_document_object(self):
-        return self.env["account.move"]
-
     def _line_domain(self, company, partner, product):
         domain = super()._line_domain(company=company, partner=partner, product=product)
 

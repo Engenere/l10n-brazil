@@ -123,7 +123,7 @@ class FiscalDocumentLine(models.Model):
                 line.quantity = line.account_line_ids.quantity
                 line.price_unit = line.account_line_ids.price_unit
 
-    @api.depends("move_id.fiscal_document_id")
+    @api.depends("move_id.fiscal_document_ids")
     def _compute_document_id(self):
         """
         Ensures that the `document_id` field is updated even when the document line is
@@ -134,10 +134,10 @@ class FiscalDocumentLine(models.Model):
             if (
                 is_draft
                 and line.move_id
-                and line.move_id.fiscal_document_id
+                and line.move_id.fiscal_document_ids
                 and not line.document_id
             ):
-                line.document_id = line.move_id.fiscal_document_id
+                line.document_id = line.move_id.fiscal_document_ids
 
     @api.onchange("product_id")
     def _inverse_product_id(self):

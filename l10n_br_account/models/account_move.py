@@ -13,7 +13,6 @@ from odoo.tools import frozendict
 
 from odoo.addons.l10n_br_fiscal.constants.fiscal import (
     DOCUMENT_ISSUER_COMPANY,
-    FISCAL_IN_OUT_ALL,
     MODELO_FISCAL_NFE,
     SITUACAO_EDOC_CANCELADA,
     SITUACAO_EDOC_EM_DIGITACAO,
@@ -25,94 +24,27 @@ from .constants import (
 
 
 class AccountMove(models.Model):
-    _name = "account.move"
-    _fiscal_decorator_model = "l10n_br_fiscal.document"
-    _inherit = [
-        _name,
-        "l10n_br_account.decorator.mixin",
-    ]
+    _inherit = "account.move"
 
-    # an account.move has normally 0 or 1 related fiscal document:
-    # - 0 when it is not related to a Brazilian company for instance.
-    # - 1 otherwise (usually). In this case the _inherits system
-    # makes it easy to edit all the fiscal document (lines) fields
-    # through the account.move form.
-    # in some rare cases an account.move may have several fiscal
-    # documents (1 on each account.move.line). In this case
-    # fiscal_document_id might be used only to sync the "main" fiscal
-    # document (or the one currently imported or edited). In this case,
-    # fiscal_document_ids contains all the line fiscal documents.
-    _inherits = {_fiscal_decorator_model: "fiscal_document_id"}
-
-    _order = "date DESC, name DESC"
-
+    fiscal_document_ids = fields.One2many(
+        comodel_name="l10n_br_fiscal.document",
+        inverse_name="move_id",
+    )
+    document_type_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.document.type",
+        related="fiscal_document_ids.document_type_id",
+    )
     document_electronic = fields.Boolean(
         related="document_type_id.electronic",
         string="Electronic?",
     )
-
-    fiscal_document_id = fields.Many2one(
-        comodel_name="l10n_br_fiscal.document",
-        string="Fiscal Document",
-        copy=False,
-        ondelete="cascade",
-        store=True,
-        readonly=False,
+    fiscal_operation_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.operation",
+        related="fiscal_document_ids.fiscal_operation_id",
     )
-
-    fiscal_document_ids = fields.One2many(
-        comodel_name="l10n_br_fiscal.document",
-        string="Fiscal Documents",
-        compute="_compute_fiscal_document_ids",
-        help="""In some rare cases (NFS-e, CT-e...) a single account.move
-        may have several different fiscal documents related to its account.move.lines.
-        """,
+    document_number = fields.Char(
+        related="fiscal_document_ids.document_number",
     )
-
-    fiscal_document_line_ids = fields.One2many(
-        comodel_name="l10n_br_fiscal.document.line",
-        string="Fiscal Document Lines",
-        related="fiscal_document_id.fiscal_line_ids",
-    )
-
-    fiscal_operation_type = fields.Selection(
-        selection=FISCAL_IN_OUT_ALL,
-        related=None,
-        compute="_compute_fiscal_operation_type",
-    )
-
-    @api.constrains("fiscal_document_id", "document_type_id")
-    def _check_fiscal_document_type(self):
-        for rec in self:
-            if rec.document_type_id and not rec.fiscal_document_id:
-                raise UserError(
-                    _(
-                        "You cannot set a document type when the move has no"
-                        " Fiscal Document!"
-                    )
-                )
-
-    @api.depends("line_ids", "invoice_line_ids", "fiscal_document_id")
-    def _compute_fiscal_document_ids(self):
-        for move in self:
-            docs = move.fiscal_document_id
-            for line in move.invoice_line_ids:
-                docs |= line.document_id
-            move.fiscal_document_ids = docs
-
-    @api.depends("move_type", "fiscal_operation_id")
-    def _compute_fiscal_operation_type(self):
-        for inv in self:
-            if inv.move_type == "entry":
-                # if it is a Journal Entry there is nothing to do.
-                inv.fiscal_operation_type = False
-                continue
-            if inv.fiscal_operation_id:
-                inv.fiscal_operation_type = (
-                    inv.fiscal_operation_id.fiscal_operation_type
-                )
-            else:
-                inv.fiscal_operation_type = MOVE_TO_OPERATION[inv.move_type]
 
     @api.model
     def _get_fiscal_lines_field_name(self):
@@ -128,27 +60,6 @@ class AccountMove(models.Model):
                     "and perform the action on each document!"
                 )
             )
-
-    @api.model
-    def _get_view(self, view_id=None, view_type="form", **options):
-        arch, view = super()._get_view(view_id, view_type, **options)
-        if self.env.company.country_id.code != "BR" or view_type != "form":
-            return arch, view
-        arch = self.env["l10n_br_fiscal.document.line"].inject_fiscal_fields(arch)
-
-        for tax_totals_node in arch.xpath(
-            "//field[@name='tax_totals'][@widget='account-tax-totals-field']"
-        ):
-            tax_totals_node.set("attrs", "{'invisible': True}")
-
-        if view_type == "form" and (
-            self.user_has_groups("l10n_br_account.group_line_fiscal_detail")
-            or self.env.context.get("force_line_fiscal_detail")
-        ):
-            for sub_tree_node in arch.xpath("//field[@name='invoice_line_ids']/tree"):
-                sub_tree_node.attrib["editable"] = ""
-
-        return arch, view
 
     @api.depends(
         "line_ids.matched_debit_ids.debit_move_id.move_id.payment_id.is_matched",
@@ -166,10 +77,10 @@ class AccountMove(models.Model):
         "line_ids.full_reconcile_id",
         "state",
         "direction_sign",
-        "fiscal_operation_id",
-        "fiscal_line_ids.cfop_id",
-        "fiscal_line_ids.amount_untaxed",
-        "fiscal_line_ids.amount_tax",
+        "fiscal_document_ids.fiscal_operation_id",
+        "fiscal_document_ids.fiscal_line_ids.cfop_id",
+        "fiscal_document_ids.fiscal_line_ids.amount_untaxed",
+        "fiscal_document_ids.fiscal_line_ids.amount_tax",
     )
     def _compute_amount(self):
         result = super()._compute_amount()
@@ -197,7 +108,7 @@ class AccountMove(models.Model):
         "amount_total_in_currency_signed",
         "invoice_date_due",
         "invoice_line_ids.cfop_id",
-        "amount_financial_total",
+        "fiscal_document_ids.amount_financial_total",
     )
     def _compute_needed_terms(self):
         """
@@ -303,8 +214,8 @@ class AccountMove(models.Model):
         for fname in vals:
             if (
                 records._name == "account.move"
-                and records.fiscal_document_id
-                and records.fiscal_document_id._fields.get(fname)
+                and records.fiscal_document_ids
+                and records.fiscal_document_ids._fields.get(fname)
             ):
                 continue
             elif (
@@ -349,20 +260,13 @@ class AccountMove(models.Model):
         for move in self:
             if not move.exists():
                 continue
-            if move.fiscal_document_id and move.fiscal_document_id:
-                unlink_documents |= move.fiscal_document_id
+            if move.fiscal_document_ids and move.fiscal_document_ids:
+                unlink_documents |= move.fiscal_document_ids
             unlink_moves |= move
         result = super(AccountMove, unlink_moves).unlink()
         unlink_documents.unlink()
         self.clear_caches()
         return result
-
-    @api.onchange("partner_id")
-    def _onchange_partner_id_fiscal(self):
-        if self.partner_id:
-            self.ind_final = self.partner_id.ind_final
-        else:
-            self.ind_final = "1"  # default is True
 
     @api.depends("move_type", "fiscal_operation_id")
     def _compute_journal_id(self):
@@ -431,17 +335,17 @@ class AccountMove(models.Model):
     def action_document_cancel(self):
         for move in self.filtered(lambda d: d.document_type_id):
             move.ensure_one_doc()
-            return move.fiscal_document_id.action_document_cancel()
+            return move.fiscal_document_ids.action_document_cancel()
 
     def action_document_correction(self):
         for move in self.filtered(lambda d: d.document_type_id):
             move.ensure_one_doc()
-            return move.fiscal_document_id.action_document_correction()
+            return move.fiscal_document_ids.action_document_correction()
 
     def action_document_invalidate(self):
         for move in self.filtered(lambda d: d.document_type_id):
             move.ensure_one_doc()
-            return move.fiscal_document_id.action_document_invalidate()
+            return move.fiscal_document_ids.action_document_invalidate()
 
     def action_document_back2draft(self):
         """Sets fiscal document to draft state and cancel and set to draft
@@ -453,7 +357,7 @@ class AccountMove(models.Model):
     def action_view_invoice(self):
         for move in self.filtered(lambda d: d.document_type_id):
             move.ensure_one_doc()
-            return move.fiscal_document_id.action_view_invoice()
+            return move.fiscal_document_ids.action_view_invoice()
 
     def _post(self, soft=True):
         for move in self.with_context(skip_post=True):
@@ -468,11 +372,11 @@ class AccountMove(models.Model):
 
     def view_pdf(self):
         self.ensure_one_doc()
-        return self.fiscal_document_id.view_pdf()
+        return self.fiscal_document_ids.view_pdf()
 
     def action_send_email(self):
         self.ensure_one_doc()
-        return self.fiscal_document_id.action_send_email()
+        return self.fiscal_document_ids.action_send_email()
 
     def _reverse_moves(self, default_values_list=None, cancel=False):
         new_moves = super()._reverse_moves(
@@ -517,29 +421,29 @@ class AccountMove(models.Model):
 
             # This method is in l10n_br_fiscal_subsequent_document module, the IF
             # is necessary to avoid a 'glue module' or direct dependence.
-            if hasattr(record.fiscal_document_id, "_document_reference"):
+            if hasattr(record.fiscal_document_ids, "_document_reference"):
                 # Add the related document to the NF-e.
                 # this is required for correct xml validation
                 if record.document_type_id and record.document_type_id.code in (
                     MODELO_FISCAL_NFE
                 ):
-                    record.fiscal_document_id._document_reference(
-                        record.reversed_entry_id.fiscal_document_id
+                    record.fiscal_document_ids._document_reference(
+                        record.reversed_entry_id.fiscal_document_ids
                     )
 
         return new_moves
 
     def button_cancel(self):
         for doc in self.filtered(lambda d: d.document_type_id):
-            doc.fiscal_document_id.action_document_cancel()
+            doc.fiscal_document_ids.action_document_cancel()
         return super().button_cancel()
 
     def button_import_fiscal_document(self):
         """
         Import move fields and invoice lines from
-        the fiscal_document_id record if there is any new line
+        the fiscal_document_ids record if there is any new line
         to import.
-        You can typically set fiscal_document_id to some l10n_br_fiscal.document
+        You can typically set fiscal_document_ids to some l10n_br_fiscal.document
         record that was imported previously and import its lines into the
         current move.
         """
@@ -548,25 +452,25 @@ class AccountMove(models.Model):
                 raise UserError(_("Cannot import in non draft Account Move!"))
             elif (
                 move.partner_id
-                and move.partner_id != move.fiscal_document_id.partner_id
+                and move.partner_id != move.fiscal_document_ids.partner_id
             ):
                 raise UserError(_("Partner mismatch!"))
             elif (
                 MOVE_TO_OPERATION[move.move_type]
-                != move.fiscal_document_id.fiscal_operation_type
+                != move.fiscal_document_ids.fiscal_operation_type
             ):
                 raise UserError(_("Fiscal Operation Type mismatch!"))
-            elif move.company_id != move.fiscal_document_id.company_id:
+            elif move.company_id != move.fiscal_document_ids.company_id:
                 raise UserError(_("Company mismatch!"))
 
             move_fiscal_lines = set(
                 move.invoice_line_ids.mapped("fiscal_document_line_id")
             )
-            fiscal_doc_lines = set(move.fiscal_document_id.fiscal_line_ids)
+            fiscal_doc_lines = set(move.fiscal_document_ids.fiscal_line_ids)
             if move_fiscal_lines == fiscal_doc_lines:
                 raise UserError(_("No new Fiscal Document Line to import!"))
 
-            self.import_fiscal_document(move.fiscal_document_id, move_id=move.id)
+            self.import_fiscal_document(move.fiscal_document_ids, move_id=move.id)
 
     @api.model
     def import_fiscal_document(
@@ -583,7 +487,7 @@ class AccountMove(models.Model):
         The account.move onchanges of these fields are properly
         triggered as if the invoice was filled manually.
         Then it creates each account.move.line and fill them using
-        their fiscal_document_id onchange.
+        their fiscal_document_ids onchange.
         """
         if move_id:
             move = self.env["account.move"].browse(move_id)
@@ -595,12 +499,12 @@ class AccountMove(models.Model):
                 account_predictive_bills_disable_prediction=True,
             )
         )
-        if not move_id or not move.fiscal_document_id:
+        if not move_id or not move.fiscal_document_ids:
             move_form.partner_id = fiscal_document.partner_id
             move_form.invoice_date = fiscal_document.document_date
             move_form.date = fiscal_document.document_date
             move_form.document_type_id = fiscal_document.document_type_id
-            move_form.fiscal_document_id = fiscal_document
+            move_form.fiscal_document_ids = fiscal_document
             move_form.fiscal_operation_id = fiscal_document.fiscal_operation_id
             move_form.document_serie = fiscal_document.document_serie
 

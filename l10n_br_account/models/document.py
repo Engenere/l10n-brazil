@@ -22,16 +22,24 @@ from .constants import MOVE_TO_OPERATION
 class FiscalDocument(models.Model):
     _inherit = "l10n_br_fiscal.document"
 
-    move_ids = fields.One2many(
+    move_id = fields.Many2one(
         comodel_name="account.move",
-        inverse_name="fiscal_document_id",
-        string="Invoices",
+        string="Related Invoice",
+        index=True,
     )
 
     move_count = fields.Integer(
         string="Invoice count",
         compute="_compute_move_count",
         readonly=True,
+    )
+
+    move_type = fields.Selection(
+        related="move_id.move_type",
+    )
+
+    fiscal_operation_type = fields.Selection(
+        compute="_compute_fiscal_operation_type",
     )
 
     # -------------------------------------------------------------------------
@@ -75,61 +83,55 @@ class FiscalDocument(models.Model):
     )
 
     @api.depends(
-        "move_ids",
-        "move_ids.company_id",
-        "move_ids.currency_id",
-        "move_ids.partner_id",
-        "move_ids.user_id",
-        "move_ids.partner_shipping_id",
+        "move_id.company_id",
+        "move_id.currency_id",
+        "move_id.partner_id",
+        "move_id.user_id",
+        "move_id.partner_shipping_id",
     )
     def _compute_shadowed_fields(self):
         for doc in self:
-            if doc.move_ids:
-                doc.partner_id = doc.move_ids.partner_id
-                doc.company_id = doc.move_ids.company_id
-                doc.currency_id = doc.move_ids.currency_id
-                doc.user_id = doc.move_ids.user_id
-                doc.partner_shipping_id = doc.move_ids.partner_shipping_id
+            if doc.move_id:
+                doc.partner_id = doc.move_id.partner_id
+                doc.company_id = doc.move_id.company_id
+                doc.currency_id = doc.move_id.currency_id
+                doc.user_id = doc.move_id.user_id
+                doc.partner_shipping_id = doc.move_id.partner_shipping_id
 
     @api.onchange("company_id")
     def _inverse_company_id(self):
         for doc in self:
-            for move in doc.move_ids:
+            for move in doc.move_id:
                 if move.company_id != doc.company_id:
                     move.company_id = doc.company_id
 
     @api.onchange("currency_id")
     def _inverse_currency_id(self):
         for doc in self:
-            for move in doc.move_ids:
+            for move in doc.move_id:
                 if move.currency_id != doc.currency_id:
                     move.currency_id = doc.currency_id
 
     @api.onchange("partner_id")
     def _inverse_partner_id(self):
         for doc in self:
-            for move in doc.move_ids:
+            for move in doc.move_id:
                 if move.partner_id != doc.partner_id:
                     move.partner_id = doc.partner_id
 
     @api.onchange("user_id")
     def _inverse_user_id(self):
         for doc in self:
-            for move in doc.move_ids:
+            for move in doc.move_id:
                 if move.user_id != doc.user_id:
                     move.user_id = doc.user_id
 
     @api.onchange("partner_shipping_id")
     def _inverse_partner_shipping_id(self):
         for doc in self:
-            for move in doc.move_ids:
+            for move in doc.move_id:
                 if move.partner_shipping_id != doc.partner_shipping_id:
                     move.partner_shipping_id = doc.partner_shipping_id
-
-    # commented out because of badly written TestInvoiceDiscount.test_date_in_out
-    #    def write(self, vals):
-    #        if self.document_type_id:
-    #            return super().write(vals)
 
     fiscal_line_ids = fields.One2many(
         copy=False,
@@ -139,7 +141,7 @@ class FiscalDocument(models.Model):
     # the related directly in the account.move does not work correctly.
     incoterm_id = fields.Many2one(
         string="Fiscal Inconterm",
-        related="move_ids.invoice_incoterm_id",
+        related="move_id.invoice_incoterm_id",
     )
 
     document_date = fields.Datetime(
@@ -150,11 +152,25 @@ class FiscalDocument(models.Model):
         compute="_compute_date_in_out", inverse="_inverse_date_in_out", store=True
     )
 
-    @api.depends("move_ids", "move_ids.invoice_date")
+    @api.depends("move_id.move_type", "fiscal_operation_id")
+    def _compute_fiscal_operation_type(self):
+        for doc in self:
+            if doc.move_id.move_type == "entry":
+                # if it is a Journal Entry there is nothing to do.
+                doc.fiscal_operation_type = False
+                continue
+            if doc.fiscal_operation_id:
+                doc.fiscal_operation_type = (
+                    doc.fiscal_operation_id.fiscal_operation_type
+                )
+            else:
+                doc.fiscal_operation_type = MOVE_TO_OPERATION[doc.move_type]
+
+    @api.depends("move_id", "move_id.invoice_date")
     def _compute_document_date(self):
         for record in self:
-            if record.move_ids and record.issuer == DOCUMENT_ISSUER_PARTNER:
-                move_id = record.move_ids[0]
+            if record.move_id and record.issuer == DOCUMENT_ISSUER_PARTNER:
+                move_id = record.move_id
                 if move_id.invoice_date:
                     user_tz = timezone(self.env.user.tz or "UTC")
                     doc_date = datetime.combine(move_id.invoice_date, time.min)
@@ -164,16 +180,16 @@ class FiscalDocument(models.Model):
 
     def _inverse_document_date(self):
         for record in self:
-            if record.move_ids and record.issuer == DOCUMENT_ISSUER_PARTNER:
-                move_id = record.move_ids[0]
+            if record.move_id and record.issuer == DOCUMENT_ISSUER_PARTNER:
+                move_id = record.move_id
                 if record.document_date:
                     move_id.invoice_date = record.document_date.date()
 
-    @api.depends("move_ids", "move_ids.date")
+    @api.depends("move_id", "move_id.date")
     def _compute_date_in_out(self):
         for record in self:
-            if record.move_ids and record.issuer == DOCUMENT_ISSUER_PARTNER:
-                move_id = record.move_ids[0]
+            if record.move_id and record.issuer == DOCUMENT_ISSUER_PARTNER:
+                move_id = record.move_id
                 if move_id.date:
                     user_tz = timezone(self.env.user.tz or "UTC")
                     doc_date = datetime.combine(move_id.date, time.min)
@@ -183,15 +199,15 @@ class FiscalDocument(models.Model):
 
     def _inverse_date_in_out(self):
         for record in self:
-            if record.move_ids and record.issuer == DOCUMENT_ISSUER_PARTNER:
-                move_id = record.move_ids[0]
+            if record.move_id and record.issuer == DOCUMENT_ISSUER_PARTNER:
+                move_id = record.move_id
                 if record.date_in_out:
                     move_id.date = record.date_in_out.date()
 
-    @api.depends("move_ids")
+    @api.depends("move_id")
     def _compute_move_count(self):
         for record in self:
-            record.move_count = len(record.move_ids)
+            record.move_count = len(record.move_id)
 
     @api.model
     def default_get(self, fields_list):
@@ -254,18 +270,18 @@ class FiscalDocument(models.Model):
         related account moves.
         """
         for doc in self:
-            for move in doc.move_ids:
+            for move in doc.move_id:
                 move.message_post(**kwargs)
 
-    def cancel_move_ids(self):
+    def cancel_move_id(self):
         for record in self:
-            if record.move_ids:
-                self.move_ids.button_cancel()
+            if record.move_id:
+                self.move_id.button_cancel()
 
     def _document_cancel(self, justificative):
         result = super()._document_cancel(justificative)
         msg = f"Cancelamento: {justificative}"
-        self.cancel_move_ids()
+        self.cancel_move_id()
         self.message_post(body=msg)
         return result
 
@@ -280,38 +296,34 @@ class FiscalDocument(models.Model):
             "Canceled due to the denial of document %(document_number)s",
             document_number=self.document_number,
         )
-        self.cancel_move_ids()
+        self.cancel_move_id()
         self.message_post(body=msg)
 
     def action_document_confirm(self):
         result = super().action_document_confirm()
         if not self._context.get("skip_post"):
-            move_ids = self.move_ids.filtered(lambda move: move.state == "draft")
-            move_ids._post()
+            move_id = self.move_id.filtered(lambda move: move.state == "draft")
+            move_id._post()
         return result
 
     def action_document_back2draft(self):
         result = super().action_document_back2draft()
-        if self.move_ids:
-            self.move_ids.button_draft()
+        if self.move_id:
+            self.move_id.button_draft()
         return result
 
     def action_view_invoice(self):
         self.ensure_one()
         form_view_name = "account.view_move_form"
 
-        if not self.move_ids or not self.move_ids[0].move_type:
+        if not self.move_id or not self.move_id.move_type:
             return
-        move_type = self.move_ids[0].move_type
+        move_type = self.move_id.move_type
         xmlid = f"account.action_move_{move_type}_type"
         action = self.env["ir.actions.act_window"]._for_xml_id(xmlid)
-
-        if len(self.move_ids) > 1:
-            action["domain"] = "[('id', 'in', %s)]" % self.move_ids.ids
-        else:
-            form_view = self.env.ref(form_view_name)
-            action["views"] = [(form_view.id, "form")]
-            action["res_id"] = self.move_ids.id
+        form_view = self.env.ref(form_view_name)
+        action["views"] = [(form_view.id, "form")]
+        action["res_id"] = self.move_id.id
 
         return action
 

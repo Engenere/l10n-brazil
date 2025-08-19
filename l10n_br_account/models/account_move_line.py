@@ -9,20 +9,30 @@ from odoo.tools import frozendict
 
 
 class AccountMoveLine(models.Model):
-    _name = "account.move.line"
-    _fiscal_decorator_model = "l10n_br_fiscal.document.line"
-    _inherit = [
-        _name,
-        "l10n_br_account.decorator.mixin",
-    ]
-    _fiscal_decorator_model = "l10n_br_fiscal.document.line"
-    _inherits = {_fiscal_decorator_model: "fiscal_document_line_id"}
+    _inherit = "account.move.line"
 
     fiscal_document_line_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.document.line",
         string="Fiscal Document Line",
         copy=False,
         ondelete="cascade",
+    )
+
+    # -------------------------------------------
+    # FIELDS RELATED TO THE FISCAL DOCUMENT LINE
+    # -------------------------------------------
+
+    cfop_id = fields.Many2one(
+        related="fiscal_document_line_id.cfop_id",
+    )
+    fiscal_tax_ids = fields.Many2many(
+        related="fiscal_document_line_id.fiscal_tax_ids",
+    )
+    fiscal_operation_line_id = fields.Many2one(
+        related="fiscal_document_line_id.fiscal_operation_line_id",
+    )
+    fiscal_operation_id = fields.Many2one(
+        related="fiscal_document_line_id.fiscal_operation_id",
     )
 
     def _compute_fiscal_document_line_ids(self):
@@ -86,11 +96,11 @@ class AccountMoveLine(models.Model):
     @api.depends(
         "quantity",
         "price_unit",
-        "discount_value",
+        "fiscal_document_line_id.discount_value",
     )
     def _compute_discounts(self):
         for line in self:
-            line.discount = (line.discount_value * 100) / (
+            line.discount = (line.fiscal_document_line_id.discount_value * 100) / (
                 line.quantity * line.price_unit or 1
             )
 
@@ -114,67 +124,6 @@ class AccountMoveLine(models.Model):
         if other_lines:
             return super()._compute_name()
         return True
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        for values in vals_list:
-            if values.get("fiscal_document_line_id"):
-                continue
-
-            move_id = self.env["account.move"].browse(values["move_id"])
-            fiscal_doc_id = move_id.fiscal_document_id.id
-            if not fiscal_doc_id:
-                continue
-            values["document_id"] = fiscal_doc_id  # pass through the _inherits system
-        # This reordering bellow is crucial to ensure accurate linkage between
-        # account.move.line (aml) and the fiscal document line. In the fiscal create a
-        # fiscal document line, leaving only those that should be created. Proper
-        # ordering is essential as mismatches between the order of amls and the
-        # manipulated vals_list of fiscal documents can lead to incorrect linkages.
-        # For example, if vals_list[0] in amls does not match vals_list[0] in the
-        # fiscal document (which is a manipulated vals_list), it results in erroneous
-        # associations.
-
-        # Add index to each dictionary in vals_list
-        indexed_vals_list = [(idx, val) for idx, val in enumerate(vals_list)]
-
-        # Reorder vals_list so lines with fiscal_operation_line_id will
-        # be created first
-        sorted_indexed_vals_list = sorted(
-            indexed_vals_list,
-            key=lambda x: not x[1].get("fiscal_operation_line_id"),
-        )
-        original_indexes = [idx for idx, _ in sorted_indexed_vals_list]
-        vals_list = [val for _, val in sorted_indexed_vals_list]
-
-        # Create the records
-        result = super().create(vals_list)
-
-        # Initialize the inverted index list with the same length as the original list
-        inverted_index = [0] * len(original_indexes)
-
-        # Iterate over the original_indexes list and fill the inverted_index list
-        #  accordingly
-        for i, val in enumerate(original_indexes):
-            inverted_index[val] = i
-
-        # Re-order the result according to the initial vals_list order
-        sorted_result = self.env["account.move.line"]
-        for idx in inverted_index:
-            sorted_result |= result[idx]
-        return sorted_result
-
-    def unlink(self):
-        unlink_fiscal_lines = self.env["l10n_br_fiscal.document.line"]
-        for inv_line in self:
-            if not inv_line.exists():
-                continue
-            if inv_line.fiscal_document_line_id:
-                unlink_fiscal_lines |= inv_line.fiscal_document_line_id
-        result = super().unlink()
-        unlink_fiscal_lines.unlink()
-        self.clear_caches()
-        return result
 
     @contextmanager
     def _sync_invoice(self, container):
@@ -284,22 +233,22 @@ class AccountMoveLine(models.Model):
         "fiscal_tax_ids",
         "fiscal_operation_line_id",
         "cfop_id",
-        "ncm_id",
-        "nbs_id",
-        "nbm_id",
-        "cest_id",
-        "discount_value",
-        "insurance_value",
-        "other_value",
-        "ii_customhouse_charges",
-        "freight_value",
-        "fiscal_price",
-        "fiscal_quantity",
-        "uot_id",
-        "icmssn_range_id",
-        "icms_origin",
-        "ind_final",
-        "company_id",
+        "fiscal_document_line_id.ncm_id",
+        "fiscal_document_line_id.nbs_id",
+        "fiscal_document_line_id.nbm_id",
+        "fiscal_document_line_id.cest_id",
+        "fiscal_document_line_id.discount_value",
+        "fiscal_document_line_id.insurance_value",
+        "fiscal_document_line_id.other_value",
+        "fiscal_document_line_id.ii_customhouse_charges",
+        "fiscal_document_line_id.freight_value",
+        "fiscal_document_line_id.fiscal_price",
+        "fiscal_document_line_id.fiscal_quantity",
+        "fiscal_document_line_id.uot_id",
+        "fiscal_document_line_id.icmssn_range_id",
+        "fiscal_document_line_id.icms_origin",
+        "fiscal_document_line_id.ind_final",
+        "fiscal_document_line_id.company_id",
     )
     def _compute_totals(self):
         """
@@ -337,21 +286,21 @@ class AccountMoveLine(models.Model):
                     ).fiscal_tax_ids,
                     operation_line=line.fiscal_operation_line_id,
                     cfop=line.cfop_id or None,
-                    ncm=line.ncm_id,
-                    nbs=line.nbs_id,
-                    nbm=line.nbm_id,
-                    cest=line.cest_id,
-                    discount_value=line.discount_value,
-                    insurance_value=line.insurance_value,
-                    other_value=line.other_value,
-                    ii_customhouse_charges=line.ii_customhouse_charges,
-                    freight_value=line.freight_value,
-                    fiscal_price=line.fiscal_price,
-                    fiscal_quantity=line.fiscal_quantity,
-                    uot_id=line.uot_id,
-                    icmssn_range=line.icmssn_range_id,
-                    icms_origin=line.icms_origin,
-                    ind_final=line.ind_final,
+                    ncm=line.fiscal_document_line_id.ncm_id,
+                    nbs=line.fiscal_document_line_id.nbs_id,
+                    nbm=line.fiscal_document_line_id.nbm_id,
+                    cest=line.fiscal_document_line_id.cest_id,
+                    discount_value=line.fiscal_document_line_id.discount_value,
+                    insurance_value=line.fiscal_document_line_id.insurance_value,
+                    other_value=line.fiscal_document_line_id.other_value,
+                    ii_customhouse_charges=line.fiscal_document_line_id.ii_customhouse_charges,
+                    freight_value=line.fiscal_document_line_id.freight_value,
+                    fiscal_price=line.fiscal_document_line_id.fiscal_price,
+                    fiscal_quantity=line.fiscal_document_line_id.fiscal_quantity,
+                    uot_id=line.fiscal_document_line_id.uot_id,
+                    icmssn_range=line.fiscal_document_line_id.icmssn_range_id,
+                    icms_origin=line.fiscal_document_line_id.icms_origin,
+                    ind_final=line.fiscal_document_line_id.ind_final,
                 )
 
                 line.price_subtotal = taxes_res["total_excluded"]
@@ -376,21 +325,21 @@ class AccountMoveLine(models.Model):
         "fiscal_tax_ids",
         "fiscal_operation_line_id",
         "cfop_id",
-        "ncm_id",
-        "nbm_id",
-        "nbs_id",
-        "cest_id",
-        "discount_value",
-        "insurance_value",
-        "other_value",
-        "ii_customhouse_charges",
-        "freight_value",
-        "fiscal_price",
-        "fiscal_quantity",
-        "uot_id",
-        "icmssn_range_id",
-        "icms_origin",
-        "ind_final",
+        "fiscal_document_line_id.ncm_id",
+        "fiscal_document_line_id.nbm_id",
+        "fiscal_document_line_id.nbs_id",
+        "fiscal_document_line_id.cest_id",
+        "fiscal_document_line_id.discount_value",
+        "fiscal_document_line_id.insurance_value",
+        "fiscal_document_line_id.other_value",
+        "fiscal_document_line_id.ii_customhouse_charges",
+        "fiscal_document_line_id.freight_value",
+        "fiscal_document_line_id.fiscal_price",
+        "fiscal_document_line_id.fiscal_quantity",
+        "fiscal_document_line_id.uot_id",
+        "fiscal_document_line_id.icmssn_range_id",
+        "fiscal_document_line_id.icms_origin",
+        "fiscal_document_line_id.ind_final",
     )
     def _compute_all_tax(self):
         """
@@ -427,21 +376,21 @@ class AccountMoveLine(models.Model):
                 fiscal_taxes=line.fiscal_tax_ids,
                 operation_line=line.fiscal_operation_line_id,
                 cfop=line.cfop_id or None,
-                ncm=line.ncm_id,
-                nbs=line.nbs_id,
-                nbm=line.nbm_id,
-                cest=line.cest_id,
-                discount_value=line.discount_value,
-                insurance_value=line.insurance_value,
-                other_value=line.other_value,
-                ii_customhouse_charges=line.ii_customhouse_charges,
-                freight_value=line.freight_value,
-                fiscal_price=line.fiscal_price,
-                fiscal_quantity=line.fiscal_quantity,
-                uot_id=line.uot_id,
-                icmssn_range=line.icmssn_range_id,
-                icms_origin=line.icms_origin,
-                ind_final=line.ind_final,
+                ncm=line.fiscal_document_line_id.ncm_id,
+                nbs=line.fiscal_document_line_id.nbs_id,
+                nbm=line.fiscal_document_line_id.nbm_id,
+                cest=line.fiscal_document_line_id.cest_id,
+                discount_value=line.fiscal_document_line_id.discount_value,
+                insurance_value=line.fiscal_document_line_id.insurance_value,
+                other_value=line.fiscal_document_line_id.other_value,
+                ii_customhouse_charges=line.fiscal_document_line_id.ii_customhouse_charges,
+                freight_value=line.fiscal_document_line_id.freight_value,
+                fiscal_price=line.fiscal_document_line_id.fiscal_price,
+                fiscal_quantity=line.fiscal_document_line_id.fiscal_quantity,
+                uot_id=line.fiscal_document_line_id.uot_id,
+                icmssn_range=line.fiscal_document_line_id.icmssn_range_id,
+                icms_origin=line.fiscal_document_line_id.icms_origin,
+                ind_final=line.fiscal_document_line_id.ind_final,
             )
             rate = (
                 line.amount_currency / line.balance
@@ -482,59 +431,6 @@ class AccountMoveLine(models.Model):
                 line.compute_all_tax[frozendict({"id": line.id})] = {
                     "tax_tag_ids": [Command.set(compute_all_currency["base_tags"])],
                 }
-
-    @api.onchange(
-        "cofins_tax_id",
-        "cofins_wh_tax_id",
-        "cofinsst_tax_id",
-        "csll_tax_id",
-        "csll_wh_tax_id",
-        "icms_tax_id",
-        "icmsfcp_tax_id",
-        "icmssn_tax_id",
-        "icmsst_tax_id",
-        "icmsfcpst_tax_id",
-        "ii_tax_id",
-        "inss_tax_id",
-        "inss_wh_tax_id",
-        "ipi_tax_id",
-        "irpj_tax_id",
-        "irpj_wh_tax_id",
-        "issqn_tax_id",
-        "issqn_wh_tax_id",
-        "pis_tax_id",
-        "pis_wh_tax_id",
-        "pisst_tax_id",
-    )
-    def _onchange_fiscal_taxes(self):
-        if self.fiscal_document_line_id:
-            self.fiscal_document_line_id._onchange_fiscal_taxes()
-
-    @api.onchange("product_id")
-    def _onchange_product_id(self):
-        if self.fiscal_document_line_id:
-            self.fiscal_document_line_id._onchange_product_id_fiscal()
-
-    @api.onchange("price_unit")
-    def _onchange_price_unit(self):
-        if self.fiscal_document_line_id:
-            self.fiscal_document_line_id._onchange_price_unit_fiscal()
-
-    @api.onchange("quantity")
-    def _onchange_quantity(self):
-        if self.fiscal_document_line_id:
-            self.fiscal_document_line_id._onchange_quantity_fiscal()
-
-    # @api.onchange("fiscal_document_line_id")
-    # def _onchange_fiscal_document_line_id(self):
-    #     if self.fiscal_document_line_id:
-    #         # do the onchange dance for fields with the same names:
-    #         self.product_id = self.fiscal_document_line_id.product_id.id
-    #         self.name = self.fiscal_document_line_id.name
-    #         self.quantity = self.fiscal_document_line_id.quantity
-    #         self.price_unit = self.fiscal_document_line_id.price_unit
-    #         # override the default product uom (set by the onchange):
-    #         self.product_uom_id = self.fiscal_document_line_id.uom_id.id
 
     @api.depends("product_id", "product_uom_id", "fiscal_tax_ids")
     def _compute_tax_ids(self):
