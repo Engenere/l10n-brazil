@@ -1856,12 +1856,15 @@ class FiscalDocumentLineMixin(models.AbstractModel):
 
     @api.depends("fiscal_operation_id", "company_id", "partner_id", "product_id")
     def _compute_fiscal_operation_line_id(self):
-        if self.fiscal_operation_id:
-            self.fiscal_operation_line_id = self.fiscal_operation_id.line_definition(
-                company=self.company_id,
-                partner=self.partner_id,
-                product=self.product_id,
-            )
+        for line in self:
+            if line.fiscal_operation_id:
+                line.fiscal_operation_line_id = (
+                    line.fiscal_operation_id.line_definition(
+                        company=line.company_id,
+                        partner=line.partner_id,
+                        product=line.product_id,
+                    )
+                )
 
     def _get_fiscal_tax_ids_dependencies(self):
         """
