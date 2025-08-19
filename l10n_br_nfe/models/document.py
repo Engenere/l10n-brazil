@@ -910,8 +910,8 @@ class NFe(spec_models.StackedModel):
         for record in self.with_context(lang="pt_BR").filtered(
             filter_processador_edoc_nfe
         ):
-            record.flush_model()
-            self.env.invalidate_all()
+            # record.flush_model()
+            # self.env.invalidate_all()
             inf_nfe = record._build_binding("nfe", "40")
 
             inf_nfe_supl = None
