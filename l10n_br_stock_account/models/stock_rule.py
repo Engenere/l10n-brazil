@@ -67,8 +67,8 @@ class StockRule(models.Model):
         """
         custom_move_fields = super()._get_custom_move_fields()
         custom_move_fields += [
-            key
-            for key in self.env["l10n_br_fiscal.document.line.mixin"]._fields.keys()
-            if key != "product_id"
+            k
+            for k in self.env["l10n_br_fiscal.document.line.mixin"]._fields
+            if k not in {"product_id", "company_id"}
         ]
         return custom_move_fields
