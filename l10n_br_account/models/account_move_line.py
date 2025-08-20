@@ -365,12 +365,16 @@ class AccountMoveLine(models.Model):
                 line.price_subtotal = taxes_res["total_excluded"]
                 line.price_total = taxes_res["total_included"]
 
-            line.price_total += (
-                line.insurance_value
-                + line.other_value
-                + line.freight_value
-                - line.icms_relief_value
-            )
+                line.price_total += (
+                    line.insurance_value
+                    + line.other_value
+                    + line.freight_value
+                    - line.icms_relief_value
+                )
+            else:
+                # If no tax, just compute the total based on price_unit and quantity
+                subtotal = line.quantity * line_discount_price_unit
+                line.price_total = line.price_subtotal = subtotal
 
     @api.depends(
         "tax_ids",
@@ -533,7 +537,13 @@ class AccountMoveLine(models.Model):
         if self.fiscal_document_line_id:
             self.fiscal_document_line_id._onchange_quantity_fiscal()
 
-    @api.depends("product_id", "product_uom_id", "fiscal_tax_ids")
+    @api.depends(
+        "product_id",
+        "product_uom_id",
+        "fiscal_tax_ids",
+        "fiscal_operation_id",
+        "company_id",
+    )
     def _compute_tax_ids(self):
         # Adding 'fiscal_tax_ids' as a dependency to ensure that the taxes
         # are recalculated when this field changes.
