@@ -61,27 +61,26 @@ class AccountMoveLine(models.Model):
     @api.onchange("product_id")
     def _inverse_product_id(self):
         for line in self:
-            if line.fiscal_document_line_id:
-                line.fiscal_document_line_id.product_id = line.product_id.id
+            line.proxy_product_id = line.product_id.id
+            line.fiscal_document_line_id._onchange_product_id_fiscal()
         return super()._inverse_product_id()
 
     @api.onchange("name")
     def _inverse_name(self):
         for line in self:
-            if line.fiscal_document_line_id:
-                line.fiscal_document_line_id.name = line.name
+            line.proxy_name = line.name
 
     @api.onchange("quantity")
     def _inverse_quantity(self):
         for line in self:
-            if line.fiscal_document_line_id:
-                line.fiscal_document_line_id.quantity = line.quantity
+            line.proxy_quantity = line.quantity
+            line.fiscal_document_line_id._onchange_quantity_fiscal()
 
     @api.onchange("price_unit")
     def _inverse_price_unit(self):
         for line in self:
-            if line.fiscal_document_line_id:
-                line.fiscal_document_line_id.price_unit = line.price_unit
+            line.proxy_price_unit = line.price_unit
+            line.fiscal_document_line_id._onchange_price_unit_fiscal()
 
     @api.depends(
         "quantity",
@@ -521,21 +520,6 @@ class AccountMoveLine(models.Model):
     def _onchange_fiscal_taxes(self):
         if self.fiscal_document_line_id:
             self.fiscal_document_line_id._onchange_fiscal_taxes()
-
-    @api.onchange("product_id")
-    def _onchange_product_id(self):
-        if self.fiscal_document_line_id:
-            self.fiscal_document_line_id._onchange_product_id_fiscal()
-
-    @api.onchange("price_unit")
-    def _onchange_price_unit(self):
-        if self.fiscal_document_line_id:
-            self.fiscal_document_line_id._onchange_price_unit_fiscal()
-
-    @api.onchange("quantity")
-    def _onchange_quantity(self):
-        if self.fiscal_document_line_id:
-            self.fiscal_document_line_id._onchange_quantity_fiscal()
 
     @api.depends(
         "product_id",
