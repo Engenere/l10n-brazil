@@ -203,11 +203,6 @@ class SaleOrderLine(models.Model):
         result.update(super()._prepare_invoice_line(**optional_values))
         return result
 
-    @api.onchange("product_uom_qty")
-    def _onchange_quantity_fiscal(self):
-        self.fiscal_quantity = 0
-        self._compute_fiscal_quantity()
-
     @api.depends(
         "qty_delivered_method",
         "analytic_line_ids.so_line",

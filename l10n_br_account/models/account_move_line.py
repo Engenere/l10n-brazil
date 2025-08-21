@@ -74,13 +74,11 @@ class AccountMoveLine(models.Model):
     def _inverse_quantity(self):
         for line in self:
             line.proxy_quantity = line.quantity
-            line.fiscal_document_line_id._onchange_quantity_fiscal()
 
     @api.onchange("price_unit")
     def _inverse_price_unit(self):
         for line in self:
             line.proxy_price_unit = line.price_unit
-            line.fiscal_document_line_id._onchange_price_unit_fiscal()
 
     @api.depends(
         "quantity",
