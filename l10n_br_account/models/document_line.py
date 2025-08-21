@@ -43,10 +43,20 @@ class FiscalDocumentLine(models.Model):
         ondelete="restrict",
     )
 
+    # -------------------------------------------------------------------------
+    # PROXY FIELDS FOR _inherits SHADOWED NAMES
+    # -------------------------------------------------------------------------
+    # When using _inherits (delegation), fields with identical names on both the
+    # child and delegated model may not synchronize correctly. To avoid ORM sync
+    # issues, we define proxy_* fields related to the delegated document fields.
+    # Then the child "original" fields point to the proxies, ensuring consistency
+    # and editability.
+
     proxy_company_id = fields.Many2one(
         related="document_id.company_id",
         comodel_name="res.company",
         string="Company (proxy)",
+        help="Technical Field.",
         readonly=False,
     )
 
@@ -54,6 +64,28 @@ class FiscalDocumentLine(models.Model):
         related="document_id.partner_id",
         comodel_name="res.partner",
         string="Partner (proxy)",
+        help="Technical Field.",
+        readonly=False,
+    )
+    proxy_product_id = fields.Many2one(
+        comodel_name="product.product",
+        string="Product (proxy)",
+        help="Technical Field.",
+        readonly=False,
+    )
+    proxy_name = fields.Char(
+        string="Name (proxy)",
+        help="Technical Field.",
+        readonly=False,
+    )
+    proxy_quantity = fields.Float(
+        string="Quantity (proxy)",
+        help="Technical Field.",
+        readonly=False,
+    )
+    proxy_price_unit = fields.Float(
+        string="Unit Price (proxy)",
+        help="Technical mirror.",
         readonly=False,
     )
 
@@ -80,48 +112,38 @@ class FiscalDocumentLine(models.Model):
     # -------------------------------------------------------------------------
 
     product_id = fields.Many2one(
-        compute="_compute_shadowed_fields",
+        related="proxy_product_id",
+        comodel_name="product.product",
         inverse="_inverse_product_id",
+        string="Product",
         store=True,
         precompute=True,
         readonly=False,
     )
     name = fields.Char(
-        compute="_compute_shadowed_fields",
+        related="proxy_name",
         inverse="_inverse_name",
+        string="Name",
         store=True,
         precompute=True,
         readonly=False,
     )
     quantity = fields.Float(
-        compute="_compute_shadowed_fields",
+        related="proxy_quantity",
         inverse="_inverse_quantity",
+        string="Quantity",
         store=True,
         precompute=True,
         readonly=False,
     )
     price_unit = fields.Float(
-        compute="_compute_shadowed_fields",
+        related="proxy_price_unit",
         inverse="_inverse_price_unit",
+        string="Price Unit",
         store=True,
         precompute=True,
         readonly=False,
     )
-
-    @api.depends(
-        "account_line_ids",
-        "account_line_ids.product_id",
-        "account_line_ids.name",
-        "account_line_ids.quantity",
-        "account_line_ids.price_unit",
-    )
-    def _compute_shadowed_fields(self):
-        for line in self:
-            if line.account_line_ids:
-                line.product_id = line.account_line_ids.product_id
-                line.name = line.account_line_ids.name
-                line.quantity = line.account_line_ids.quantity
-                line.price_unit = line.account_line_ids.price_unit
 
     @api.depends("move_id.fiscal_document_id")
     def _compute_document_id(self):
