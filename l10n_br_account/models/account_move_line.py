@@ -511,6 +511,27 @@ class AccountMoveLine(models.Model):
         if self.fiscal_document_line_id:
             self.fiscal_document_line_id._onchange_fiscal_taxes()
 
+    @api.onchange("city_taxation_code_id")
+    def _onchange_city_taxation_code_id(self):
+        if self.fiscal_document_line_id:
+            self.fiscal_document_line_id._onchange_city_taxation_code_id()
+
+    @api.onchange(
+        "icms_base",
+        "icms_percent",
+        "icms_reduction",
+        "icms_value",
+        "icms_destination_base",
+        "icms_origin_percent",
+        "icms_destination_percent",
+        "icms_sharing_percent",
+        "icms_origin_value",
+        "icms_tax_benefit_id",
+    )
+    def _onchange_icms_fields(self):
+        if self.fiscal_document_line_id:
+            self.fiscal_document_line_id._onchange_icms_fields()
+
     @api.depends(
         "product_id",
         "product_uom_id",
