@@ -222,6 +222,18 @@ class FiscalDocumentLine(models.Model):
         necessary.
         """
 
+        # copy proxy fields value to original fields:
+        # TODO pode ser removido depois que renomear os campos no fiscal.
+        for vals in vals_list:
+            if "quantity" not in vals and "proxy_quantity" in vals:
+                vals["quantity"] = vals["proxy_quantity"]
+            if "price_unit" not in vals and "proxy_price_unit" in vals:
+                vals["price_unit"] = vals["proxy_price_unit"]
+            if "name" not in vals and "proxy_name" in vals:
+                vals["name"] = vals["proxy_name"]
+            if "product_id" not in vals and "proxy_product_id" in vals:
+                vals["product_id"] = vals["proxy_product_id"]
+
         if self._context.get("create_from_account"):
             # Filter out the dictionaries that do not meet the conditions
             filtered_vals_list = [
