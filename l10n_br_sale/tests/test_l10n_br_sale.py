@@ -157,7 +157,6 @@ class L10nBrSaleBaseTest(TransactionCase):
         if sale_line.display_type:
             return
         sale_line._onchange_product_id_fiscal()
-        sale_line._onchange_fiscal_taxes()
 
     def _invoice_sale_order(self, sale_order):
         sale_order.action_confirm()

@@ -113,9 +113,6 @@ class SubsequentDocument(models.Model):
             {"fiscal_operation_id": new_doc.fiscal_operation_id.id}
         )
 
-        for item in new_doc.fiscal_line_ids:
-            item._onchange_fiscal_taxes()
-
         document = new_doc
         document.action_document_confirm()
         self.subsequent_document_id = document

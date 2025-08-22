@@ -93,7 +93,6 @@ class TestXMLValidation(TransactionCase):
                 "cofins_tax_id": self.env.ref("l10n_br_fiscal.tax_cofins_7_6").id,
             }
         )
-        line._onchange_fiscal_taxes()
 
         # Line 2 - using two lines to test the XML totals
         line2 = document_line_model.create(
@@ -123,7 +122,6 @@ class TestXMLValidation(TransactionCase):
                 "cofins_tax_id": self.env.ref("l10n_br_fiscal.tax_cofins_7_6").id,
             }
         )
-        line2._onchange_fiscal_taxes()
 
         document.action_document_confirm()
         document.action_document_send()

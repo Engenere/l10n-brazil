@@ -484,33 +484,6 @@ class AccountMoveLine(models.Model):
                     "tax_tag_ids": [Command.set(compute_all_currency["base_tags"])],
                 }
 
-    @api.onchange(
-        "cofins_tax_id",
-        "cofins_wh_tax_id",
-        "cofinsst_tax_id",
-        "csll_tax_id",
-        "csll_wh_tax_id",
-        "icms_tax_id",
-        "icmsfcp_tax_id",
-        "icmssn_tax_id",
-        "icmsst_tax_id",
-        "icmsfcpst_tax_id",
-        "ii_tax_id",
-        "inss_tax_id",
-        "inss_wh_tax_id",
-        "ipi_tax_id",
-        "irpj_tax_id",
-        "irpj_wh_tax_id",
-        "issqn_tax_id",
-        "issqn_wh_tax_id",
-        "pis_tax_id",
-        "pis_wh_tax_id",
-        "pisst_tax_id",
-    )
-    def _onchange_fiscal_taxes(self):
-        if self.fiscal_document_line_id:
-            self.fiscal_document_line_id._onchange_fiscal_taxes()
-
     @api.onchange("city_taxation_code_id")
     def _onchange_city_taxation_code_id(self):
         if self.fiscal_document_line_id:

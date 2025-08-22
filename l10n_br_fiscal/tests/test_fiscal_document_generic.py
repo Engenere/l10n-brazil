@@ -45,7 +45,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
             # Restore the original price_unit value,
             # as the product change might have altered it.
             line.price_unit = 100
-            line._onchange_fiscal_taxes()
 
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
@@ -161,7 +160,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
         """Test NFe other state."""
         for line in self.nfe_other_state.fiscal_line_ids:
             line._onchange_product_id_fiscal()
-            line._onchange_fiscal_taxes()
 
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
@@ -275,7 +273,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
         """Test NFe not taxpayer."""
         for line in self.nfe_not_taxpayer.fiscal_line_ids:
             line._onchange_product_id_fiscal()
-            line._onchange_fiscal_taxes()
 
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
@@ -376,7 +373,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
         """Test NFe not taxpayer not Company."""
         for line in self.nfe_not_taxpayer_pf.fiscal_line_ids:
             line._onchange_product_id_fiscal()
-            line._onchange_fiscal_taxes()
 
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
@@ -477,7 +473,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
         """Test NFe export."""
         for line in self.nfe_export.fiscal_line_ids:
             line._onchange_product_id_fiscal()
-            line._onchange_fiscal_taxes()
 
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
@@ -581,7 +576,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
                     "federal_taxes_national": 33.00,
                 }
             )
-            line._onchange_fiscal_taxes()
 
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
@@ -681,7 +675,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
         """Test NFe SN other state."""
         for line in self.nfe_sn_other_state.fiscal_line_ids:
             line._onchange_product_id_fiscal()
-            line._onchange_fiscal_taxes()
 
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
@@ -778,7 +771,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
         """Test NFe SN not taxpayer."""
         for line in self.nfe_sn_not_taxpayer.fiscal_line_ids:
             line._onchange_product_id_fiscal()
-            line._onchange_fiscal_taxes()
 
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
@@ -862,7 +854,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
         """Test NFe SN export."""
         for line in self.nfe_sn_export.fiscal_line_ids:
             line._onchange_product_id_fiscal()
-            line._onchange_fiscal_taxes()
 
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(

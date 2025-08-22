@@ -555,7 +555,6 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
         # Testando com Alivio do ICMS
         prod_line = self.move_out_venda_with_icms_reduction.invoice_line_ids[0]
         prod_line.icms_relief_id = self.env.ref("l10n_br_fiscal.icms_relief_1")
-        self.move_out_venda_with_icms_reduction.invoice_line_ids._onchange_fiscal_taxes()
 
         # price_total deve ser vProd + vIPI − vICMSDeson
         # 1000.00 + 32.50 − 36.23 = 996.27

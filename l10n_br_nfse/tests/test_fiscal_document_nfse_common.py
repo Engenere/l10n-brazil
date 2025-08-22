@@ -125,7 +125,6 @@ class TestFiscalDocumentNFSeCommon(TransactionCase):
 
         for line in self.nfse_same_state.fiscal_line_ids:
             line._onchange_product_id_fiscal()
-            line._onchange_fiscal_taxes()
 
             # prepare_line_servico()
             self.assertEqual(

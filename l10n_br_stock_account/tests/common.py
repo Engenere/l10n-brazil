@@ -15,6 +15,5 @@ class TestBrPickingInvoicingCommon(TestPickingInvoicingCommon):
 
         # Stock Move
         record._onchange_product_id_fiscal()
-        record._onchange_fiscal_taxes()
         record._onchange_product_quantity()
         return result

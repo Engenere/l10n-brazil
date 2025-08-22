@@ -370,6 +370,7 @@
                   <field name="price_unit" />
                   <field name="quantity" />
                   <field name="amount_total" />
+                  <field name="fiscal_tax_ids" widget="many2many_tags" />
                 </tree>
               </field>
             </page>
