@@ -728,8 +728,6 @@ class FiscalDocumentMixin(models.AbstractModel):
                             for line in record._get_product_amount_lines()[:-1]
                         )
                     )
-                for line in record._get_product_amount_lines():
-                    line._onchange_fiscal_taxes()
                 record._fields["amount_total"].compute_value(record)
                 record.write(
                     {
@@ -778,8 +776,6 @@ class FiscalDocumentMixin(models.AbstractModel):
                             for line in record._get_product_amount_lines()[:-1]
                         )
                     )
-                for line in record._get_product_amount_lines():
-                    line._onchange_fiscal_taxes()
                 record._fields["amount_total"].compute_value(record)
                 record.write(
                     {
@@ -828,8 +824,6 @@ class FiscalDocumentMixin(models.AbstractModel):
                             for line in record._get_product_amount_lines()[:-1]
                         )
                     )
-                for line in record._get_product_amount_lines():
-                    line._onchange_fiscal_taxes()
                 record._fields["amount_total"].compute_value(record)
                 record.write(
                     {

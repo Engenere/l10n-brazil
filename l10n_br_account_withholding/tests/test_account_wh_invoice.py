@@ -436,7 +436,6 @@ class AccountMoveWithWhInvoice(AccountMoveBRCommon):
             line_ids.issqn_fg_city_id = self.env.ref("l10n_br_base.city_3550308")
             line_ids.issqn_wh_tax_id = self.env.ref("l10n_br_fiscal.tax_issqn_wh_5")
 
-        move_issqn.invoice_line_ids._onchange_fiscal_taxes()
         move_issqn.action_post()
         move_issqn._compute_wh_invoice_ids()
 
@@ -511,7 +510,6 @@ class AccountMoveWithWhInvoice(AccountMoveBRCommon):
             line_ids.issqn_fg_city_id = self.env.ref("l10n_br_base.city_3550308")
             line_ids.issqn_wh_tax_id = self.env.ref("l10n_br_fiscal.tax_issqn_wh_5")
 
-        move_issqn.invoice_line_ids._onchange_fiscal_taxes()
         move_issqn.action_post()
         move_issqn._compute_wh_invoice_ids()
 

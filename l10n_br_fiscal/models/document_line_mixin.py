@@ -52,30 +52,6 @@ from ..constants.issqn import (
     ISSQN_INCENTIVE_DEFAULT,
 )
 
-FISCAL_TAX_ID_FIELDS = [
-    "cofins_tax_id",
-    "cofins_wh_tax_id",
-    "cofinsst_tax_id",
-    "csll_tax_id",
-    "csll_wh_tax_id",
-    "icms_tax_id",
-    "icmsfcp_tax_id",
-    "icmssn_tax_id",
-    "icmsst_tax_id",
-    "icmsfcpst_tax_id",
-    "ii_tax_id",
-    "inss_tax_id",
-    "inss_wh_tax_id",
-    "ipi_tax_id",
-    "irpj_tax_id",
-    "irpj_wh_tax_id",
-    "issqn_tax_id",
-    "issqn_wh_tax_id",
-    "pis_tax_id",
-    "pis_wh_tax_id",
-    "pisst_tax_id",
-]
-
 FISCAL_CST_ID_FIELDS = [
     "icms_cst_id",
     "ipi_cst_id",
@@ -278,11 +254,10 @@ class FiscalDocumentLineMixin(models.AbstractModel):
 
     fiscal_tax_ids = fields.Many2many(
         comodel_name="l10n_br_fiscal.tax",
-        string="Fiscal Taxes",
         compute="_compute_fiscal_tax_ids",
+        string="Fiscal Taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     amount_fiscal = fields.Monetary(
@@ -362,10 +337,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax ISSQN",
         domain=[("tax_domain", "=", TAX_DOMAIN_ISSQN)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_ISSQN,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     issqn_fg_city_id = fields.Many2one(
@@ -435,10 +411,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax ISSQN RET",
         domain=[("tax_domain", "=", TAX_DOMAIN_ISSQN_WH)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_ISSQN_WH,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     issqn_wh_base = fields.Monetary(
@@ -478,10 +455,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax ICMS",
         domain=[("tax_domain", "=", TAX_DOMAIN_ICMS)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_ICMS,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     icms_cst_id = fields.Many2one(
@@ -591,10 +569,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax ICMS ST",
         domain=[("tax_domain", "=", TAX_DOMAIN_ICMS_ST)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_ICMS_ST,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     # modBCST - Modalidade de determinação da BC do ICMS ST
@@ -667,10 +646,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax ICMS FCP",
         domain=[("tax_domain", "=", TAX_DOMAIN_ICMS_FCP)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_ICMS_FCP,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     # vBCFCPUFDest
@@ -707,10 +687,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax ICMS FCP ST",
         domain=[("tax_domain", "=", TAX_DOMAIN_ICMS_FCP_ST)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_ICMS_FCP_ST,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     # vBCFCPST
@@ -807,10 +788,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax ICMS SN",
         domain=[("tax_domain", "=", TAX_DOMAIN_ICMS_SN)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_ICMS_SN,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     icmssn_base = fields.Monetary(
@@ -874,10 +856,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax IPI",
         domain=[("tax_domain", "=", TAX_DOMAIN_IPI)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_IPI,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     ipi_cst_id = fields.Many2one(
@@ -956,10 +939,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax II",
         domain=[("tax_domain", "=", TAX_DOMAIN_II)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_II,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     ii_base = fields.Monetary(
@@ -996,10 +980,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax COFINS",
         domain=[("tax_domain", "=", TAX_DOMAIN_COFINS)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_COFINS,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     cofins_cst_id = fields.Many2one(
@@ -1073,10 +1058,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax COFINS ST",
         domain=[("tax_domain", "=", TAX_DOMAIN_COFINS_ST)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_COFINS_ST,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     cofinsst_cst_id = fields.Many2one(
@@ -1141,10 +1127,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax COFINS RET",
         domain=[("tax_domain", "=", TAX_DOMAIN_COFINS_WH)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_COFINS_WH,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     cofins_wh_base_type = fields.Selection(
@@ -1194,10 +1181,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax PIS",
         domain=[("tax_domain", "=", TAX_DOMAIN_PIS)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_PIS,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     pis_cst_id = fields.Many2one(
@@ -1271,10 +1259,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax PIS ST",
         domain=[("tax_domain", "=", TAX_DOMAIN_PIS_ST)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_PIS_ST,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     pisst_cst_id = fields.Many2one(
@@ -1339,10 +1328,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax PIS RET",
         domain=[("tax_domain", "=", TAX_DOMAIN_PIS_WH)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_PIS_WH,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     pis_wh_base_type = fields.Selection(
@@ -1392,10 +1382,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax CSLL",
         domain=[("tax_domain", "=", TAX_DOMAIN_CSLL)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_CSLL,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     csll_base = fields.Monetary(
@@ -1434,10 +1425,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax CSLL RET",
         domain=[("tax_domain", "=", TAX_DOMAIN_CSLL_WH)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_CSLL_WH,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     csll_wh_base = fields.Monetary(
@@ -1476,10 +1468,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax IRPJ",
         domain=[("tax_domain", "=", TAX_DOMAIN_IRPJ)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_IRPJ,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     irpj_base = fields.Monetary(
@@ -1518,10 +1511,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax IRPJ RET",
         domain=[("tax_domain", "=", TAX_DOMAIN_IRPJ_WH)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_IRPJ_WH,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     irpj_wh_base = fields.Monetary(
@@ -1560,10 +1554,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax INSS",
         domain=[("tax_domain", "=", TAX_DOMAIN_INSS)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_INSS,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     inss_base = fields.Monetary(
@@ -1602,10 +1597,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.tax",
         string="Tax INSS RET",
         domain=[("tax_domain", "=", TAX_DOMAIN_INSS_WH)],
-        compute="_compute_tax_fields",
+        fiscal_tax_domain=TAX_DOMAIN_INSS_WH,
+        compute="_compute_singleton_taxes",
+        inverse="_inverse_singleton_taxes",
         store=True,
         precompute=True,
-        readonly=False,
     )
 
     inss_wh_base = fields.Monetary(
@@ -1861,6 +1857,48 @@ class FiscalDocumentLineMixin(models.AbstractModel):
                     )
                 )
 
+    @api.depends("fiscal_tax_ids")
+    def _compute_singleton_taxes(self):
+        domain_to_field = {
+            f.fiscal_tax_domain: name
+            for name, f in self._fields.items()
+            if hasattr(f, "fiscal_tax_domain")
+        }
+        for line in self:
+            vals = {fname: False for fname in domain_to_field.values()}
+            vals.update(
+                {
+                    domain_to_field[t.tax_domain]: t.id
+                    for t in line.fiscal_tax_ids
+                    if t.tax_domain in domain_to_field
+                }
+            )
+            for fname, v in vals.items():
+                line[fname] = v
+
+    @api.onchange("icms_tax_id", "ipi_tax_id", "pis_tax_id", "cofins_tax_id")
+    def _inverse_singleton_taxes(self):
+        field_map = {
+            name: f.fiscal_tax_domain
+            for name, f in self._fields.items()
+            if hasattr(f, "fiscal_tax_domain")
+        }
+        for line in self:
+            new_rs = line.fiscal_tax_ids
+            for field_name, code in field_map.items():
+                # remove current tax of this domain
+                to_remove = new_rs.filtered(lambda t, c=code: t.tax_domain == c)
+                new_rs = new_rs - to_remove
+
+                # add chosen if coherent with the domain
+                chosen = line[field_name]
+                if chosen and chosen.tax_domain == code:
+                    new_rs = new_rs | chosen
+
+            # write back only if changed
+            if new_rs != line.fiscal_tax_ids:
+                line.fiscal_tax_ids = new_rs
+
     def _get_fiscal_tax_ids_dependencies(self):
         """
         Dynamically get the list of fields dependencies, overriden in l10n_br_purchase.
@@ -1881,44 +1919,40 @@ class FiscalDocumentLineMixin(models.AbstractModel):
 
     @api.depends(lambda self: self._get_fiscal_tax_ids_dependencies())
     def _compute_fiscal_tax_ids(self):
-        """
-        Use fiscal_operation_line_id to map and compute the applicable Brazilian taxes.
-
-        Among the dependencies, company_id, partner_id and ind_final are related
-        to the fiscal document/line container. When called from account.move.line
-        via _inherits on newID records, we read these values from the related aml
-        to work around and _inherits/precompute limitation.
-        """
-        if self._context.get("skip_compute_fiscal_tax_ids"):
-            return
+        Tax = self.env["l10n_br_fiscal.tax"]
         for line in self:
-            if line.fiscal_operation_line_id:
-                mapping_result = line.fiscal_operation_line_id.map_fiscal_taxes(
-                    company=line.company_id,
-                    partner=line._get_fiscal_partner(),
-                    product=line.product_id,
-                    ncm=line.ncm_id,
-                    nbm=line.nbm_id,
-                    nbs=line.nbs_id,
-                    cest=line.cest_id,
-                    city_taxation_code=line.city_taxation_code_id,
-                    service_type=line.service_type_id,
-                    ind_final=line.ind_final,
-                )
-                line.cfop_id = mapping_result["cfop"]
-                line.ipi_guideline_id = mapping_result["ipi_guideline"]
-                line.icms_tax_benefit_id = mapping_result["icms_tax_benefit_id"]
-                if line._is_imported():
-                    return
-
-                taxes = line.env["l10n_br_fiscal.tax"]
-                for tax in mapping_result["taxes"].values():
-                    taxes |= tax
-                line.fiscal_tax_ids = taxes
-                line.comment_ids = line.fiscal_operation_line_id.comment_ids
-
-            else:
+            if not line.fiscal_operation_line_id:
                 line.fiscal_tax_ids = [Command.clear()]
+                continue
+
+            mr = line.fiscal_operation_line_id.map_fiscal_taxes(
+                company=line.company_id,
+                partner=line._get_fiscal_partner(),
+                product=line.product_id,
+                ncm=line.ncm_id,
+                nbm=line.nbm_id,
+                nbs=line.nbs_id,
+                cest=line.cest_id,
+                city_taxation_code=line.city_taxation_code_id,
+                service_type=line.service_type_id,
+                ind_final=line.ind_final,
+            )
+
+            line.cfop_id = mr.get("cfop")
+            line.ipi_guideline_id = mr.get("ipi_guideline")
+            line.icms_tax_benefit_id = mr.get("icms_tax_benefit_id")
+
+            if line._is_imported():
+                continue
+
+            taxes = Tax.browse()
+            for tax in mr.get("taxes").values():
+                taxes |= tax
+
+            line.fiscal_tax_ids = [Command.set(taxes.ids)]
+            line.comment_ids = [
+                Command.set(line.fiscal_operation_line_id.comment_ids.ids)
+            ]
 
     @api.model
     def _build_null_mask_dict(self) -> dict:
@@ -1932,8 +1966,9 @@ class FiscalDocumentLineMixin(models.AbstractModel):
                 self.env["l10n_br_fiscal.document.line.mixin"]._fields.items(),
             )
         }
-        for fiscal_tax_field in FISCAL_TAX_ID_FIELDS:
-            mask_dict[fiscal_tax_field] = False
+        for name, f in self._fields.items():
+            if hasattr(f, "fiscal_tax_domain"):
+                mask_dict[name] = False
         return mask_dict
 
     def _get_tax_fields_dependencies(self):
@@ -2365,19 +2400,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
             "cofinsst_value": tax_dict.get("tax_value", 0.00),
         }
 
-    @api.onchange(*FISCAL_TAX_ID_FIELDS)
-    def _onchange_fiscal_taxes(self):
-        taxes = self.env["l10n_br_fiscal.tax"]
-        for fiscal_tax_field in FISCAL_TAX_ID_FIELDS:
-            taxes |= self[fiscal_tax_field]
-
-        for line in self:
-            taxes_groups = line.fiscal_tax_ids.mapped("tax_domain")
-            fiscal_taxes = line.fiscal_tax_ids.filtered(
-                lambda ft, taxes_groups=taxes_groups: ft.tax_domain not in taxes_groups
-            )
-            line.fiscal_tax_ids = fiscal_taxes + taxes
-
     @api.depends("uom_id")
     def _compute_uot_id(self):
         for line in self:
@@ -2434,3 +2456,9 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         # in a PO line or SO line, there is no document_id
         # and we consider the document is not imported
         return hasattr(self, "document_id") and self.document_id.imported_document
+
+    @api.model
+    def _valid_field_parameter(self, field, name):
+        if name == "fiscal_tax_domain":
+            return True
+        return super()._valid_field_parameter(field, name)
