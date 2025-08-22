@@ -6,6 +6,7 @@ from copy import deepcopy
 from lxml import etree
 
 from odoo import Command, api, fields, models
+from odoo.tools import float_compare
 
 from ..constants.fiscal import (
     CFOP_DESTINATION_EXPORT,
@@ -2058,6 +2059,10 @@ class FiscalDocumentLineMixin(models.AbstractModel):
                     "estimate_tax": compute_result.get("estimate_tax", 0.0),
                 }
             )
+
+            # Prune unchanged values
+            to_update = line._prune_unchanged(to_update)
+
             in_draft_mode = line != line._origin
             if in_draft_mode:
                 line.update(to_update)
@@ -2081,6 +2086,66 @@ class FiscalDocumentLineMixin(models.AbstractModel):
                     if prepared_fields:
                         tax_values.update(prepared_fields)
         return tax_values
+
+    def _prune_unchanged(self, to_update):
+        """
+        Return a filtered copy of `to_update` keeping only entries whose value
+        actually differs from the current record value.
+        Handles: many2one, monetary (v16, via currency rounding), float, basic types.
+        """
+        self.ensure_one()
+        res = {}
+        fields = self._fields
+
+        for fname, new in (to_update or {}).items():
+            field = fields.get(fname)
+            if not field:
+                continue  # unknown field, ignore
+
+            cur = self[fname]
+            ftype = field.type
+
+            if ftype == "many2one":
+                cur_id = cur.id if cur else False
+                new_id = getattr(new, "id", new) or False
+                if cur_id != new_id:
+                    res[fname] = new_id  # normalize to id
+
+            elif ftype == "monetary":
+                # v16: precision comes from currency_field → res.currency.rounding
+                currency = self[field.currency_field] if field.currency_field else None
+                rounding = currency.rounding if currency else 0.01  # sane fallback
+                if (
+                    float_compare(cur or 0.0, new or 0.0, precision_rounding=rounding)
+                    != 0
+                ):
+                    res[fname] = new
+
+            elif ftype == "float":
+                # Try field.digits (may be a (precision, scale) tuple), else fallback
+                pd = None
+                if (
+                    isinstance(getattr(field, "digits", None), tuple)
+                    and len(field.digits) > 1
+                ):
+                    pd = field.digits[1]
+                if pd is not None:
+                    if float_compare(cur or 0.0, new or 0.0, precision_digits=pd) != 0:
+                        res[fname] = new
+                else:
+                    # default tolerance for floats when no digits provided
+                    if (
+                        float_compare(cur or 0.0, new or 0.0, precision_rounding=1e-6)
+                        != 0
+                    ):
+                        res[fname] = new
+
+            else:
+                # char, text, selection, boolean, integer, date/datetime, etc.
+                if (cur or False) != (new or False):
+                    res[fname] = new
+
+        return res
 
     @api.depends(
         "product_id",
