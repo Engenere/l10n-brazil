@@ -296,7 +296,6 @@ class AccountMoveLine(models.Model):
         "icmssn_range_id",
         "icms_origin",
         "ind_final",
-        "company_id",
     )
     def _compute_totals(self):
         """
@@ -510,7 +509,6 @@ class AccountMoveLine(models.Model):
         "product_uom_id",
         "fiscal_tax_ids",
         "fiscal_operation_id",
-        "company_id",
     )
     def _compute_tax_ids(self):
         # Adding 'fiscal_tax_ids' as a dependency to ensure that the taxes

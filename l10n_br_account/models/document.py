@@ -75,8 +75,6 @@ class FiscalDocument(models.Model):
     )
 
     @api.depends(
-        "move_ids",
-        "move_ids.company_id",
         "move_ids.currency_id",
         "move_ids.partner_id",
         "move_ids.user_id",
@@ -150,7 +148,7 @@ class FiscalDocument(models.Model):
         compute="_compute_date_in_out", inverse="_inverse_date_in_out", store=True
     )
 
-    @api.depends("move_ids", "move_ids.invoice_date")
+    @api.depends("issuer", "move_ids.invoice_date")
     def _compute_document_date(self):
         for record in self:
             if record.move_ids and record.issuer == DOCUMENT_ISSUER_PARTNER:
@@ -169,7 +167,7 @@ class FiscalDocument(models.Model):
                 if record.document_date:
                     move_id.invoice_date = record.document_date.date()
 
-    @api.depends("move_ids", "move_ids.date")
+    @api.depends("issuer", "move_ids.date")
     def _compute_date_in_out(self):
         for record in self:
             if record.move_ids and record.issuer == DOCUMENT_ISSUER_PARTNER:
