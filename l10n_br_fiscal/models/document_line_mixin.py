@@ -1759,23 +1759,22 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         return arch, view
 
     @api.depends(
-        "fiscal_price",
         "discount_value",
+        "amount_tax_not_included",
+        "amount_tax_withholding",
+        "price_unit",
+        "quantity",
+        "fiscal_operation_line_id",
+        "cfop_id",
+        "icms_relief_value",
         "insurance_value",
         "other_value",
         "freight_value",
-        "fiscal_quantity",
-        "amount_tax_not_included",
-        "amount_tax_included",
-        "amount_tax_withholding",
-        "uot_id",
-        "product_id",
-        "partner_id",
-        "company_id",
-        "price_unit",
-        "quantity",
-        "icms_relief_id",
-        "fiscal_operation_line_id",
+        "pis_value",
+        "cofins_value",
+        "icms_value",
+        "ii_value",
+        "ii_customhouse_charges",
     )
     def _compute_fiscal_amounts(self):
         for record in self:
@@ -1819,7 +1818,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
                 record.financial_total_gross = record.financial_total = 0.0
                 record.financial_discount_value = 0.0
 
-    @api.depends("tax_icms_or_issqn", "partner_is_public_entity")
+    @api.depends("tax_icms_or_issqn", "partner_id")
     def _compute_allow_csll_irpj(self):
         """Calculates the possibility of 'CSLL' and 'IRPJ' tax charges."""
         for line in self:
@@ -1846,7 +1845,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
             return {f"default_{k}": vals[k] for k in vals.keys()}
         return vals
 
-    @api.depends("fiscal_operation_id", "company_id", "partner_id", "product_id")
+    @api.depends("fiscal_operation_id", "partner_id", "product_id")
     def _compute_fiscal_operation_line_id(self):
         for line in self:
             if line.fiscal_operation_id:
@@ -1905,7 +1904,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         Dynamically get the list of fields dependencies, overriden in l10n_br_purchase.
         """
         return [
-            "company_id",
             "partner_id",
             "fiscal_operation_line_id",
             "product_id",
@@ -1998,7 +1996,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
             "icms_relief_id",
             "fiscal_tax_ids",
             "fiscal_operation_line_id",
-            "company_id",
             "partner_id",
         ]
 
