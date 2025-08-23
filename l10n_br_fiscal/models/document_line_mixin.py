@@ -109,7 +109,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     currency_id = fields.Many2one(
         comodel_name="res.currency",
         string="Currency",
-        compute="_compute_currency_id",
     )
 
     product_id = fields.Many2one(
@@ -1675,13 +1674,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         comodel_name="l10n_br_fiscal.cnae",
         string="CNAE Code",
     )
-
-    @api.depends("company_id")
-    def _compute_currency_id(self):
-        for doc_line in self:
-            doc_line.currency_id = doc_line.company_id.currency_id or self.env.ref(
-                "base.BRL"
-            )
 
     @api.model
     def inject_fiscal_fields(
