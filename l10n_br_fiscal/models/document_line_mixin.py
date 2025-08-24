@@ -2279,10 +2279,10 @@ class FiscalDocumentLineMixin(models.AbstractModel):
             line.fiscal_genre_id = p.fiscal_genre_id
             line.service_type_id = p.service_type_id
 
-    @api.depends("product_id", "fiscal_operation_id")
+    @api.depends("product_id")
     def _compute_city_taxation_code_id(self):
         for line in self:
-            if not line.fiscal_operation_id or not line.product_id:
+            if not line.product_id:
                 line.city_taxation_code_id = False
                 continue
             company_city = line.company_id.city_id
