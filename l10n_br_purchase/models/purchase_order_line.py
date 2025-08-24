@@ -38,12 +38,14 @@ class PurchaseOrderLine(models.Model):
         "('state', '=', 'approved')]",
     )
 
-    partner_id = fields.Many2one(
-        precompute=True,
+    # overriden to disable precompute as it depends on price_unit which is not
+    # precompute in the purchase module. We don't need precompute in purchase.
+    fiscal_price = fields.Float(
+        precompute=False,
     )
 
     price_unit = fields.Float(
-        precompute=True,
+        precompute=False,
     )
 
     quantity = fields.Float(
