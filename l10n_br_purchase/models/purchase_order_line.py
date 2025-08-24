@@ -38,16 +38,6 @@ class PurchaseOrderLine(models.Model):
         "('state', '=', 'approved')]",
     )
 
-    # overriden to disable precompute as it depends on price_unit which is not
-    # precompute in the purchase module. We don't need precompute in purchase.
-    fiscal_price = fields.Float(
-        precompute=False,
-    )
-
-    price_unit = fields.Float(
-        precompute=False,
-    )
-
     quantity = fields.Float(
         string="Mixin Quantity",
         related="product_qty",
@@ -148,3 +138,15 @@ class PurchaseOrderLine(models.Model):
                 partner.address_get(["invoice"]).get("invoice")
             )
         return partner
+
+    def _setup_complete(self):
+        # /!\ LOW-LEVEL OVERRIDE (registry setup) /!\
+        # The BR fiscal mixin uses many fields with precompute=True,
+        # but purchase does not have all dependencies ready at create time.
+        # Since we have hundreds of fields, instead of overriding each one,
+        # we set precompute=False dynamically here.
+        res = super()._setup_complete()
+        for field in self._fields.values():
+            if getattr(field, "precompute", False):
+                field.precompute = False
+        return res
