@@ -22,10 +22,8 @@ class DocumentLine(models.Model):
 
     @api.onchange("product_id")
     def _onchange_product_id_fiscal(self):
-        result = super()._onchange_product_id_fiscal()
         if self.product_id and self.product_id.fiscal_deductions_value:
             self.fiscal_deductions_value = self.product_id.fiscal_deductions_value
-        return result
 
     def _compute_taxes(self, taxes, cst=None):
         discount_value = self.discount_value
