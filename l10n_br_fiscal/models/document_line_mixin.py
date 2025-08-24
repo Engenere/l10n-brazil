@@ -2252,10 +2252,10 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         self.ensure_one()
         return self.partner_id
 
-    @api.depends("product_id", "fiscal_operation_id")
+    @api.depends("product_id")
     def _compute_product_fiscal_fields(self):
         for line in self:
-            if not line.fiscal_operation_id or not line.product_id:
+            if not line.product_id:
                 line.fiscal_type = False
                 line.uom_id = False
                 line.ncm_id = False
