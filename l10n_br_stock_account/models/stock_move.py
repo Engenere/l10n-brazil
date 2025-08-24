@@ -222,14 +222,10 @@ class StockMove(models.Model):
         # TODO: Isso deveria ser resolvido no metodo principal?
         if self.picking_id.fiscal_operation_id:
             price_unit = self.price_unit
-            result = super()._onchange_product_id_fiscal()
             # Valor informado pelo usuario tem prioridade
             if self.product_id and price_unit == 0.0:
                 price_unit = self._get_price_unit()
-
             self.price_unit = price_unit
-
-            return result
 
     def _split(self, qty, restrict_partner_id=False):
         new_moves_vals = super()._split(qty, restrict_partner_id)
