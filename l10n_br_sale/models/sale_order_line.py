@@ -183,7 +183,6 @@ class SaleOrderLine(models.Model):
         """Compute the amounts of the SO line."""
         result = super()._compute_amount()
         for line in self:
-            line._compute_tax_fields()  # TODO is it required?
             line.update(
                 {
                     "price_tax": line.amount_tax,

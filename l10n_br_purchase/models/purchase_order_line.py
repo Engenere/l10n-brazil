@@ -106,7 +106,6 @@ class PurchaseOrderLine(models.Model):
         result = super()._compute_amount()
         for line in self:
             if line.fiscal_operation_id:
-                line._compute_tax_fields()  # TODO is it required?
                 line.update(
                     {
                         "price_subtotal": line.amount_untaxed,
