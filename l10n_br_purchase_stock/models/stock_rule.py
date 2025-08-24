@@ -18,7 +18,6 @@ class StockRule(models.Model):
                 if purchase.fiscal_operation_id:
                     for line in purchase.order_line:
                         price_unit = line.price_unit
-                        line._onchange_product_id_fiscal()
                         line.price_unit = price_unit
 
         return result
