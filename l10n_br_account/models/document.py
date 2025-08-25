@@ -126,11 +126,6 @@ class FiscalDocument(models.Model):
                 if move.partner_shipping_id != doc.partner_shipping_id:
                     move.partner_shipping_id = doc.partner_shipping_id
 
-    # commented out because of badly written TestInvoiceDiscount.test_date_in_out
-    #    def write(self, vals):
-    #        if self.document_type_id:
-    #            return super().write(vals)
-
     fiscal_line_ids = fields.One2many(
         copy=False,
     )
@@ -149,6 +144,20 @@ class FiscalDocument(models.Model):
 
     date_in_out = fields.Datetime(
         compute="_compute_date_in_out", inverse="_inverse_date_in_out", store=True
+    )
+
+    proxy_user_id = fields.Many2one(
+        comodel_name="res.users",
+        string="User (proxy)",
+        help="Technical Field.",
+        readonly=False,
+    )
+
+    user_id = fields.Many2one(
+        related="proxy_user_id",
+        store=True,
+        precompute=True,
+        readonly=False,
     )
 
     @api.depends("issuer", "move_ids.invoice_date")
