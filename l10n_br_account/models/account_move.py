@@ -81,6 +81,13 @@ class AccountMove(models.Model):
         compute="_compute_fiscal_operation_type",
     )
 
+    user_id = fields.Many2one(inverse="_inverse_user_id")
+
+    @api.onchange("user_id")
+    def _inverse_user_id(self):
+        for line in self:
+            line.proxy_user_id = line.user_id
+
     @api.constrains("fiscal_document_id", "document_type_id")
     def _check_fiscal_document_type(self):
         for rec in self:
