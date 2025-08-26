@@ -99,10 +99,6 @@
         <field name="other_value">100</field>
     </record>
 
-    <function model="stock.move" name="_onchange_product_id_fiscal">
-        <value eval="[ref('main_company-move_1_1')]" />
-    </function>
-
     <record model="stock.move" id="main_company-move_1_2">
         <field name="name">Test - l10n_br_stock_account - 1</field>
         <!-- sem o campo abaixo falha o mapeamento de CFOP, erro não acontece na tela -->
@@ -124,10 +120,6 @@
         <field name="insurance_value">100</field>
         <field name="other_value">100</field>
     </record>
-
-    <function model="stock.move" name="_onchange_product_id_fiscal">
-        <value eval="[ref('main_company-move_1_2')]" />
-    </function>
 
     <!-- usado para o teste de não agrupar qdo operação fiscal for diferente -->
     <record model="stock.move" id="main_company-move_1_3">
@@ -151,10 +143,6 @@
         <field name="insurance_value">100</field>
         <field name="other_value">100</field>
     </record>
-
-    <function model="stock.move" name="_onchange_product_id_fiscal">
-        <value eval="[ref('main_company-move_1_3')]" />
-    </function>
 
     <!-- Picking Duplicado para testar o Agrupamento -->
     <record model="stock.picking" id="main_company-picking_2">
@@ -194,10 +182,6 @@
         <field name="insurance_value">100</field>
         <field name="other_value">100</field>
     </record>
-
-    <function model="stock.move" name="_onchange_product_id_fiscal">
-        <value eval="[ref('main_company-move_2_1')]" />
-    </function>
 
     <record model="stock.move" id="main_company-move_2_2">
         <field name="name">Test - l10n_br_stock_account - 1</field>
