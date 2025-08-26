@@ -62,7 +62,6 @@ class AccountMoveLine(models.Model):
     def _inverse_product_id(self):
         for line in self:
             line.proxy_product_id = line.product_id.id
-            line.fiscal_document_line_id._onchange_product_id_fiscal()
         return super()._inverse_product_id()
 
     @api.onchange("name")
@@ -312,6 +311,7 @@ class AccountMoveLine(models.Model):
         """
 
         if not self.move_id.fiscal_operation_id:
+            # TODO contexto
             result = super(
                 AccountMoveLine,
                 self.with_context(
@@ -490,11 +490,6 @@ class AccountMoveLine(models.Model):
                 line.compute_all_tax[frozendict({"id": line.id})] = {
                     "tax_tag_ids": [Command.set(compute_all_currency["base_tags"])],
                 }
-
-    @api.onchange("city_taxation_code_id")
-    def _onchange_city_taxation_code_id(self):
-        if self.fiscal_document_line_id:
-            self.fiscal_document_line_id._onchange_city_taxation_code_id()
 
     @api.onchange(
         "icms_base",

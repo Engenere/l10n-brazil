@@ -510,8 +510,4 @@
         />
     </record>
 
-    <function model="sale.order.line" name="_onchange_product_id_fiscal">
-        <value eval="[ref('lucro_presumido-sale_order_line_1_4')]" />
-    </function>
-
 </odoo>

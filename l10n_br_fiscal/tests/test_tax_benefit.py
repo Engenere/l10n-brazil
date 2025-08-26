@@ -38,10 +38,7 @@ class TestTaxBenefit(TransactionCase):
 
     def test_nfe_tax_benefit(self):
         """Test NFe with tax benefit."""
-
         for line in self.nfe_tax_benefit.fiscal_line_ids:
-            line._onchange_product_id_fiscal()
-
             self.assertEqual(
                 line.icms_tax_benefit_id,
                 self.tax_benefit,

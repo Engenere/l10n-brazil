@@ -40,8 +40,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
     def test_nfe_same_state(self):
         """Test NFe same state."""
         for line in self.nfe_same_state.fiscal_line_ids:
-            line._onchange_product_id_fiscal()
-
             # Restore the original price_unit value,
             # as the product change might have altered it.
             line.price_unit = 100
@@ -160,8 +158,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
     def test_nfe_other_state(self):
         """Test NFe other state."""
         for line in self.nfe_other_state.fiscal_line_ids:
-            line._onchange_product_id_fiscal()
-
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
                     line.cfop_id.code,
@@ -273,8 +269,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
     def test_nfe_not_taxpayer(self):
         """Test NFe not taxpayer."""
         for line in self.nfe_not_taxpayer.fiscal_line_ids:
-            line._onchange_product_id_fiscal()
-
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
                     line.cfop_id.code,
@@ -373,8 +367,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
     def test_nfe_not_taxpayer_not_company(self):
         """Test NFe not taxpayer not Company."""
         for line in self.nfe_not_taxpayer_pf.fiscal_line_ids:
-            line._onchange_product_id_fiscal()
-
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
                     line.cfop_id.code,
@@ -473,8 +465,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
     def test_nfe_export(self):
         """Test NFe export."""
         for line in self.nfe_export.fiscal_line_ids:
-            line._onchange_product_id_fiscal()
-
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
                     line.cfop_id.code,
@@ -565,8 +555,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
     def test_nfe_sn_same_state(self):
         """Test NFe Simples Nacional same state."""
         for line in self.nfe_sn_same_state.fiscal_line_ids:
-            line._onchange_product_id_fiscal()
-
             # set fake estimate tax
             line.ncm_id.tax_estimate_ids.create(
                 {
@@ -675,8 +663,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
     def test_nfe_sn_other_state(self):
         """Test NFe SN other state."""
         for line in self.nfe_sn_other_state.fiscal_line_ids:
-            line._onchange_product_id_fiscal()
-
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
                     line.cfop_id.code,
@@ -771,8 +757,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
     def test_nfe_sn_not_taxpayer(self):
         """Test NFe SN not taxpayer."""
         for line in self.nfe_sn_not_taxpayer.fiscal_line_ids:
-            line._onchange_product_id_fiscal()
-
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
                     line.cfop_id.code,
@@ -854,8 +838,6 @@ class TestFiscalDocumentGeneric(TransactionCase):
     def test_nfe_sn_export(self):
         """Test NFe SN export."""
         for line in self.nfe_sn_export.fiscal_line_ids:
-            line._onchange_product_id_fiscal()
-
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
                     line.cfop_id.code,
