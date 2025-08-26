@@ -79,17 +79,6 @@ class PurchaseOrderLine(models.Model):
         related="company_id.delivery_costs",
     )
 
-    def _get_tax_configuration_dependencies(self):
-        fields = super()._get_tax_configuration_dependencies()
-        fields.remove("partner_id")
-        return fields
-
-    def _get_tax_amounts_depends(self):
-        fields = super()._get_tax_amounts_depends()
-        fields.remove("price_unit")
-        fields.remove("fiscal_price")
-        return fields
-
     @api.depends(
         "product_uom_qty",
         "price_unit",
