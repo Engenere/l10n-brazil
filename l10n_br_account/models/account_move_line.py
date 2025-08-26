@@ -338,6 +338,7 @@ class AccountMoveLine(models.Model):
 
             # Compute 'price_total'.
             if line.tax_ids:
+                f_line = line.fiscal_document_line_id
                 taxes_res = line.tax_ids._origin.with_context().compute_all(
                     line_discount_price_unit,
                     currency=line.currency_id,
@@ -346,36 +347,34 @@ class AccountMoveLine(models.Model):
                     partner=line.partner_id,
                     is_refund=line.move_type in ("out_refund", "in_refund"),
                     handle_price_include=True,  # sure?
-                    fiscal_taxes=line.with_context(
-                        skip_compute_fiscal_tax_ids=True
-                    ).fiscal_tax_ids,
-                    operation_line=line.fiscal_operation_line_id,
-                    cfop=line.cfop_id or None,
-                    ncm=line.ncm_id,
-                    nbs=line.nbs_id,
-                    nbm=line.nbm_id,
-                    cest=line.cest_id,
-                    discount_value=line.discount_value,
-                    insurance_value=line.insurance_value,
-                    other_value=line.other_value,
-                    ii_customhouse_charges=line.ii_customhouse_charges,
-                    freight_value=line.freight_value,
-                    fiscal_price=line.fiscal_price,
-                    fiscal_quantity=line.fiscal_quantity,
-                    uot_id=line.uot_id,
-                    icmssn_range=line.icmssn_range_id,
-                    icms_origin=line.icms_origin,
-                    ind_final=line.ind_final,
+                    fiscal_taxes=f_line.fiscal_tax_ids,
+                    operation_line=f_line.fiscal_operation_line_id,
+                    cfop=f_line.cfop_id or None,
+                    ncm=f_line.ncm_id,
+                    nbs=f_line.nbs_id,
+                    nbm=f_line.nbm_id,
+                    cest=f_line.cest_id,
+                    discount_value=f_line.discount_value,
+                    insurance_value=f_line.insurance_value,
+                    other_value=f_line.other_value,
+                    ii_customhouse_charges=f_line.ii_customhouse_charges,
+                    freight_value=f_line.freight_value,
+                    fiscal_price=f_line.fiscal_price,
+                    fiscal_quantity=f_line.fiscal_quantity,
+                    uot_id=f_line.uot_id,
+                    icmssn_range=f_line.icmssn_range_id,
+                    icms_origin=f_line.icms_origin,
+                    ind_final=f_line.ind_final,
                 )
 
                 line.price_subtotal = taxes_res["total_excluded"]
                 line.price_total = taxes_res["total_included"]
 
                 line.price_total += (
-                    line.insurance_value
-                    + line.other_value
-                    + line.freight_value
-                    - line.icms_relief_value
+                    f_line.insurance_value
+                    + f_line.other_value
+                    + f_line.freight_value
+                    - f_line.icms_relief_value
                 )
             else:
                 # If no tax, just compute the total based on price_unit and quantity
