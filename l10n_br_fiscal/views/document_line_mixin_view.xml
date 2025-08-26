@@ -264,6 +264,16 @@
                                             attrs="{'readonly': [('icmssn_tax_id', '!=', False)], 'invisible': [('tax_framework', '=', '3')]}"
                                         />
                                         <field
+                                            name="simple_value"
+                                            force_save="1"
+                                            attrs="{'readonly': [('icmssn_tax_id', '!=', False)], 'invisible': [('tax_framework', '=', '3')]}"
+                                        />
+                                        <field
+                                            name="simple_without_icms_value"
+                                            force_save="1"
+                                            attrs="{'readonly': [('icmssn_tax_id', '!=', False)], 'invisible': [('tax_framework', '=', '3')]}"
+                                        />
+                                        <field
                                             name="icms_reduction"
                                             force_save="1"
                                             attrs="{'readonly': [('icms_tax_id', '!=', False)], 'invisible': ['|', ('tax_framework', '=', '3'), ('icms_cst_code', '!=', '900')]}"
@@ -560,7 +570,8 @@
                                     <group>
                                         <field name="ii_base" />
                                         <field name="ii_value" />
-                                    </group>
+                                        <field name="ii_percent" />
+                                </group>
                                     <group>
                                         <field name="ii_iof_value" />
                                         <field name="ii_customhouse_charges" />
