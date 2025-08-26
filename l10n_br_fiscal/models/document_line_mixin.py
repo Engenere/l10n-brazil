@@ -446,6 +446,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_city_taxation_code_id",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     partner_order = fields.Char(string="Partner Order (xPed)", size=15)
@@ -461,6 +462,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     issqn_fg_city_id = fields.Many2one(
@@ -537,6 +539,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     issqn_wh_base = fields.Monetary(
@@ -599,6 +602,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="ICMS CST Code",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     icms_tax_benefit_id = fields.Many2one(
@@ -619,6 +623,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         related="icms_tax_benefit_id.code",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     icms_base_type = fields.Selection(
@@ -706,6 +711,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     # modBCST - Modalidade de determinação da BC do ICMS ST
@@ -782,6 +788,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     # vBCFCPUFDest
@@ -822,6 +829,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     # vBCFCPST
@@ -922,6 +930,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     icmssn_base = fields.Monetary(
@@ -989,6 +998,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     ipi_cst_id = fields.Many2one(
@@ -1002,7 +1012,10 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     )
 
     ipi_cst_code = fields.Char(
-        related="ipi_cst_id.code", string="IPI CST Code", store=True
+        related="ipi_cst_id.code",
+        string="IPI CST Code",
+        store=True,
+        readonly=False,
     )
 
     ipi_base_type = fields.Selection(
@@ -1071,6 +1084,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     ii_base = fields.Monetary(
@@ -1111,6 +1125,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     cofins_cst_id = fields.Many2one(
@@ -1126,7 +1141,10 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     )
 
     cofins_cst_code = fields.Char(
-        related="cofins_cst_id.code", string="COFINS CST Code", store=True
+        related="cofins_cst_id.code",
+        string="COFINS CST Code",
+        store=True,
+        readonly=False,
     )
 
     cofins_base_type = fields.Selection(
@@ -1188,6 +1206,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     cofinsst_cst_id = fields.Many2one(
@@ -1203,7 +1222,10 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     )
 
     cofinsst_cst_code = fields.Char(
-        related="cofinsst_cst_id.code", string="COFINS ST CST Code", store=True
+        related="cofinsst_cst_id.code",
+        string="COFINS ST CST Code",
+        store=True,
+        readonly=False,
     )
 
     cofinsst_base_type = fields.Selection(
@@ -1256,6 +1278,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     cofins_wh_base_type = fields.Selection(
@@ -1309,6 +1332,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     pis_cst_id = fields.Many2one(
@@ -1324,7 +1348,10 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     )
 
     pis_cst_code = fields.Char(
-        related="pis_cst_id.code", string="PIS CST Code", store=True
+        related="pis_cst_id.code",
+        string="PIS CST Code",
+        store=True,
+        readonly=False,
     )
 
     pis_base_type = fields.Selection(
@@ -1386,6 +1413,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     pisst_cst_id = fields.Many2one(
@@ -1401,7 +1429,10 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     )
 
     pisst_cst_code = fields.Char(
-        related="pisst_cst_id.code", string="PIS ST CST Code", store=True
+        related="pisst_cst_id.code",
+        string="PIS ST CST Code",
+        store=True,
+        readonly=False,
     )
 
     pisst_base_type = fields.Selection(
@@ -1454,6 +1485,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     pis_wh_base_type = fields.Selection(
@@ -1507,6 +1539,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     csll_base = fields.Monetary(
@@ -1549,6 +1582,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     csll_wh_base = fields.Monetary(
@@ -1591,6 +1625,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     irpj_base = fields.Monetary(
@@ -1633,6 +1668,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     irpj_wh_base = fields.Monetary(
@@ -1675,6 +1711,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     inss_base = fields.Monetary(
@@ -1717,6 +1754,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     inss_wh_base = fields.Monetary(
@@ -1787,6 +1825,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     cnae_id = fields.Many2one(
@@ -1795,6 +1834,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="CNAE",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     @api.model
