@@ -565,6 +565,9 @@ class TestFiscalDocumentGeneric(TransactionCase):
                     "federal_taxes_national": 33.00,
                 }
             )
+            # força o compute, pois não é chamado automaticamente
+            # quando uma informação externa muda.
+            line._compute_tax_amounts()
 
             if "Revenda" in line.fiscal_operation_line_id.name:
                 self.assertEqual(
@@ -947,7 +950,7 @@ class TestFiscalDocumentGeneric(TransactionCase):
         additional_data = self.nfe_not_taxpayer.fiscal_line_ids[0].additional_data
         self.assertEqual(
             additional_data,
-            "manual comment test",
+            "manual comment test - Valor Aprox. dos Tributos: R$\xa00,00",
         )
 
     def test_fields_freight_insurance_other_costs(self):

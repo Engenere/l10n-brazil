@@ -35,6 +35,8 @@ class TestTaxBenefit(TransactionCase):
                 "state": "approved",
             }
         )
+        # force update
+        cls.nfe_tax_benefit.fiscal_line_ids._compute_tax_configuration()
 
     def test_nfe_tax_benefit(self):
         """Test NFe with tax benefit."""
