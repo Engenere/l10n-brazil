@@ -7,6 +7,30 @@ from contextlib import contextmanager
 from odoo import Command, _, api, fields, models
 from odoo.tools import frozendict
 
+ALL_TAX_ID_FIELDS = [
+    "cofins_tax_id",
+    "cofins_wh_tax_id",
+    "cofinsst_tax_id",
+    "csll_tax_id",
+    "csll_wh_tax_id",
+    "icms_tax_id",
+    "icmsfcp_tax_id",
+    "icmssn_tax_id",
+    "icmsst_tax_id",
+    "icmsfcpst_tax_id",
+    "ii_tax_id",
+    "inss_tax_id",
+    "inss_wh_tax_id",
+    "ipi_tax_id",
+    "irpj_tax_id",
+    "irpj_wh_tax_id",
+    "issqn_tax_id",
+    "issqn_wh_tax_id",
+    "pis_tax_id",
+    "pis_wh_tax_id",
+    "pisst_tax_id",
+]
+
 
 class AccountMoveLine(models.Model):
     _name = "account.move.line"
@@ -500,6 +524,19 @@ class AccountMoveLine(models.Model):
     def _onchange_icms_fields(self):
         if self.fiscal_document_line_id:
             self.fiscal_document_line_id._onchange_icms_fields()
+
+    @api.onchange(*ALL_TAX_ID_FIELDS)
+    def _onchange_fiscal_taxes(self):
+        taxes = self.env["l10n_br_fiscal.tax"]
+        for fiscal_tax_field in ALL_TAX_ID_FIELDS:
+            taxes |= self[fiscal_tax_field]
+
+        for line in self:
+            taxes_groups = line.fiscal_tax_ids.mapped("tax_domain")
+            fiscal_taxes = line.fiscal_tax_ids.filtered(
+                lambda ft, taxes_groups=taxes_groups: ft.tax_domain not in taxes_groups
+            )
+            line.fiscal_tax_ids = fiscal_taxes + taxes
 
     @api.depends(
         "product_id",

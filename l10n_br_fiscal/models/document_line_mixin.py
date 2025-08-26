@@ -174,6 +174,8 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Company",
     )
 
+    ind_final = fields.Char()
+
     partner_company_type = fields.Selection(related="partner_id.company_type")
 
     uom_id = fields.Many2one(
@@ -316,16 +318,18 @@ class FiscalDocumentLineMixin(models.AbstractModel):
 
     fiscal_tax_ids = fields.Many2many(
         comodel_name="l10n_br_fiscal.tax",
-        compute="_compute_fiscal_tax_ids",
+        compute="_compute_tax_configuration",
         string="Fiscal Taxes",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     amount_fiscal = fields.Monetary(
         compute="_compute_fiscal_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     price_gross = fields.Monetary(
@@ -337,30 +341,35 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_fiscal_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     amount_untaxed = fields.Monetary(
         compute="_compute_fiscal_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     amount_tax = fields.Monetary(
         compute="_compute_fiscal_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     amount_taxed = fields.Monetary(
         compute="_compute_fiscal_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     amount_total = fields.Monetary(
         compute="_compute_fiscal_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     financial_total = fields.Monetary(
@@ -368,6 +377,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_fiscal_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     financial_total_gross = fields.Monetary(
@@ -376,24 +386,28 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_fiscal_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     financial_discount_value = fields.Monetary(
         compute="_compute_fiscal_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     amount_tax_included = fields.Monetary(
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     amount_tax_not_included = fields.Monetary(
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     amount_tax_withholding = fields.Monetary(
@@ -401,6 +415,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
+        readonly=False,
     )
 
     fiscal_genre_id = fields.Many2one(
@@ -443,7 +458,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax ISSQN",
         domain=[("tax_domain", "=", TAX_DOMAIN_ISSQN)],
         fiscal_tax_domain=TAX_DOMAIN_ISSQN,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -519,7 +534,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax ISSQN RET",
         domain=[("tax_domain", "=", TAX_DOMAIN_ISSQN_WH)],
         fiscal_tax_domain=TAX_DOMAIN_ISSQN_WH,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -562,7 +577,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax ICMS",
         domain=[("tax_domain", "=", TAX_DOMAIN_ICMS)],
         fiscal_tax_domain=TAX_DOMAIN_ICMS,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         readonly=False,
         precompute=True,
@@ -688,7 +703,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax ICMS ST",
         domain=[("tax_domain", "=", TAX_DOMAIN_ICMS_ST)],
         fiscal_tax_domain=TAX_DOMAIN_ICMS_ST,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -764,7 +779,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax ICMS FCP",
         domain=[("tax_domain", "=", TAX_DOMAIN_ICMS_FCP)],
         fiscal_tax_domain=TAX_DOMAIN_ICMS_FCP,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -804,7 +819,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax ICMS FCP ST",
         domain=[("tax_domain", "=", TAX_DOMAIN_ICMS_FCP_ST)],
         fiscal_tax_domain=TAX_DOMAIN_ICMS_FCP_ST,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -904,7 +919,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax ICMS SN",
         domain=[("tax_domain", "=", TAX_DOMAIN_ICMS_SN)],
         fiscal_tax_domain=TAX_DOMAIN_ICMS_SN,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -971,7 +986,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax IPI",
         domain=[("tax_domain", "=", TAX_DOMAIN_IPI)],
         fiscal_tax_domain=TAX_DOMAIN_IPI,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1053,7 +1068,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax II",
         domain=[("tax_domain", "=", TAX_DOMAIN_II)],
         fiscal_tax_domain=TAX_DOMAIN_II,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1093,7 +1108,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax COFINS",
         domain=[("tax_domain", "=", TAX_DOMAIN_COFINS)],
         fiscal_tax_domain=TAX_DOMAIN_COFINS,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1170,7 +1185,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax COFINS ST",
         domain=[("tax_domain", "=", TAX_DOMAIN_COFINS_ST)],
         fiscal_tax_domain=TAX_DOMAIN_COFINS_ST,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1238,7 +1253,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax COFINS RET",
         domain=[("tax_domain", "=", TAX_DOMAIN_COFINS_WH)],
         fiscal_tax_domain=TAX_DOMAIN_COFINS_WH,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1291,7 +1306,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax PIS",
         domain=[("tax_domain", "=", TAX_DOMAIN_PIS)],
         fiscal_tax_domain=TAX_DOMAIN_PIS,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1368,7 +1383,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax PIS ST",
         domain=[("tax_domain", "=", TAX_DOMAIN_PIS_ST)],
         fiscal_tax_domain=TAX_DOMAIN_PIS_ST,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1436,7 +1451,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax PIS RET",
         domain=[("tax_domain", "=", TAX_DOMAIN_PIS_WH)],
         fiscal_tax_domain=TAX_DOMAIN_PIS_WH,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1489,7 +1504,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax CSLL",
         domain=[("tax_domain", "=", TAX_DOMAIN_CSLL)],
         fiscal_tax_domain=TAX_DOMAIN_CSLL,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1531,7 +1546,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax CSLL RET",
         domain=[("tax_domain", "=", TAX_DOMAIN_CSLL_WH)],
         fiscal_tax_domain=TAX_DOMAIN_CSLL_WH,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1573,7 +1588,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax IRPJ",
         domain=[("tax_domain", "=", TAX_DOMAIN_IRPJ)],
         fiscal_tax_domain=TAX_DOMAIN_IRPJ,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1615,7 +1630,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax IRPJ RET",
         domain=[("tax_domain", "=", TAX_DOMAIN_IRPJ_WH)],
         fiscal_tax_domain=TAX_DOMAIN_IRPJ_WH,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1657,7 +1672,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax INSS",
         domain=[("tax_domain", "=", TAX_DOMAIN_INSS)],
         fiscal_tax_domain=TAX_DOMAIN_INSS,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1699,7 +1714,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         string="Tax INSS RET",
         domain=[("tax_domain", "=", TAX_DOMAIN_INSS_WH)],
         fiscal_tax_domain=TAX_DOMAIN_INSS_WH,
-        compute="_compute_tax_configuration",
+        compute="_compute_tax_amounts",
         store=True,
         precompute=True,
     )
@@ -1970,13 +1985,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     )
     def _compute_tax_configuration(self):
         Tax = self.env["l10n_br_fiscal.tax"]
-        domain_to_field = {
-            f.fiscal_tax_domain: name
-            for name, f in self._fields.items()
-            if hasattr(f, "fiscal_tax_domain")
-        }
         for line in self:
-            tax_vals = {fname: False for fname in domain_to_field.values()}
             if line.fiscal_operation_line_id:
                 mr = line.fiscal_operation_line_id.map_fiscal_taxes(
                     company=line.company_id,
@@ -1997,19 +2006,10 @@ class FiscalDocumentLineMixin(models.AbstractModel):
                 if line._is_imported():
                     continue
 
-                # compute all *_tax_ids field
                 taxes = Tax.browse()
                 for tax in mr.get("taxes").values():
                     taxes |= tax
-                tax_vals.update(
-                    {
-                        domain_to_field[t.tax_domain]: t.id
-                        for t in taxes
-                        if t.tax_domain in domain_to_field
-                    }
-                )
-            for fname, v in tax_vals.items():
-                line[fname] = v
+                line.fiscal_tax_ids = taxes
 
     @api.depends("fiscal_operation_line_id")
     def _compute_comment_ids(self):
@@ -2035,14 +2035,18 @@ class FiscalDocumentLineMixin(models.AbstractModel):
                 mask_dict[name] = False
         return mask_dict
 
-    @api.depends(*ALL_TAX_ID_FIELDS)
-    def _compute_fiscal_tax_ids(self):
-        Tax = self.env["l10n_br_fiscal.tax"]
-        tax_id_fnames = ALL_TAX_ID_FIELDS
+    @api.onchange(*ALL_TAX_ID_FIELDS)
+    def _onchange_fiscal_taxes(self):
+        taxes = self.env["l10n_br_fiscal.tax"]
+        for fiscal_tax_field in ALL_TAX_ID_FIELDS:
+            taxes |= self[fiscal_tax_field]
+
         for line in self:
-            tax_ids = set()
-            tax_ids = {line[f].id for f in tax_id_fnames if line[f]}
-            line.fiscal_tax_ids = Tax.browse(list(tax_ids))
+            taxes_groups = line.fiscal_tax_ids.mapped("tax_domain")
+            fiscal_taxes = line.fiscal_tax_ids.filtered(
+                lambda ft, taxes_groups=taxes_groups: ft.tax_domain not in taxes_groups
+            )
+            line.fiscal_tax_ids = fiscal_taxes + taxes
 
     @api.depends(
         "fiscal_tax_ids",
