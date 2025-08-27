@@ -2044,8 +2044,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         "service_type_id",
         "ind_final",
     )
+    @api.depends_context("preserve_fiscal_tax_ids")
     def _compute_tax_configuration(self):
         Tax = self.env["l10n_br_fiscal.tax"]
+        preserve_tax = bool(self.env.context.get("preserve_fiscal_tax_ids"))
+
         for line in self:
             if line.fiscal_operation_line_id:
                 mr = line.fiscal_operation_line_id.map_fiscal_taxes(
@@ -2067,10 +2070,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
                 if line._is_imported():
                     continue
 
-                taxes = Tax.browse()
-                for tax in mr.get("taxes").values():
-                    taxes |= tax
-                line.fiscal_tax_ids = taxes
+                if not preserve_tax:
+                    taxes = Tax.browse()
+                    for tax in mr.get("taxes").values():
+                        taxes |= tax
+                    line.fiscal_tax_ids = taxes
 
     @api.depends("fiscal_operation_line_id")
     def _compute_comment_ids(self):
@@ -2656,3 +2660,23 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         if name == "fiscal_tax_domain":
             return True
         return super()._valid_field_parameter(field, name)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        with_tax, without_tax = [], []
+        for vals in vals_list:
+            if "fiscal_tax_ids" in vals:
+                with_tax.append(vals)
+            else:
+                without_tax.append(vals)
+
+        recs = self.browse()
+        if without_tax:
+            recs |= super().create(without_tax)
+
+        if with_tax:
+            ctx = dict(self.env.context, preserve_fiscal_tax_ids=True)
+            recs |= super(FiscalDocumentLineMixin, self.with_context(**ctx)).create(
+                with_tax
+            )
+        return recs
