@@ -63,6 +63,13 @@ class AccountMoveLine(models.Model):
         store=True,
     )
 
+    price_subtotal = fields.Monetary(
+        readonly=False,
+    )
+    price_total = fields.Monetary(
+        readonly=False,
+    )
+
     payment_term_number = fields.Char(
         help="Stores the installment number in the format 'current-total'. "
         "For example, '1-3' for the first of three installments, '2-3' for the second,"
