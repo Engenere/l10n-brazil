@@ -85,9 +85,9 @@ class AccountMoveLine(models.Model):
     # methods would fail to do what we expect from them in the Odoo objects.
     # -------------------------------------------------------------------------
 
-    name = fields.Char(inverse="_inverse_name")
-    quantity = fields.Float(inverse="_inverse_quantity")
-    price_unit = fields.Float(inverse="_inverse_price_unit")
+    # name = fields.Char(inverse="_inverse_name")
+    # quantity = fields.Float(inverse="_inverse_quantity")
+    # price_unit = fields.Float(inverse="_inverse_price_unit")
 
     @api.onchange("product_id")
     def _inverse_product_id(self):

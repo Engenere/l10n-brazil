@@ -81,7 +81,7 @@ class AccountMove(models.Model):
         compute="_compute_fiscal_operation_type",
     )
 
-    user_id = fields.Many2one(inverse="_inverse_user_id")
+    # user_id = fields.Many2one(inverse="_inverse_user_id")
 
     @api.onchange("user_id")
     def _inverse_user_id(self):
