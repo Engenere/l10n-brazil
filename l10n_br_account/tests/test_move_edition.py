@@ -263,7 +263,7 @@ class TestMoveEdition(TransactionCase):
         # test line fiscal taxes result:
         self.assertEqual(
             aml.fiscal_operation_line_id,
-            self.env.ref("l10n_br_fiscal.fo_venda_revenda"),
+            self.env.ref("l10n_br_fiscal.fo_venda_venda"),
         )
         self.assertEqual(
             aml.icms_tax_id.id,

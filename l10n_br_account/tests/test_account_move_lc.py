@@ -556,6 +556,12 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
         prod_line = self.move_out_venda_with_icms_reduction.invoice_line_ids[0]
         prod_line.icms_relief_id = self.env.ref("l10n_br_fiscal.icms_relief_1")
 
+        # Foi setado essa linha manualmente na criação do account.move.
+        self.assertEqual(
+            prod_line.fiscal_operation_line_id.name,
+            "Venda com ICMS 12 e Redução de 26,57",
+        )
+
         # price_total deve ser vProd + vIPI − vICMSDeson
         # 1000.00 + 32.50 − 36.23 = 996.27
         prica_total = 996.27

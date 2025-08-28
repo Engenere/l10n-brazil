@@ -174,23 +174,8 @@ class AccountMoveLine(models.Model):
         original_indexes = [idx for idx, _ in sorted_indexed_vals_list]
         vals_list = [val for _, val in sorted_indexed_vals_list]
 
-        # Evitar recomputação, limitação do inhertis?
-        # TODO fazer para todos os campos?
-        with_tax, without_tax = [], []
-        for vals in vals_list:
-            if "fiscal_tax_ids" in vals:
-                with_tax.append(vals)
-            else:
-                without_tax.append(vals)
-
-        result = self.browse()
-        if without_tax:
-            result |= super().create(without_tax)
-
-        if with_tax:
-            result |= super(
-                AccountMoveLine, self.with_context(preserve_fiscal_tax_ids=True)
-            ).create(with_tax)
+        # Create the records
+        result = super().create(vals_list)
 
         # Initialize the inverted index list with the same length as the original list
         inverted_index = [0] * len(original_indexes)
@@ -341,6 +326,7 @@ class AccountMoveLine(models.Model):
         "icmssn_range_id",
         "icms_origin",
         "ind_final",
+        "icms_relief_value",
     )
     def _compute_totals(self):
         """
