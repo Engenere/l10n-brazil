@@ -76,12 +76,17 @@ class TestXMLValidation(TransactionCase):
             }
         )
         # Force taxes
-        line.update(
+        line.write(
             {
                 "price_unit": 116.41,
                 "fiscal_price": 116.41,
                 "quantity": 22,
                 "fiscal_quantity": 22,
+            }
+        )
+        self.assertEqual(len(line.fiscal_tax_ids), 4)
+        line.write(
+            {
                 "icms_tax_id": self.env.ref("l10n_br_fiscal.tax_icms_12_st").id,
                 "icmsst_tax_id": self.env.ref("l10n_br_fiscal.tax_icmsst_p30_50").id,
                 "icmsfcpst_tax_id": self.env.ref("l10n_br_fiscal.tax_icmsfcp_st_2").id,
@@ -90,7 +95,6 @@ class TestXMLValidation(TransactionCase):
                 "cofins_tax_id": self.env.ref("l10n_br_fiscal.tax_cofins_7_6").id,
             }
         )
-
         # Line 2 - using two lines to test the XML totals
         line2 = document_line_model.create(
             {
@@ -103,12 +107,17 @@ class TestXMLValidation(TransactionCase):
             }
         )
         # Force taxes
-        line2.update(
+        line2.write(
             {
                 "price_unit": 116.41,
                 "fiscal_price": 116.41,
                 "quantity": 22,
                 "fiscal_quantity": 22,
+            }
+        )
+        # update separado para não ser sobreescrito pelo compute.
+        line2.write(
+            {
                 "icms_tax_id": self.env.ref("l10n_br_fiscal.tax_icms_12_st").id,
                 "icmsst_tax_id": self.env.ref("l10n_br_fiscal.tax_icmsst_p30_50").id,
                 "icmsfcpst_tax_id": self.env.ref("l10n_br_fiscal.tax_icmsfcp_st_2").id,

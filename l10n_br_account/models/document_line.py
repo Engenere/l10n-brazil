@@ -58,6 +58,8 @@ class FiscalDocumentLine(models.Model):
         string="Company (proxy)",
         help="Technical Field.",
         readonly=False,
+        store=True,
+        precompute=True,
     )
 
     proxy_partner_id = fields.Many2one(
@@ -66,6 +68,8 @@ class FiscalDocumentLine(models.Model):
         string="Partner (proxy)",
         help="Technical Field.",
         readonly=False,
+        store=True,
+        precompute=True,
     )
     proxy_product_id = fields.Many2one(
         comodel_name="product.product",
@@ -114,7 +118,7 @@ class FiscalDocumentLine(models.Model):
     product_id = fields.Many2one(
         related="proxy_product_id",
         comodel_name="product.product",
-        inverse="_inverse_product_id",
+        # inverse="_inverse_product_id",
         string="Product",
         store=True,
         precompute=True,
@@ -122,7 +126,7 @@ class FiscalDocumentLine(models.Model):
     )
     name = fields.Char(
         related="proxy_name",
-        inverse="_inverse_name",
+        # inverse="_inverse_name",
         string="Name",
         store=True,
         precompute=True,
@@ -130,7 +134,7 @@ class FiscalDocumentLine(models.Model):
     )
     quantity = fields.Float(
         related="proxy_quantity",
-        inverse="_inverse_quantity",
+        # inverse="_inverse_quantity",
         string="Quantity",
         store=True,
         precompute=True,
@@ -138,7 +142,7 @@ class FiscalDocumentLine(models.Model):
     )
     price_unit = fields.Float(
         related="proxy_price_unit",
-        inverse="_inverse_price_unit",
+        # inverse="_inverse_price_unit",
         string="Price Unit",
         store=True,
         precompute=True,

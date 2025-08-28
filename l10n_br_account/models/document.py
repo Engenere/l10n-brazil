@@ -47,13 +47,6 @@ class FiscalDocument(models.Model):
         precompute=True,
         readonly=False,
     )
-    currency_id = fields.Many2one(
-        compute="_compute_shadowed_fields",
-        inverse="_inverse_currency_id",
-        store=True,
-        precompute=True,
-        readonly=False,
-    )
     partner_id = fields.Many2one(
         compute="_compute_shadowed_fields",
         inverse="_inverse_partner_id",
@@ -77,7 +70,6 @@ class FiscalDocument(models.Model):
     )
 
     @api.depends(
-        "move_ids.currency_id",
         "move_ids.partner_id",
         "move_ids.user_id",
         "move_ids.partner_shipping_id",
@@ -87,7 +79,6 @@ class FiscalDocument(models.Model):
             if doc.move_ids:
                 doc.partner_id = doc.move_ids.partner_id
                 doc.company_id = doc.move_ids.company_id
-                doc.currency_id = doc.move_ids.currency_id
                 doc.user_id = doc.move_ids.user_id
                 doc.partner_shipping_id = doc.move_ids.partner_shipping_id
 
@@ -97,13 +88,6 @@ class FiscalDocument(models.Model):
             for move in doc.move_ids:
                 if move.company_id != doc.company_id:
                     move.company_id = doc.company_id
-
-    @api.onchange("currency_id")
-    def _inverse_currency_id(self):
-        for doc in self:
-            for move in doc.move_ids:
-                if move.currency_id != doc.currency_id:
-                    move.currency_id = doc.currency_id
 
     @api.onchange("partner_id")
     def _inverse_partner_id(self):
