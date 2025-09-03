@@ -206,5 +206,16 @@ class TestCTeSerialize(TransactionCase):
             cte.send_file_id.store_fname,
         )
         _logger.info(f"XML file saved at {output}")
+
+        # >>> extra: imprimir XML no console
+        try:
+            with open(output, encoding="utf-8") as f:
+                xml_content = f.read()
+                _logger.info("==== XML CONTENT BEGIN ====")
+                _logger.info("\n" + xml_content)
+                _logger.info("==== XML CONTENT END ====")
+        except Exception as e:
+            _logger.warning(f"Could not read XML for debug: {e}")
+
         diff = main.diff_files(output, xml_path)
         return diff

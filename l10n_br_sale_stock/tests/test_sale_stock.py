@@ -111,7 +111,7 @@ class TestSaleStock(TestBrPickingInvoicingCommon):
             "amount_fiscal",
             "price_unit",
             "amount_untaxed",
-            "amount_total",
+            "fiscal_amount_total",
         ]
         skipped_fields[len(skipped_fields) :] = skipped_fields_after_confirm
 
