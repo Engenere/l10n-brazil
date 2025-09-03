@@ -172,6 +172,7 @@ class FiscalDocumentLineMixinMethods(models.AbstractModel):
             record.price_gross = round_curr.round(record.price_unit * record.quantity)
             record.amount_fiscal = record.price_gross - record.discount_value
             record.amount_tax = record.amount_tax_not_included
+            record.fiscal_amount_tax = record.amount_tax_not_included
 
             add_to_amount = sum(record[a] for a in record._add_fields_to_amount())
             rm_to_amount = sum(record[r] for r in record._rm_fields_to_amount())

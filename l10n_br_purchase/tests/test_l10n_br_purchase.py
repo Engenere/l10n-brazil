@@ -227,8 +227,8 @@ class L10nBrPurchaseBaseTest(TransactionCase):
             )
 
             self.assertEqual(
-                order.amount_tax,
-                invoice.amount_tax,
+                order.fiscal_amount_tax,
+                invoice.fiscal_amount_tax,
                 "Error Amount Tax in Invoice is different from Purchase Order.",
             )
             self.assertEqual(

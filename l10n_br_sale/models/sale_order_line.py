@@ -186,7 +186,7 @@ class SaleOrderLine(models.Model):
             line._compute_tax_fields()  # TODO is it required?
             line.update(
                 {
-                    "price_tax": line.amount_tax,
+                    "price_tax": line.fiscal_amount_tax,
                     "price_total": line.amount_total,
                 }
             )
