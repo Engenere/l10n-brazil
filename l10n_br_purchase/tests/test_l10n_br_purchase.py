@@ -218,8 +218,8 @@ class L10nBrPurchaseBaseTest(TransactionCase):
 
             # Valida os Totais
             self.assertEqual(
-                order.amount_total,
-                invoice.amount_total,
+                order.fiscal_amount_total,
+                invoice.fiscal_amount_total,
                 "Error Amount Total in Invoice is different from Purchase Order.",
             )
 
@@ -229,8 +229,8 @@ class L10nBrPurchaseBaseTest(TransactionCase):
                 "Error Amount Tax in Invoice is different from Purchase Order.",
             )
             self.assertEqual(
-                order.amount_untaxed,
-                invoice.amount_untaxed,
+                order.fiscal_amount_untaxed,
+                invoice.fiscal_amount_untaxed,
                 "Error Amount Untaxed in Invoice is different from Purchase Order.",
             )
             self.assertEqual(

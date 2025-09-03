@@ -179,8 +179,8 @@ class L10nBrSaleBaseTest(TransactionCase):
 
             # Testa se os Valores Totais estão iguais entre o Pedido e Fatura
             self.assertAlmostEqual(
-                sale_order.amount_total,
-                invoice.amount_total,
+                sale_order.fiscal_amount_total,
+                invoice.fiscal_amount_total,
                 2,
                 "Error field Amount Total in Invoice are different from Sale Order.",
             )
@@ -191,8 +191,8 @@ class L10nBrSaleBaseTest(TransactionCase):
                 "Error field Amount Tax in Invoice are different from Sale Order.",
             )
             self.assertAlmostEqual(
-                sale_order.amount_untaxed,
-                invoice.amount_untaxed,
+                sale_order.fiscal_amount_untaxed,
+                invoice.fiscal_amount_untaxed,
                 2,
                 "Error field Amount Untaxed in Invoice are different from Sale Order.",
             )
