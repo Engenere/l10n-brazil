@@ -111,7 +111,7 @@ class PurchaseOrderLine(models.Model):
                 line.update(
                     {
                         "price_subtotal": line.amount_untaxed,
-                        "price_tax": line.fiscal_amount_tax,
+                        "price_tax": line.amount_fiscal_tax,
                         "price_total": line.amount_total,
                     }
                 )

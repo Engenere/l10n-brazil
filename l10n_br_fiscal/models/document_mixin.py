@@ -408,6 +408,12 @@ class FiscalDocumentMixin(models.AbstractModel):
         store=True,
     )
 
+    amount_fiscal_tax = fields.Monetary(
+        string="Fiscal Amount Tax",
+        compute="_compute_fiscal_amount",
+        store=True,
+    )
+
     amount_total = fields.Monetary(
         compute="_compute_fiscal_amount",
         store=True,

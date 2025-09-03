@@ -90,7 +90,7 @@
               <group>
                 <field name="amount_untaxed" />
                 <field name="amount_fiscal" />
-                <field name="fiscal_amount_tax" />
+                <field name="amount_fiscal_tax" />
                 <field name="estimate_tax" />
               </group>
               <group>
