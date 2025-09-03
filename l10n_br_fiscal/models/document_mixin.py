@@ -125,7 +125,7 @@ class FiscalDocumentMixin(models.AbstractModel):
         help="Amount without discount.",
     )
 
-    amount_untaxed = fields.Monetary(
+    fiscal_amount_untaxed = fields.Monetary(
         compute="_compute_fiscal_amount",
         store=True,
     )
@@ -393,12 +393,12 @@ class FiscalDocumentMixin(models.AbstractModel):
         store=True,
     )
 
-    amount_tax = fields.Monetary(
+    fiscal_amount_tax = fields.Monetary(
         compute="_compute_fiscal_amount",
         store=True,
     )
 
-    amount_total = fields.Monetary(
+    fiscal_amount_total = fields.Monetary(
         compute="_compute_fiscal_amount",
         store=True,
     )
@@ -713,13 +713,13 @@ class FiscalDocumentMixin(models.AbstractModel):
                         )
                     )
                 else:
-                    amount_total = sum(
+                    fiscal_amount_total = sum(
                         record._get_product_amount_lines().mapped("price_gross")
                     )
                     for line in record._get_product_amount_lines()[:-1]:
-                        if line.price_gross and amount_total:
+                        if line.price_gross and fiscal_amount_total:
                             line.freight_value = amount_freight_value * (
-                                line.price_gross / amount_total
+                                line.price_gross / fiscal_amount_total
                             )
                     record._get_product_amount_lines()[-1].freight_value = (
                         amount_freight_value
@@ -728,7 +728,7 @@ class FiscalDocumentMixin(models.AbstractModel):
                             for line in record._get_product_amount_lines()[:-1]
                         )
                     )
-                record._fields["amount_total"].compute_value(record)
+                record._fields["fiscal_amount_total"].compute_value(record)
                 record.write(
                     {
                         name: value
@@ -761,13 +761,13 @@ class FiscalDocumentMixin(models.AbstractModel):
                         )
                     )
                 else:
-                    amount_total = sum(
+                    fiscal_amount_total = sum(
                         record._get_product_amount_lines().mapped("price_gross")
                     )
                     for line in record._get_product_amount_lines()[:-1]:
-                        if line.price_gross and amount_total:
+                        if line.price_gross and fiscal_amount_total:
                             line.insurance_value = amount_insurance_value * (
-                                line.price_gross / amount_total
+                                line.price_gross / fiscal_amount_total
                             )
                     record._get_product_amount_lines()[-1].insurance_value = (
                         amount_insurance_value
@@ -776,7 +776,7 @@ class FiscalDocumentMixin(models.AbstractModel):
                             for line in record._get_product_amount_lines()[:-1]
                         )
                     )
-                record._fields["amount_total"].compute_value(record)
+                record._fields["fiscal_amount_total"].compute_value(record)
                 record.write(
                     {
                         name: value
@@ -809,13 +809,13 @@ class FiscalDocumentMixin(models.AbstractModel):
                         )
                     )
                 else:
-                    amount_total = sum(
+                    fiscal_amount_total = sum(
                         record._get_product_amount_lines().mapped("price_gross")
                     )
                     for line in record._get_product_amount_lines()[:-1]:
-                        if line.price_gross and amount_total:
+                        if line.price_gross and fiscal_amount_total:
                             line.other_value = amount_other_value * (
-                                line.price_gross / amount_total
+                                line.price_gross / fiscal_amount_total
                             )
                     record._get_product_amount_lines()[-1].other_value = (
                         amount_other_value
@@ -824,7 +824,7 @@ class FiscalDocumentMixin(models.AbstractModel):
                             for line in record._get_product_amount_lines()[:-1]
                         )
                     )
-                record._fields["amount_total"].compute_value(record)
+                record._fields["fiscal_amount_total"].compute_value(record)
                 record.write(
                     {
                         name: value

@@ -25,10 +25,10 @@
 
           <field name="amount_fiscal" force_save="1" invisible="1" />
           <field name="price_gross" force_save="1" invisible="1" />
-          <field name="amount_untaxed" force_save="1" invisible="1" />
-          <field name="amount_tax" force_save="1" invisible="1" />
+          <field name="fiscal_amount_untaxed" force_save="1" invisible="1" />
+          <field name="fiscal_amount_tax" force_save="1" invisible="1" />
           <field name="amount_taxed" force_save="1" invisible="1" />
-          <field name="amount_total" force_save="1" invisible="1" />
+          <field name="fiscal_amount_total" force_save="1" invisible="1" />
           <field name="financial_total" force_save="1" invisible="1" />
           <field name="financial_total_gross" force_save="1" invisible="1" />
           <field name="financial_discount_value" force_save="1" invisible="1" />

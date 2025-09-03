@@ -95,7 +95,7 @@
                   <field name="product_uom_id" />
                   <field name="price_unit" />
                   <field name="quantity" />
-                  <field name="amount_total" />
+                  <field name="fiscal_amount_total" />
                 </tree>
             </field>
         </xpath>

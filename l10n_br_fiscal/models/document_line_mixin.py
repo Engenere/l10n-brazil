@@ -344,14 +344,14 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         readonly=False,
     )
 
-    amount_untaxed = fields.Monetary(
+    fiscal_amount_untaxed = fields.Monetary(
         compute="_compute_fiscal_amounts",
         store=True,
         precompute=True,
         readonly=False,
     )
 
-    amount_tax = fields.Monetary(
+    fiscal_amount_tax = fields.Monetary(
         compute="_compute_fiscal_amounts",
         store=True,
         precompute=True,
@@ -365,7 +365,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         readonly=False,
     )
 
-    amount_total = fields.Monetary(
+    fiscal_amount_total = fields.Monetary(
         compute="_compute_fiscal_amounts",
         store=True,
         precompute=True,
@@ -1958,11 +1958,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
             # Total value of products or services
             record.price_gross = round_curr.round(record.price_unit * record.quantity)
             record.amount_fiscal = record.price_gross - record.discount_value
-            record.amount_tax = record.amount_tax_not_included
+            record.fiscal_amount_tax = record.amount_tax_not_included
 
             add_to_amount = sum(record[a] for a in record._add_fields_to_amount())
             rm_to_amount = sum(record[r] for r in record._rm_fields_to_amount())
-            record.amount_untaxed = (
+            record.fiscal_amount_untaxed = (
                 record.price_gross
                 - record.discount_value
                 + add_to_amount
@@ -1970,13 +1970,17 @@ class FiscalDocumentLineMixin(models.AbstractModel):
             )
 
             # Valor do documento (NF)
-            record.amount_total = record.amount_untaxed + record.amount_tax
+            record.fiscal_amount_total = (
+                record.fiscal_amount_untaxed + record.fiscal_amount_tax
+            )
 
             # Valor Liquido (TOTAL + IMPOSTOS - RETENÇÕES)
-            record.amount_taxed = record.amount_total - record.amount_tax_withholding
+            record.amount_taxed = (
+                record.fiscal_amount_total - record.amount_tax_withholding
+            )
 
             # Valor do documento (NF) - RETENÇÕES
-            record.amount_total = record.amount_taxed
+            record.fiscal_amount_total = record.amount_taxed
 
             # Valor financeiro
             if (

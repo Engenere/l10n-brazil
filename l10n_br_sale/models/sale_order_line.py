@@ -186,7 +186,7 @@ class SaleOrderLine(models.Model):
             line.update(
                 {
                     "price_tax": line.amount_tax,
-                    "price_total": line.amount_total,
+                    "price_total": line.fiscal_amount_total,
                 }
             )
         return result

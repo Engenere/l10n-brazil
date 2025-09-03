@@ -175,8 +175,8 @@ class AccountMove(models.Model):
         "direction_sign",
         "fiscal_operation_id",
         "fiscal_line_ids.cfop_id",
-        "fiscal_line_ids.amount_untaxed",
-        "fiscal_line_ids.amount_tax",
+        "fiscal_line_ids.fiscal_amount_untaxed",
+        "fiscal_line_ids.fiscal_amount_tax",
     )
     def _compute_amount(self):
         result = super()._compute_amount()
@@ -185,12 +185,14 @@ class AccountMove(models.Model):
             fiscal_line_ids = move.fiscal_document_line_ids.filtered(
                 lambda line: not line.cfop_id or line.cfop_id.finance_move
             )
-            move.amount_untaxed = sum(fiscal_line_ids.mapped("amount_untaxed"))
-            move.amount_tax = sum(fiscal_line_ids.mapped("amount_tax"))
+            move.amount_untaxed = sum(fiscal_line_ids.mapped("fiscal_amount_untaxed"))
+            move.amount_tax = sum(fiscal_line_ids.mapped("fiscal_amount_tax"))
             move.amount_untaxed_signed = sign * sum(
-                fiscal_line_ids.mapped("amount_untaxed")
+                fiscal_line_ids.mapped("fiscal_amount_untaxed")
             )
-            move.amount_tax_signed = sign * sum(fiscal_line_ids.mapped("amount_tax"))
+            move.amount_tax_signed = sign * sum(
+                fiscal_line_ids.mapped("fiscal_amount_tax")
+            )
         return result
 
     def _compute_imported_terms(self):
