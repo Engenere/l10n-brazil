@@ -73,7 +73,6 @@
         <field name="quantity">1</field>
         <field name="fiscal_operation_type">out</field>
         <field name="fiscal_operation_id" ref="l10n_br_fiscal.fo_venda" />
-        <field name="fiscal_operation_line_id" ref="l10n_br_fiscal.fo_venda_venda" />
     </record>
 
     <!-- NFe Test - Pessoa Física - ICMS 18% with a reduction of 51.11% -->
@@ -104,11 +103,9 @@
         <field name="document_id" ref="demo_nfe_natural_icms_18_red_51_11" />
         <field name="name">Teste</field>
         <field name="product_id" ref="product.product_product_20" />
-        <field name="uom_id" ref="uom.product_uom_kgm" />
         <field name="quantity">1</field>
         <field name="fiscal_operation_type">out</field>
         <field name="fiscal_operation_id" ref="l10n_br_fiscal.fo_venda" />
-        <field name="fiscal_operation_line_id" ref="l10n_br_fiscal.fo_venda_venda" />
     </record>
 
     <!-- NFe Test - Pessoa Física - ICMS 4% Imported for Resale -->
@@ -136,7 +133,6 @@
         <field name="document_id" ref="demo_nfe_natural_icms_7_resale" />
         <field name="name">Teste</field>
         <field name="product_id" ref="product.product_product_9" />
-        <field name="uom_id" ref="uom.product_uom_kgm" />
         <field name="quantity">2</field>
         <field name="fiscal_operation_type">out</field>
         <field name="fiscal_operation_id" ref="l10n_br_fiscal.fo_venda" />
