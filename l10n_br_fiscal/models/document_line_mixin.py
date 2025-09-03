@@ -145,7 +145,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     tax_icms_or_issqn = fields.Selection(
         selection=TAX_ICMS_OR_ISSQN,
         string="ICMS or ISSQN Tax",
-        default=TAX_DOMAIN_ICMS,
         compute="_compute_product_fiscal_fields",
         store=True,
         readonly=False,
@@ -632,7 +631,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     icms_base_type = fields.Selection(
         selection=ICMS_BASE_TYPE,
         string="ICMS Base Type",
-        default=ICMS_BASE_TYPE_DEFAULT,
         compute="_compute_tax_amounts",
         store=True,
         readonly=False,
@@ -642,7 +640,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     icms_origin = fields.Selection(
         selection=ICMS_ORIGIN,
         string="ICMS Origin",
-        default=ICMS_ORIGIN_DEFAULT,
         compute="_compute_product_fiscal_fields",
         store=True,
         readonly=False,
@@ -722,7 +719,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     icmsst_base_type = fields.Selection(
         selection=ICMS_ST_BASE_TYPE,
         string="ICMS ST Base Type",
-        default=ICMS_ST_BASE_TYPE_DEFAULT,
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
@@ -1029,7 +1025,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     ipi_base_type = fields.Selection(
         selection=TAX_BASE_TYPE,
         string="IPI Base Type",
-        default=TAX_BASE_TYPE_PERCENT,
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
@@ -1160,7 +1155,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     cofins_base_type = fields.Selection(
         selection=TAX_BASE_TYPE,
         string="COFINS Base Type",
-        default=TAX_BASE_TYPE_PERCENT,
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
@@ -1242,7 +1236,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     cofinsst_base_type = fields.Selection(
         selection=TAX_BASE_TYPE,
         string="COFINS ST Base Type",
-        default=TAX_BASE_TYPE_PERCENT,
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
@@ -1296,7 +1289,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     cofins_wh_base_type = fields.Selection(
         selection=TAX_BASE_TYPE,
         string="COFINS WH Base Type",
-        default=TAX_BASE_TYPE_PERCENT,
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
@@ -1370,7 +1362,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     pis_base_type = fields.Selection(
         selection=TAX_BASE_TYPE,
         string="PIS Base Type",
-        default=TAX_BASE_TYPE_PERCENT,
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
@@ -1452,7 +1443,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     pisst_base_type = fields.Selection(
         selection=TAX_BASE_TYPE,
         string="PIS ST Base Type",
-        default=TAX_BASE_TYPE_PERCENT,
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
@@ -1506,7 +1496,6 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     pis_wh_base_type = fields.Selection(
         selection=TAX_BASE_TYPE,
         string="PIS WH Base Type",
-        default=TAX_BASE_TYPE_PERCENT,
         compute="_compute_tax_amounts",
         store=True,
         precompute=True,
@@ -2173,6 +2162,20 @@ class FiscalDocumentLineMixin(models.AbstractModel):
             if null_mask is None:
                 null_mask = self._build_null_mask_dict()
             to_update = null_mask.copy()
+            # prepare with default values
+            to_update.update(
+                {
+                    "icms_base_type": ICMS_BASE_TYPE_DEFAULT,
+                    "icmsst_base_type": ICMS_ST_BASE_TYPE_DEFAULT,
+                    "ipi_base_type": TAX_BASE_TYPE_PERCENT,
+                    "cofins_base_type": TAX_BASE_TYPE_PERCENT,
+                    "cofinsst_base_type": TAX_BASE_TYPE_PERCENT,
+                    "cofins_wh_base_type": TAX_BASE_TYPE_PERCENT,
+                    "pis_base_type": TAX_BASE_TYPE_PERCENT,
+                    "pisst_base_type": TAX_BASE_TYPE_PERCENT,
+                    "pis_wh_base_type": TAX_BASE_TYPE_PERCENT,
+                }
+            )
             if line.fiscal_operation_line_id:
                 compute_result = line.fiscal_tax_ids.compute_taxes(
                     company=line.company_id,
@@ -2346,12 +2349,13 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     def _compute_product_fiscal_fields(self):
         for line in self:
             if not line.product_id:
+                # Default Values
                 line.fiscal_type = False
                 line.uom_id = False
                 line.ncm_id = False
                 line.nbm_id = False
-                line.tax_icms_or_issqn = False
-                line.icms_origin = False
+                line.tax_icms_or_issqn = TAX_DOMAIN_ICMS
+                line.icms_origin = ICMS_ORIGIN_DEFAULT
                 line.cest_id = False
                 line.nbs_id = False
                 line.fiscal_genre_id = False
