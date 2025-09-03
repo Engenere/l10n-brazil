@@ -134,7 +134,7 @@ class TestDeliveryInverseAmount(TransactionCase):
             "Unexpected value for the field amount_costs from Sale Order",
         )
         self.assertEqual(
-            self.sale_order_total_id.amount_tax,
+            self.sale_order_total_id.fiscal_amount_tax,
             0.0,
             "Unexpected value for the field amount_tax from Sale Order",
         )
@@ -169,14 +169,14 @@ class TestDeliveryInverseAmount(TransactionCase):
             "Unexpected value for the field amount_other from Sale Order",
         )
         self.assertEqual(
-            self.sale_order_line_id.amount_tax,
+            self.sale_order_line_id.fiscal_amount_tax,
             0.0,
             "Unexpected value for the field amount_tax from Sale Order",
         )
 
     def test_invoice_amount_tax(self):
         """Check invoice amount tax"""
-        invoice_tax_total = self.sale_order_total_id.invoice_ids[0].amount_tax
+        invoice_tax_total = self.sale_order_total_id.invoice_ids[0].fiscal_amount_tax
 
         self.assertEqual(
             invoice_tax_total,
@@ -184,7 +184,7 @@ class TestDeliveryInverseAmount(TransactionCase):
             "Unexpected value for the field invoice_tax from Invoice",
         )
 
-        invoice_tax_line = self.sale_order_line_id.invoice_ids[0].amount_tax
+        invoice_tax_line = self.sale_order_line_id.invoice_ids[0].fiscal_amount_tax
 
         self.assertEqual(
             invoice_tax_line,

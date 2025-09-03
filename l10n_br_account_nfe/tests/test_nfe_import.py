@@ -166,7 +166,7 @@ class NFeImportTest(TransactionCase):
         self.assertTrue(abs(move.amount_freight_value - 0) < 0.01)
         self.assertTrue(abs(move.amount_insurance_value - 0) < 0.01)
         self.assertTrue(abs(move.amount_other_value - 0) < 0.01)
-        self.assertTrue(abs(move.amount_tax - 132.14) < 0.01)
+        self.assertTrue(abs(move.fiscal_amount_tax - 132.14) < 0.01)
         self.assertTrue(abs(move.amount_total - 12108.10) < 0.01)
 
         self.assertEqual(len(move.invoice_line_ids), 4)
