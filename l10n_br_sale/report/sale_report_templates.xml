@@ -87,7 +87,7 @@
             <tr style="">
                 <td name="td_amount_tax_label"><strong>Taxes</strong></td>
                 <td name="td_amount_tax" class="text-right">
-                    <span t-field="doc.amount_tax" />
+                    <span t-field="doc.fiscal_amount_tax" />
                 </td>
             </tr>
 

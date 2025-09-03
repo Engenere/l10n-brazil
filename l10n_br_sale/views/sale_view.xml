@@ -367,9 +367,9 @@
                     <page name="amounts" string="Amounts">
                         <group>
                             <group>
-                                <field name="amount_untaxed" />
+                                <field name="fiscal_amount_untaxed" />
                                 <field name="amount_fiscal" />
-                                <field name="amount_tax" />
+                                <field name="fiscal_amount_tax" />
                                 <field name="estimate_tax" readonly="1" />
                             </group>
                             <group>
