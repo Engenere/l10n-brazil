@@ -10,10 +10,6 @@ class SaleOrderLine(models.Model):
     _inherit = [_name, "l10n_br_fiscal.document.line.mixin"]
 
     @api.model
-    def _default_fiscal_operation(self):
-        return self.env.company.sale_fiscal_operation_id
-
-    @api.model
     def _fiscal_operation_domain(self):
         domain = [
             ("fiscal_operation_type", "=", "out"),
@@ -24,7 +20,6 @@ class SaleOrderLine(models.Model):
 
     fiscal_operation_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.operation",
-        default=_default_fiscal_operation,
         domain=lambda self: self._fiscal_operation_domain(),
     )
 
