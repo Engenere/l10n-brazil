@@ -311,8 +311,11 @@
                                         widget="many2many_tags"
                                     />
                                     <field name="fiscal_amount_total" sum="Total" />
-                                  <field name="fiscal_tax_ids" widget="many2many_tags" />
-                </tree>
+                                    <field
+                                        name="fiscal_tax_ids"
+                                        widget="many2many_tags"
+                                    />
+                                </tree>
                             </field>
                         </page>
                         <page name="document_related" string="Document Related">
