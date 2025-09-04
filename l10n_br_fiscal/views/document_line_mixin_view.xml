@@ -21,15 +21,11 @@
                     <field name="fiscal_type" force_save="1" invisible="1" />
                     <field name="partner_company_type" force_save="1" invisible="1" />
                     <field name="tax_framework" force_save="1" invisible="1" />
-          
+
           <field name="amount_tax_included" force_save="1" invisible="1" />
-          <field
-                        name="amount_tax_not_included"
-                        force_save="1"
-                        invisible="1"
-                    />
+          <field name="amount_tax_not_included" force_save="1" invisible="1" />
                     <field name="amount_tax_withholding" force_save="1" invisible="1" />
-          
+
           <field name="amount_fiscal" force_save="1" invisible="1" />
           <field name="price_gross" force_save="1" invisible="1" />
           <field name="fiscal_amount_untaxed" force_save="1" invisible="1" />
