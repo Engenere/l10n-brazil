@@ -47,6 +47,7 @@ class L10nBrSaleBaseTest(TransactionCase):
             "issqn": {
                 "tax": cls.env.ref("l10n_br_fiscal.tax_issqn_5"),
             },
+            # /!\ O IPI muda conforme o NCM do produto!
             "ipi": {
                 "tax": cls.env.ref("l10n_br_fiscal.tax_ipi_3_25"),
                 "cst": cls.env.ref("l10n_br_fiscal.cst_ipi_50"),
@@ -337,6 +338,12 @@ class L10nBrSaleBaseTest(TransactionCase):
             )
 
             # IPI
+            if (
+                line.ncm_id.code == "9401.30.90"
+                and "IPI Outros" not in taxes["ipi"]["tax"].name
+            ):
+                # Quando o NCM é 9401.30.90 o IPI deve ser 5%
+                taxes["ipi"]["tax"] = self.env.ref("l10n_br_fiscal.tax_ipi_5")
             self.assertEqual(
                 line.ipi_tax_id.name,
                 taxes["ipi"]["tax"].name,
