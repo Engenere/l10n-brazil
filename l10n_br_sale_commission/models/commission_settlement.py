@@ -64,7 +64,6 @@ class CommissionSettlement(models.Model):
                     move_line._inverse_account_id()
                     move_line._inverse_amount_currency()
                     # Fiscal Brazil
-                    move_line._onchange_product_id_fiscal()
                     move_line._onchange_fiscal_taxes()
 
                     new_values = move_line._convert_to_write(move_line._cache)
