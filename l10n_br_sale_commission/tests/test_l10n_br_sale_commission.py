@@ -47,9 +47,8 @@ class TestL10nBrSalesCommission(TransactionCase):
         self.assertEqual(len(settlements), 1, "Settlements not was created.")
 
         # Cria a Fatura das Comissões/Settlements
-        with Form(self.env["commission.make.invoice"]) as wiz_form:
-            wiz = wiz_form.save()
-            wiz.button_create()
+        wiz = self.env["commission.make.invoice"].create({})
+        wiz.button_create()
 
         settlements = self.env["commission.settlement"].search(
             [("state", "=", "invoiced")]

@@ -243,7 +243,11 @@ class FiscalDocumentLine(models.Model):
             filtered_vals_list = [
                 vals
                 for vals in vals_list
-                if vals.get("document_id") and vals.get("fiscal_operation_line_id")
+                if vals.get("document_id")
+                and (
+                    vals.get("fiscal_operation_id")
+                    or vals.get("fiscal_operation_line_id")
+                )
             ]
             # Stop execution and return empty if no dictionary meets the conditions
             if not filtered_vals_list:

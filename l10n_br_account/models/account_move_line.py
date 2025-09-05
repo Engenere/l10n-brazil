@@ -153,9 +153,17 @@ class AccountMoveLine(models.Model):
         if "proxy_product_id" not in vals and "product_id" in vals:
             vals["proxy_product_id"] = vals["product_id"]
 
-    def write(self, vals):
-        self._sync_proxy_fields_vals(vals)
-        res = super().write(vals)
+    def new(self, values=None, origin=None, ref=None):
+        # TODO verificar melhor se é preciso manter esse método
+        # se com isso pode ser removidos os inverse, onchange etc.
+        if values is None:
+            values = {}
+        self._sync_proxy_fields_vals(values)
+        return super().new(values)
+
+    def write(self, values):
+        self._sync_proxy_fields_vals(values)
+        res = super().write(values)
         return res
 
     @api.model_create_multi
