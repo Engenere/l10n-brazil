@@ -79,6 +79,8 @@ class DocumentLine(models.Model):
         precompute=True,
     )
 
+    additional_data = fields.Text()
+
     @api.depends("product_id")
     def _compute_name(self):
         for line in self:
@@ -86,3 +88,18 @@ class DocumentLine(models.Model):
                 line.name = line.product_id.display_name
             else:
                 line.name = False
+
+    def __document_comment_vals(self):
+        self.ensure_one()
+        return {
+            "user": self.env.user,
+            "ctx": self._context,
+            "doc": self.document_id if hasattr(self, "document_id") else None,
+            "item": self,
+        }
+
+    def _document_comment(self):
+        for d in self:
+            d.additional_data = d.comment_ids.compute_message(
+                d.__document_comment_vals(), d.manual_additional_data
+            )
