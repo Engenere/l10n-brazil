@@ -587,7 +587,7 @@ class CTe(spec_models.StackedModel):
     # CT-e tag: vPrest
     ##########################
 
-    cte40_vTPrest = fields.Monetary(related="amount_total")
+    cte40_vTPrest = fields.Monetary(related="fiscal_amount_total")
 
     cte40_vRec = fields.Monetary(related="amount_price_gross")
 
@@ -1112,9 +1112,7 @@ class CTe(spec_models.StackedModel):
     @api.depends(
         "issuer",
         "company_id",
-        "company_id.partner_id.rntrc_code",
         "partner_id",
-        "partner_id.rntrc_code",
     )
     def _compute_cte40_RNTRC(self):
         for record in self.filtered(filter_processador_edoc_cte):
