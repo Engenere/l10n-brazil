@@ -157,7 +157,6 @@ class L10nBrSaleBaseTest(TransactionCase):
         if sale_line.display_type:
             return
         sale_line._onchange_product_id_fiscal()
-        sale_line._onchange_fiscal_operation_id()
         sale_line._onchange_fiscal_taxes()
         sale_line._onchange_fiscal_tax_ids()
 
