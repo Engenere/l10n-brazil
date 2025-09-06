@@ -28,7 +28,7 @@ class TestFiscalDocumentNFSeCommon(TransactionCase):
         cls.company.icms_regulation_id = cls.env.ref(
             "l10n_br_fiscal.tax_icms_regulation"
         ).id
-        cls.company.city_taxation_code_id = cls.env.ref(
+        cls.company.city_taxation_code_ids = cls.env.ref(
             "l10n_br_fiscal.city_taxation_code_itajuba"
         )
         cls.company.document_type_id = cls.env.ref("l10n_br_fiscal.document_SE")
@@ -125,8 +125,6 @@ class TestFiscalDocumentNFSeCommon(TransactionCase):
 
         for line in self.nfse_same_state.fiscal_line_ids:
             line._onchange_product_id_fiscal()
-            line._onchange_fiscal_operation_id()
-            line._onchange_fiscal_taxes()
 
             # prepare_line_servico()
             self.assertEqual(
