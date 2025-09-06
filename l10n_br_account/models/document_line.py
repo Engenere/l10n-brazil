@@ -43,24 +43,42 @@ class FiscalDocumentLine(models.Model):
         ondelete="restrict",
     )
 
+    proxy_company_id = fields.Many2one(
+        related="document_id.company_id",
+        comodel_name="res.company",
+        string="Company (proxy)",
+        readonly=False,
+    )
+
+    proxy_partner_id = fields.Many2one(
+        related="document_id.partner_id",
+        comodel_name="res.partner",
+        string="Partner (proxy)",
+        readonly=False,
+    )
+
+    partner_id = fields.Many2one(
+        related="proxy_partner_id",
+        comodel_name="res.partner",
+        string="Partner",
+        store=True,
+        readonly=False,
+        precompute=True,
+    )
+
+    company_id = fields.Many2one(
+        related="proxy_company_id",
+        comodel_name="res.company",
+        string="Company",
+        store=True,
+        readonly=False,
+        precompute=True,
+    )
+
     # -------------------------------------------------------------------------
     # SHADOWED FIELDS SYNC
     # -------------------------------------------------------------------------
 
-    company_id = fields.Many2one(
-        compute="_compute_shadowed_fields",
-        inverse="_inverse_company_id",
-        store=True,
-        precompute=True,
-        readonly=False,
-    )
-    partner_id = fields.Many2one(
-        compute="_compute_shadowed_fields",
-        inverse="_inverse_partner_id",
-        store=True,
-        precompute=True,
-        readonly=False,
-    )
     product_id = fields.Many2one(
         compute="_compute_shadowed_fields",
         inverse="_inverse_product_id",
@@ -92,8 +110,6 @@ class FiscalDocumentLine(models.Model):
 
     @api.depends(
         "account_line_ids",
-        "account_line_ids.company_id",
-        "account_line_ids.partner_id",
         "account_line_ids.product_id",
         "account_line_ids.name",
         "account_line_ids.quantity",
@@ -102,8 +118,6 @@ class FiscalDocumentLine(models.Model):
     def _compute_shadowed_fields(self):
         for line in self:
             if line.account_line_ids:
-                line.company_id = line.account_line_ids.company_id
-                line.partner_id = line.account_line_ids.partner_id
                 line.product_id = line.account_line_ids.product_id
                 line.name = line.account_line_ids.name
                 line.quantity = line.account_line_ids.quantity
