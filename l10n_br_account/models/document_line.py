@@ -15,6 +15,26 @@ class FiscalDocumentLine(models.Model):
         string="Invoice Lines",
     )
 
+    move_id = fields.Many2one(
+        comodel_name="account.move",
+        related="account_line_ids.move_id",
+        store=True,
+        precompute=True,
+        string="Invoice",
+    )
+
+    document_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.document",
+        string="Fiscal Document",
+        compute="_compute_document_id",
+        store=True,
+        readonly=False,
+        precompute=True,
+        index=True,
+        check_company=True,
+        ondelete="cascade",
+    )
+
     uom_id = fields.Many2one(
         compute="_compute_product_uom_id",
         store=True,
@@ -24,13 +44,126 @@ class FiscalDocumentLine(models.Model):
     )
 
     # -------------------------------------------------------------------------
+    # PROXY FIELDS FOR _inherits SHADOWED NAMES
+    # -------------------------------------------------------------------------
+    # When using _inherits (delegation), fields with identical names on both the
+    # child and delegated model may not synchronize correctly. To avoid ORM sync
+    # issues, we define proxy_* fields related to the delegated document fields.
+    # Then the child "original" fields point to the proxies, ensuring consistency
+    # and editability.
+
+    proxy_company_id = fields.Many2one(
+        related="document_id.company_id",
+        comodel_name="res.company",
+        string="Company (proxy)",
+        help="Technical Field.",
+        readonly=False,
+        store=True,
+        precompute=True,
+    )
+
+    proxy_partner_id = fields.Many2one(
+        related="document_id.partner_id",
+        comodel_name="res.partner",
+        string="Partner (proxy)",
+        help="Technical Field.",
+        readonly=False,
+        store=True,
+        precompute=True,
+    )
+    proxy_product_id = fields.Many2one(
+        comodel_name="product.product",
+        string="Product (proxy)",
+        help="Technical Field.",
+        readonly=False,
+    )
+    proxy_name = fields.Char(
+        string="Name (proxy)",
+        help="Technical Field.",
+        readonly=False,
+    )
+    proxy_quantity = fields.Float(
+        string="Quantity (proxy)",
+        help="Technical Field.",
+        readonly=False,
+    )
+    proxy_price_unit = fields.Float(
+        string="Unit Price (proxy)",
+        help="Technical mirror.",
+        readonly=False,
+    )
+
+    partner_id = fields.Many2one(
+        related="proxy_partner_id",
+        comodel_name="res.partner",
+        string="Partner",
+        store=True,
+        readonly=False,
+        precompute=True,
+    )
+
+    company_id = fields.Many2one(
+        related="proxy_company_id",
+        comodel_name="res.company",
+        string="Company",
+        store=True,
+        readonly=False,
+        precompute=True,
+    )
+
+    # -------------------------------------------------------------------------
     # SHADOWED FIELDS SYNC
     # -------------------------------------------------------------------------
 
-    product_id = fields.Many2one(inverse="_inverse_product_id")
-    name = fields.Char(inverse="_inverse_name")
-    quantity = fields.Float(inverse="_inverse_quantity")
-    price_unit = fields.Float(inverse="_inverse_price_unit")
+    product_id = fields.Many2one(
+        related="proxy_product_id",
+        comodel_name="product.product",
+        # inverse="_inverse_product_id",
+        string="Product",
+        store=True,
+        precompute=True,
+        readonly=False,
+    )
+    name = fields.Char(
+        related="proxy_name",
+        # inverse="_inverse_name",
+        string="Name",
+        store=True,
+        precompute=True,
+        readonly=False,
+    )
+    quantity = fields.Float(
+        related="proxy_quantity",
+        # inverse="_inverse_quantity",
+        string="Quantity",
+        store=True,
+        precompute=True,
+        readonly=False,
+    )
+    price_unit = fields.Float(
+        related="proxy_price_unit",
+        # inverse="_inverse_price_unit",
+        string="Price Unit",
+        store=True,
+        precompute=True,
+        readonly=False,
+    )
+
+    @api.depends("move_id.fiscal_document_id")
+    def _compute_document_id(self):
+        """
+        Ensures that the `document_id` field is updated even when the document line is
+        a new record (NewId) and has not yet been saved.
+        """
+        for line in self:
+            is_draft = line.id != line._origin.id
+            if (
+                is_draft
+                and line.move_id
+                and line.move_id.fiscal_document_id
+                and not line.document_id
+            ):
+                line.document_id = line.move_id.fiscal_document_id
 
     @api.onchange("product_id")
     def _inverse_product_id(self):
@@ -93,12 +226,28 @@ class FiscalDocumentLine(models.Model):
         necessary.
         """
 
+        # copy proxy fields value to original fields:
+        # TODO pode ser removido depois que renomear os campos no fiscal.
+        for vals in vals_list:
+            if "quantity" not in vals and "proxy_quantity" in vals:
+                vals["quantity"] = vals["proxy_quantity"]
+            if "price_unit" not in vals and "proxy_price_unit" in vals:
+                vals["price_unit"] = vals["proxy_price_unit"]
+            if "name" not in vals and "proxy_name" in vals:
+                vals["name"] = vals["proxy_name"]
+            if "product_id" not in vals and "proxy_product_id" in vals:
+                vals["product_id"] = vals["proxy_product_id"]
+
         if self._context.get("create_from_account"):
             # Filter out the dictionaries that do not meet the conditions
             filtered_vals_list = [
                 vals
                 for vals in vals_list
-                if vals.get("document_id") and vals.get("fiscal_operation_line_id")
+                if vals.get("document_id")
+                and (
+                    vals.get("fiscal_operation_id")
+                    or vals.get("fiscal_operation_line_id")
+                )
             ]
             # Stop execution and return empty if no dictionary meets the conditions
             if not filtered_vals_list:
