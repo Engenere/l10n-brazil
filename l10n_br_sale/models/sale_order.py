@@ -135,7 +135,9 @@ class SaleOrder(models.Model):
 
         moves = self.env["account.move"]
         for document_type in document_types:
-            self = self.with_context(document_type_id=document_type.id)
+            self = self.with_context(
+                document_type_id=document_type.id, l10n_br_fiscal_active=True
+            )
             try:
                 moves |= super()._create_invoices(
                     grouped=grouped, final=final, date=date
@@ -155,7 +157,7 @@ class SaleOrder(models.Model):
     def _prepare_invoice(self):
         self.ensure_one()
         result = super()._prepare_invoice()
-        if self.fiscal_operation_id:  # (Brazil)
+        if self._context.get("l10n_br_fiscal_active"):
             fiscal_values = self._prepare_br_fiscal_dict()
             # unlike super()._prepare_invoice(), prepare_fiscal_dict doesn't consider
             # partner_invoice_id, so we adjust the partner_id eventually:
