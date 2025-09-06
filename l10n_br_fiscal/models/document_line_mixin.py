@@ -133,6 +133,11 @@ class FiscalDocumentLineMixin(models.AbstractModel):
 
     partner_id = fields.Many2one(comodel_name="res.partner", string="Partner")
 
+    company_id = fields.Many2one(
+        comodel_name="res.company",
+        string="Company",
+    )
+
     partner_company_type = fields.Selection(related="partner_id.company_type")
 
     uom_id = fields.Many2one(comodel_name="uom.uom", string="UOM")
@@ -184,8 +189,12 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     fiscal_operation_line_id = fields.Many2one(
         comodel_name="l10n_br_fiscal.operation.line",
         string="Operation Line",
+        compute="_compute_fiscal_operation_line_id",
         domain="[('fiscal_operation_id', '=', fiscal_operation_id), "
         "('state', '=', 'approved')]",
+        store=True,
+        precompute=True,
+        readonly=False,
     )
 
     cfop_id = fields.Many2one(
