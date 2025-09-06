@@ -1962,6 +1962,8 @@ class FiscalDocumentLineMixin(models.AbstractModel):
             "icms_relief_id",
             "fiscal_tax_ids",
             "fiscal_operation_line_id",
+            "company_id",
+            "partner_id",
         ]
 
     @api.depends(lambda self: self._get_tax_fields_dependencies())
