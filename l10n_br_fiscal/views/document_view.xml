@@ -71,9 +71,9 @@
                 <field name="document_date" />
                 <field name="fiscal_operation_id" />
                 <field name="partner_id" />
-                <field name="amount_untaxed" />
-                <field name="amount_tax" />
-                <field name="amount_total" />
+                <field name="fiscal_amount_untaxed" />
+                <field name="fiscal_amount_tax" />
+                <field name="fiscal_amount_total" />
                 <field name="state" invisible="1" />
                 <field
                     name="state_edoc"
@@ -310,7 +310,7 @@
                                         name="fiscal_tax_ids"
                                         widget="many2many_tags"
                                     />
-                                    <field name="amount_total" sum="Total" />
+                                    <field name="fiscal_amount_total" sum="Total" />
                                 </tree>
                             </field>
                         </page>
@@ -408,8 +408,8 @@
                                             attrs="{'readonly': [('delivery_costs', '=', 'line'),('force_compute_delivery_costs_by_total', '=', False)]}"
                                         />
                                         <field name="amount_estimate_tax" />
-                                        <field name="amount_tax" />
-                                        <field name="amount_total" />
+                                        <field name="fiscal_amount_tax" />
+                                        <field name="fiscal_amount_total" />
                                         <field name="amount_tax_withholding" />
                                         <field name="amount_financial_total" />
                                         <field name="amount_financial_total_gross" />
