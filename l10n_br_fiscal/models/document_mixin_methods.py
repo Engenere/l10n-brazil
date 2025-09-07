@@ -179,9 +179,6 @@ class FiscalDocumentMixinMethods(models.AbstractModel):
         partner = self._get_fiscal_partner()
         if partner:
             self.ind_final = partner.ind_final
-            for line in self._get_amount_lines():
-                # reload fiscal data, operation line, cfop, taxes, etc.
-                line._onchange_fiscal_operation_id()
 
     @api.depends("fiscal_operation_id")
     def _compute_operation_name(self):

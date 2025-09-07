@@ -429,8 +429,6 @@ class Document(models.Model):
                         ).format(line.fiscal_operation_id)
                     )
                 line.fiscal_operation_id = fsc_op_line
-                line._onchange_fiscal_operation_id()
-
             return_docs |= new_doc
         return return_docs
 
