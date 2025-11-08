@@ -8,17 +8,33 @@ from brazilfiscalreport.danfe import Danfe
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+EVENT_TYPE_MAP = {
+    "210200": "Confirmada operação",
+    "210210": "Ciente da Operação",
+    "210220": "Desconhecimento da Operação",
+    "210240": "Operação não realizada",
+}
 
-class AccessKey(models.Model):
-    _name = "l10n_br_fiscal.dfe_access_key"
-    _description = ""
 
-    key = fields.Char(size=44, required=True)
+class L10nBrFiscalDfeDocument(models.Model):
+    _name = "l10n_br_fiscal_dfe.document"
+    _description = "Fiscal document from distribution service"
+    _order = "id desc"
+
+    _sql_constraints = [
+        (
+            "unique_access_key",
+            "UNIQUE(access_key)",
+            "The Access Key already exists",
+        ),
+    ]
+
+    access_key = fields.Char(size=44, required=True)
 
     dfe_ids = fields.One2many(
-        comodel_name="l10n_br_fiscal.dfe",
-        inverse_name="dfe_access_key_id",
-        string="DFe",
+        comodel_name="l10n_br_fiscal_dfe.dfe",
+        inverse_name="dfe_document_id",
+        string="DF-e records",
     )
 
     emitter = fields.Char(related="dfe_ids.emitter")
@@ -33,20 +49,14 @@ class AccessKey(models.Model):
 
     document_number = fields.Float(related="dfe_ids.document_number")
 
+    document_emission_date = fields.Datetime(related="dfe_ids.emission_datetime")
+
     serie = fields.Char(related="dfe_ids.serie")
 
     dfe_monitor_id = fields.Many2one(
-        comodel_name="l10n_br_fiscal.dfe_monitor",
+        comodel_name="l10n_br_fiscal_dfe.dfe_monitor",
         string="Monitor de DFe",
     )
-
-    _sql_constraints = [
-        (
-            "unique_key",
-            "UNIQUE(key)",
-            "The access key already exists",
-        ),
-    ]
 
     color_status = fields.Selection(
         [
@@ -68,6 +78,12 @@ class AccessKey(models.Model):
         default="sem_manifestacao",
     )
 
+    manifestations_ids = fields.One2many(
+        comodel_name="l10n_br_nfe.md_event",
+        inverse_name="dfe_document_id",
+        string="Manifestations",
+    )
+
     @api.depends("dfe_ids.dfe_nfe_document_type")
     def _compute_color_status(self):
         for record in self:
@@ -80,7 +96,7 @@ class AccessKey(models.Model):
                 record.color_status = "normal"
 
     def name_get(self):
-        return [(record.id, record.key) for record in self]
+        return [(record.id, record.access_key) for record in self]
 
     def action_download_xml(self):
         complete_dfe_ids = self.dfe_ids.filtered(
@@ -112,7 +128,7 @@ class AccessKey(models.Model):
 
         pdf_attachment = self.env["ir.attachment"].create(
             {
-                "name": f"DANFE{complete_dfe.key}.pdf",
+                "name": f"DANFE{complete_dfe.access_key}.pdf",
                 "type": "binary",
                 "datas": base64.b64encode(danfe_file),
                 "res_model": self._name,
@@ -127,15 +143,17 @@ class AccessKey(models.Model):
             "target": "self",
         }
 
-    def create_mde_action(self):
+    # TODO migrar pro módulo l10n_br_nfe_dfe
+    def create_nfe_md_action(self):
+        self.ensure_one()
         return {
-            "name": _("Manifestação do Destinatário"),
+            "name": _("Manifestação do Destinatário da NF-e"),
             "type": "ir.actions.act_window",
             "res_model": "nfe_recipient_manifestation_event.wizard",
             "view_mode": "form",
             "target": "new",
             "context": {
-                "default_dfe_access_key_id": self.id,
+                "default_access_key": self.access_key,
             },
         }
 
@@ -146,31 +164,3 @@ class AccessKey(models.Model):
         if complete_dfe_ids:
             return complete_dfe_ids.import_document()
         raise UserError(_("You can only import the NF-e when the DF-e is completed."))
-
-    @api.model
-    def update_manifestation_status(self):
-        EVENT_TYPE_MAP = {
-            "210200": "Confirmada operação",
-            "210210": "Ciente da Operação",
-            "210220": "Desconhecimento da Operação",
-            "210240": "Operação não realizada",
-        }
-
-        dfe_events = self.env["l10n_br_fiscal.dfe"].search(
-            [("dfe_nfe_document_type", "=", "dfe_nfe_event")],
-            order="emission_datetime desc",
-        )
-
-        latest_events = {}
-
-        for dfe in dfe_events:
-            if dfe.key not in latest_events:
-                latest_events[dfe.key] = dfe.event_type_dfe
-
-        for key, event_code in latest_events.items():
-            event_desc = EVENT_TYPE_MAP.get(event_code, "sem_manifestacao")
-
-            access_key = self.search([("key", "=", key)], limit=1)
-            if access_key:
-                access_key.write({"manifestation_status": event_desc})
-        return True

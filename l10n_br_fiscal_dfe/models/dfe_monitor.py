@@ -13,6 +13,7 @@ from nfelib.nfe.bindings.v4_0.leiaute_nfe_v4_00 import TnfeProc
 from nfelib.nfe.client.v4_0.dfe import DfeClient
 
 from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 from ..tools import utils
 
@@ -20,9 +21,9 @@ _logger = logging.getLogger(__name__)
 
 
 class DFeMonitor(models.Model):
-    _name = "l10n_br_fiscal.dfe_monitor"
+    _name = "l10n_br_fiscal_dfe.dfe_monitor"
     _inherit = ["mail.thread", "mail.activity.mixin"]
-    _description = "Consult DF-e"
+    _description = "DF-e Monitor"
     _order = "id desc"
     _rec_name = "display_name"
 
@@ -41,32 +42,35 @@ class DFeMonitor(models.Model):
 
     last_nsu = fields.Char(related="company_id.last_nsu", readonly=False)
 
-    max_nsu = fields.Char(readonly=True)
+    max_nsu = fields.Char(string="Max NSU", readonly=True)
 
-    last_query = fields.Datetime(string="Last query")
+    last_query = fields.Datetime()
 
-    use_cron = fields.Boolean(
+    last_status = fields.Char(readonly=True)
+
+    last_status_code = fields.Char(readonly=True)
+
+    auto_fetch = fields.Boolean(
         default=False,
-        string="Download new documents automatically",
-        help="If activated, allows new manifestations to be automatically "
-        "searched with a Cron",
+        string="Auto-fetch DF-e",
+        help="Periodically queries DF-e distribution for new documents",
     )
 
-    automatically_acknowledge_receipt = fields.Boolean(
+    auto_manifest_nfe = fields.Boolean(
         default=False,
-        string="Manifestar Ciência Automaticamente",
+        string="Automatic Recipient Manifestation (NF-e)",
         help="Automatically acknowledge receipt"
         "of notifications or events without manual intervention",
     )  # TODO: Vê um nome melhor pro campo
 
-    dfe_access_key_id = fields.One2many(
-        comodel_name="l10n_br_fiscal.dfe_access_key",
+    dfe_document_ids = fields.One2many(
+        comodel_name="l10n_br_fiscal_dfe.document",
         inverse_name="dfe_monitor_id",
         string="Chave de Acesso",
     )
 
     dfe_ids = fields.One2many(
-        comodel_name="l10n_br_fiscal.dfe",
+        comodel_name="l10n_br_fiscal_dfe.dfe",
         inverse_name="dfe_monitor_id",
         string="Documentos Fiscais Eletrônicos",
     )
@@ -87,7 +91,7 @@ class DFeMonitor(models.Model):
         )
 
     @api.model
-    def validate_distribution_response(self, result):
+    def validate_distribution_response(self, result, raise_message=False):
         valid = False
         message = result.resposta.xMotivo
         if result.retorno.status_code != 200:
@@ -98,33 +102,77 @@ class DFeMonitor(models.Model):
             valid = True
 
         if not valid:
-            self.message_post(
-                body=_(
-                    f"Error validating document distribution: \n\n"
-                    f"{code} - {message}"
-                )
+            msg_error = _(
+                "Error validating document distribution: \n\n" f"{code} - {message}"
             )
-
+            if raise_message:
+                raise ValidationError(msg_error)
+            else:
+                self.message_post(body=msg_error)
         return valid
 
-    @api.model
+    def action_document_distribution(self):
+        self.ensure_one()
+        action = self._document_distribution()
+        return action
+
+    def _search_specific_document(self, access_key=None, nsu=None):
+        """
+        Search for a specific document by access key or NSU.
+        """
+        self.ensure_one()
+        result = self._get_processor().consultar_distribuicao(
+            chave=access_key,
+            nsu_especifico=utils.format_nsu(nsu) if nsu else None,
+            cnpj_cpf=re.sub("[^0-9]", "", self.company_id.vat),
+        )
+        if not self.validate_distribution_response(result, raise_message=True):
+            return
+        self._process_distribution(result)
+
     def _document_distribution(self):
+        self.ensure_one()
         last_nsu = (
             self.last_nsu
             if (self.last_nsu and self.last_nsu.isdigit())
             else "000000000000000"
         )
         raw_max = (self.max_nsu or "").strip()
-        maxNSU = raw_max if (raw_max and raw_max != "000000000000000") else False
+        max_nsu = raw_max if (raw_max and raw_max != "000000000000000") else False
+        last_query = self.last_query or fields.Datetime.now()
 
-        if maxNSU and last_nsu == maxNSU:
-            last_query = self.last_query or fields.Datetime.now()
+        if self.last_status_code == "656":
             if fields.Datetime.now() - last_query < timedelta(hours=1):
-                self.message_post(body=_("Waiting 1 hour before making a new request."))
-                return
+                # Bloqueado - Consumo Indevido
+                # self.message_post(body=_(
+                #     "Consumo Indevido detected.\n"
+                #     "Waiting 1 hour before making a new request."
+                # ))
+                return {
+                    "type": "ir.actions.client",
+                    "tag": "display_notification",
+                    "params": {
+                        "title": _("Consumo Indevido detected"),
+                        "message": _("Waiting 1 hour before making a new request."),
+                        "type": "warning",
+                        "sticky": False,
+                    },
+                }
+
+        if max_nsu and last_nsu >= max_nsu:
+            if self.last_status_code == "137":
+                # Bloqueado - Sem novos documentos
+                if fields.Datetime.now() - last_query < timedelta(hours=1):
+                    self.message_post(
+                        body=_(
+                            "No new documents to download.\n"
+                            "Waiting 1 hour before making a new request."
+                        )
+                    )
+                    return
 
         last_query_success = None
-
+        result = False
         while True:
             try:
                 result = self._get_processor().consultar_distribuicao(
@@ -139,21 +187,28 @@ class DFeMonitor(models.Model):
 
             last_query_success = fields.Datetime.now()
             last_nsu = result.resposta.ultNSU
-            if not maxNSU:
-                maxNSU = result.resposta.maxNSU
+            max_nsu = result.resposta.maxNSU
 
             if not self.validate_distribution_response(result):
                 break
 
             self._process_distribution(result)
-            if last_nsu == maxNSU:
+
+            if last_nsu >= max_nsu:
+                # Não há mais documentos para baixar
                 break
 
         self.write(
             {
                 "last_nsu": last_nsu,
                 "last_query": last_query_success or self.last_query,
-                "max_nsu": maxNSU,
+                "last_status": getattr(result.resposta, "xMotivo", "")
+                if result
+                else "",
+                "last_status_code": getattr(result.resposta, "cStat", "")
+                if result
+                else "",
+                "max_nsu": max_nsu,
             }
         )
 
@@ -203,11 +258,22 @@ class DFeMonitor(models.Model):
 
     @api.model
     def _cron_search_documents(self):
-        self.search([("use_cron", "=", True)]).search_documents()
+        self.search([("auto_fetch", "=", True)]).search_documents()
 
     def search_documents(self):
         for record in self:
             record._document_distribution()
+
+    def action_search_specific(self):
+        self.ensure_one()
+        return {
+            "name": _("Specific Document Search"),
+            "type": "ir.actions.act_window",
+            "res_model": "dfe_specific_search_wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_dfe_monitor_id": self.id},
+        }
 
     def _process_distribution(self, result):
         for doc in result.resposta.loteDistDFeInt.docZip:
@@ -231,7 +297,7 @@ class DFeMonitor(models.Model):
             nsu_raw = getattr(doc, "NSU", None) or getattr(doc, "nsu", None)
             nsu = utils.format_nsu(nsu_raw)
 
-            dfe_id = self.env["l10n_br_fiscal.dfe"].search(
+            dfe_id = self.env["l10n_br_fiscal_dfe.dfe"].search(
                 [("nsu", "=", nsu), ("company_id", "=", self.company_id.id)], limit=1
             )
             if dfe_id:
@@ -250,7 +316,7 @@ class DFeMonitor(models.Model):
             elif schema_type == "procEventoNFe":
                 dfe_id = self._create_dfe_from_procEventoNFe(root, nsu)
             else:
-                dfe_id = self.env["l10n_br_fiscal.dfe"].create(
+                dfe_id = self.env["l10n_br_fiscal_dfe.dfe"].create(
                     {
                         "nsu": nsu,
                         "inclusion_datetime": datetime.now(),
@@ -259,14 +325,14 @@ class DFeMonitor(models.Model):
                     }
                 )
             if dfe_id:
+                dfe_id.schema_type = schema_type
                 dfe_id.create_xml_attachment(xml)
-        self.dfe_access_key_id.update_manifestation_status()
 
     @api.model
     def _create_dfe_from_procNFe(self, root, nsu):
         nfe_key = root.protNFe.infProt.chNFe
 
-        access_key = self._get_or_create_access_key(nfe_key)
+        access_key = self._get_or_create_document(nfe_key)
 
         supplier_cnpj = utils.mask_cnpj("%014d" % root.NFe.infNFe.emit.CNPJ)
         partner = self.env["res.partner"].search([("vat", "=", supplier_cnpj)], limit=1)
@@ -280,11 +346,11 @@ class DFeMonitor(models.Model):
             [("code", "in", cfop_codes)]
         )
 
-        dfe = self.env["l10n_br_fiscal.dfe"].create(
+        dfe = self.env["l10n_br_fiscal_dfe.dfe"].create(
             {
                 "document_number": root.NFe.infNFe.ide.nNF,
                 "emitter": root.NFe.infNFe.emit.xNome,
-                "key": nfe_key,
+                "access_key": nfe_key,
                 "serie": root.NFe.infNFe.ide.serie,
                 "operation_type": str(root.NFe.infNFe.ide.tpNF),
                 "document_amount": root.NFe.infNFe.total.ICMSTot.vNF,
@@ -298,7 +364,6 @@ class DFeMonitor(models.Model):
                 ),
                 "nsu": nsu,
                 "company_id": self.company_id.id,
-                "inclusion_mode": "Verificação agendada",
                 "dfe_monitor_id": self.id,
                 "cfop_ids": [(6, 0, cfop_records.ids)],
                 "dfe_nfe_document_type": "dfe_nfe_complete",
@@ -312,14 +377,14 @@ class DFeMonitor(models.Model):
     def _create_dfe_from_resNFe(self, root, nsu):
         nfe_key = root.chNFe
 
-        access_key = self._get_or_create_access_key(nfe_key)
+        dfe_document_id = self._get_or_create_document(nfe_key)
 
         supplier_cnpj = utils.mask_cnpj("%014d" % root.CNPJ)
         partner_id = self.env["res.partner"].search([("vat", "=", supplier_cnpj)])
 
-        dfe = self.env["l10n_br_fiscal.dfe"].create(
+        dfe = self.env["l10n_br_fiscal_dfe.dfe"].create(
             {
-                "key": nfe_key,
+                "access_key": nfe_key,
                 "emitter": root.xNome,
                 "operation_type": str(root.tpNF),
                 "document_amount": root.vNF,
@@ -332,44 +397,41 @@ class DFeMonitor(models.Model):
                     str(root.dhEmi)[:19], "%Y-%m-%dT%H:%M:%S"
                 ),
                 "company_id": self.company_id.id,
-                "inclusion_mode": "Verificação agendada - manifestada por outro app",
                 "dfe_monitor_id": self.id,
                 "dfe_nfe_document_type": "dfe_nfe_summary",
                 "nsu": nsu,
             }
         )
 
-        if self.automatically_acknowledge_receipt:
-            mde = self.env["l10n_br_nfe.recipient_manifestation_event"].create(
+        if self.auto_manifest_nfe:
+            mde = self.env["l10n_br_nfe.md_event"].create(
                 {
-                    "key": nfe_key,
+                    "access_key": nfe_key,
                     "event_type": "ciente",
-                    "event_type_selection": "ciente",
-                    "company_id": self.env.company.id,
-                    "dfe_access_key_id": access_key.id,
-                    "mde_document_type": "mde_nfe",
-                    "status": "transmitido",
+                    "company_id": self.company_id.id,
+                    "document_type": "nfe",
+                    "state": "draft",
                 }
             )
-            mde.action_confirm_selection()
+            mde.action_confirm()
 
-        access_key.dfe_ids = [(4, dfe.id)]
+        dfe_document_id.dfe_ids = [(4, dfe.id)]
         return dfe
 
     @api.model
     def _create_dfe_from_resEvento(self, root, nsu):
         nfe_key = root.chNFe
 
-        access_key = self._get_or_create_access_key(nfe_key)
+        access_key = self._get_or_create_document(nfe_key)
 
         supplier_cnpj = utils.mask_cnpj("%014d" % root.CNPJ)
         partner_id = self.env["res.partner"].search(
             [("vat", "=", supplier_cnpj)], limit=1
         )
 
-        dfe = self.env["l10n_br_fiscal.dfe"].create(
+        dfe = self.env["l10n_br_fiscal_dfe.dfe"].create(
             {
-                "key": nfe_key,
+                "access_key": nfe_key,
                 "inclusion_datetime": datetime.now(),
                 "vat": supplier_cnpj,
                 "partner_id": partner_id.id,
@@ -377,7 +439,6 @@ class DFeMonitor(models.Model):
                     str(root.dhEvento)[:19], "%Y-%m-%dT%H:%M:%S"
                 ),
                 "company_id": self.company_id.id,
-                "inclusion_mode": "Verificação agendada - manifestada por outro app",
                 "dfe_monitor_id": self.id,
                 "event_type_dfe": str(root.tpEvento),
                 "dfe_nfe_document_type": "dfe_nfe_event",
@@ -392,16 +453,16 @@ class DFeMonitor(models.Model):
     def _create_dfe_from_procEventoNFe(self, root, nsu):
         nfe_key = root.evento.infEvento.chNFe
 
-        access_key = self._get_or_create_access_key(nfe_key)
+        dfe_document_id = self._get_or_create_document(nfe_key)
 
         supplier_cnpj = utils.mask_cnpj("%014d" % root.evento.infEvento.CNPJ)
         partner_id = self.env["res.partner"].search(
             [("vat", "=", supplier_cnpj)], limit=1
         )
 
-        dfe = self.env["l10n_br_fiscal.dfe"].create(
+        dfe = self.env["l10n_br_fiscal_dfe.dfe"].create(
             {
-                "key": nfe_key,
+                "access_key": nfe_key,
                 "inclusion_datetime": datetime.now(),
                 "vat": supplier_cnpj,
                 "partner_id": partner_id.id,
@@ -409,29 +470,28 @@ class DFeMonitor(models.Model):
                     str(root.evento.infEvento.dhEvento)[:19], "%Y-%m-%dT%H:%M:%S"
                 ),
                 "company_id": self.company_id.id,
-                "inclusion_mode": "Verificação agendada - manifestada por outro app",
                 "dfe_monitor_id": self.id,
                 "dfe_nfe_document_type": "dfe_nfe_event",  # TODO: tipo de DFe evento?
                 "nsu": nsu,
             }
         )
 
-        access_key.dfe_ids = [(4, dfe.id)]
+        dfe_document_id.dfe_ids = [(4, dfe.id)]
         return dfe
 
-    def _get_or_create_access_key(self, nfe_key):
-        access_key = self.env["l10n_br_fiscal.dfe_access_key"].search(
-            [("key", "=", nfe_key)], limit=1
+    def _get_or_create_document(self, nfe_key):
+        document = self.env["l10n_br_fiscal_dfe.document"].search(
+            [("access_key", "=", nfe_key)], limit=1
         )
-        if not access_key:
-            access_key = self.env["l10n_br_fiscal.dfe_access_key"].create(
-                {"key": nfe_key, "dfe_monitor_id": self.id}
+        if not document:
+            document = self.env["l10n_br_fiscal_dfe.document"].create(
+                {"access_key": nfe_key, "dfe_monitor_id": self.id}
             )
-        return access_key
+        return document
 
     @api.model
     def find_dfe_by_key(self, key):
-        dfe_id = self.env["l10n_br_fiscal.dfe"].search([("key", "=", key)])
+        dfe_id = self.env["l10n_br_fiscal_dfe.dfe"].search([("key", "=", key)])
         if not dfe_id:
             return False
 
