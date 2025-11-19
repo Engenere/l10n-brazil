@@ -845,6 +845,12 @@ class FiscalDocumentLineMixin(models.AbstractModel):
             else:
                 line.fiscal_quantity = line.quantity
 
+    # não depender do document_id pois já tá no inverse.
+    def _compute_ind_final(self):
+        for line in self:
+            if line.ind_final != line.document_id.ind_final:
+                line.ind_final = line.document_id.ind_final
+
     @api.model
     def _add_fields_to_amount(self):
         fields_to_amount = ["insurance_value", "other_value", "freight_value"]
@@ -864,10 +870,13 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         return ["icms_relief_value"]
 
     def _is_imported(self):
-        # When the mixin is used for instance
-        # in a PO line or SO line, there is no document_id
-        # and we consider the document is not imported
-        return hasattr(self, "document_id") and self.document_id.imported_document
+        # Override this method in inherited models if needed
+        return False
+
+    document_id = fields.Many2one(
+        comodel_name="l10n_br_fiscal.document.mixin",
+        string="Fiscal Document",
+    )
 
     currency_id = fields.Many2one(
         comodel_name="res.currency",
@@ -913,16 +922,7 @@ class FiscalDocumentLineMixin(models.AbstractModel):
         selection=FINAL_CUSTOMER,
         string="Consumidor final",
         compute="_compute_ind_final",
-        store=True,
-        precompute=True,
-        readonly=False,
     )
-
-    def _compute_ind_final(self):
-        for line in self:
-            doc = line._get_document()
-            if line.ind_final != doc.ind_final:
-                line.ind_final = doc.ind_final
 
     partner_company_type = fields.Selection(related="partner_id.company_type")
 
