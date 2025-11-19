@@ -24,11 +24,11 @@
                     <field
                         name="manifestation_status"
                         widget="badge"
-                        decoration-success="manifestation_status == 'Confirmação de Operação pelo Destinatário'"
-                        decoration-info="manifestation_status == 'Ciência da Operação pelo Destinatário'"
-                        decoration-warning="manifestation_status == 'Desconhecimento da Operação pelo Destinatário'"
-                        decoration-danger="manifestation_status == 'Operação não Realizada'"
-                        decoration-muted="manifestation_status == 'Evento Desconhecido'"
+                        decoration-success="manifestation_status == 'confirmado'"
+                        decoration-info="manifestation_status == 'ciente'"
+                        decoration-warning="manifestation_status == 'desconhecido'"
+                        decoration-danger="manifestation_status == 'nao_realizado'"
+                        decoration-muted="manifestation_status == 'sem_manifestacao'"
                         readonly="1"
                     />
                     <field name="manifestations_ids" readonly="1" />
@@ -66,7 +66,6 @@
                 decoration-muted="color_status == 'normal'"
             >
                 <field name="color_status" invisible="1" />
-                <field name="document_number" string="Number" />
                 <field name="document_emission_date" string="Date" widget="date" />
                 <field name="access_key" />
                 <field name="emitter" />
@@ -76,12 +75,13 @@
                     name="manifestation_status"
                     widget="badge"
                     string="Manifestation"
-                    decoration-success="manifestation_status == 'Confirmação de Operação pelo Destinatário'"
-                    decoration-info="manifestation_status == 'Ciência da Operação pelo Destinatário'"
-                    decoration-warning="manifestation_status == 'Desconhecimento da Operação pelo Destinatário'"
-                    decoration-danger="manifestation_status == 'Operação não Realizada'"
-                    decoration-muted="manifestation_status == 'Evento Desconhecido'"
+                    decoration-success="manifestation_status == 'confirmado'"
+                    decoration-info="manifestation_status == 'ciente'"
+                    decoration-warning="manifestation_status == 'desconhecido'"
+                    decoration-danger="manifestation_status == 'nao_realizado'"
+                    decoration-muted="manifestation_status == 'sem_manifestacao'"
                 />
+                <field name="document_state" string="State" />
                 <button
                     string="XML"
                     name="action_download_xml"

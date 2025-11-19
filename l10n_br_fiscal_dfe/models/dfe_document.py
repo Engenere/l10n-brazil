@@ -8,6 +8,8 @@ from brazilfiscalreport.danfe import Danfe
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+from ..constants.dfe import SITUACAO_NFE
+
 EVENT_TYPE_MAP = {
     "210200": "Confirmada operação",
     "210210": "Ciente da Operação",
@@ -23,9 +25,9 @@ class L10nBrFiscalDfeDocument(models.Model):
 
     _sql_constraints = [
         (
-            "unique_access_key",
-            "UNIQUE(access_key)",
-            "The Access Key already exists",
+            "access_key_company_uniq",
+            "unique(access_key, company_id)",
+            "A DFe with this access key already exists for this company.",
         ),
     ]
 
@@ -37,21 +39,23 @@ class L10nBrFiscalDfeDocument(models.Model):
         string="DF-e records",
     )
 
-    emitter = fields.Char(related="dfe_ids.emitter")
+    emitter = fields.Char(compute="_compute_dfe_info")
 
     vat = fields.Char(related="dfe_ids.vat")
 
     document_amount = fields.Float(
-        string="Document Total Value", digits=(18, 2), related="dfe_ids.document_amount"
+        string="Document Total Value", digits=(18, 2), compute="_compute_dfe_info"
     )
 
-    document_state = fields.Selection(related="dfe_ids.document_state")
+    document_state = fields.Selection(
+        selection=SITUACAO_NFE, compute="_compute_dfe_info"
+    )
 
-    document_number = fields.Float(related="dfe_ids.document_number")
+    document_number = fields.Float(compute="_compute_dfe_info")
 
-    document_emission_date = fields.Datetime(related="dfe_ids.emission_datetime")
+    document_emission_date = fields.Datetime(compute="_compute_dfe_info")
 
-    serie = fields.Char(related="dfe_ids.serie")
+    serie = fields.Char(compute="_compute_dfe_info")
 
     dfe_monitor_id = fields.Many2one(
         comodel_name="l10n_br_fiscal_dfe.dfe_monitor",
@@ -75,14 +79,76 @@ class L10nBrFiscalDfeDocument(models.Model):
             ("nao_realizado", "Não realizado"),
             ("sem_manifestacao", "Sem manifestação"),
         ],
-        default="sem_manifestacao",
+        compute="_compute_manifestation_status",
     )
 
     manifestations_ids = fields.One2many(
         comodel_name="l10n_br_nfe.md_event",
-        inverse_name="dfe_document_id",
+        compute="_compute_manifestations_ids",
         string="Manifestations",
     )
+
+    company_id = fields.Many2one(
+        comodel_name="res.company",
+        required=True,
+        default=lambda self: self.env.company.id,
+        index=True,
+    )
+
+    def _compute_dfe_info(self):
+        for record in self:
+            dfe_ids = record.dfe_ids
+
+            complete = dfe_ids.filtered(
+                lambda d: d.dfe_nfe_document_type == "dfe_nfe_complete"
+            )
+            summary = dfe_ids.filtered(
+                lambda d: d.dfe_nfe_document_type == "dfe_nfe_summary"
+            )
+
+            dfe = (
+                (complete and complete[0])
+                or (summary and summary[0])
+                or (dfe_ids and dfe_ids[0])
+                or False
+            )
+
+            if dfe:
+                record.emitter = dfe.emitter
+                record.document_amount = dfe.document_amount
+                record.document_state = dfe.document_state
+                record.document_number = dfe.document_number
+                record.document_emission_date = dfe.emission_datetime
+                record.serie = dfe.serie
+            else:
+                record.emitter = False
+                record.document_amount = 0.0
+                record.document_state = False
+                record.document_number = 0.0
+                record.document_emission_date = False
+                record.serie = False
+
+    def _compute_manifestation_status(self):
+        for record in self:
+            latest = self.env["l10n_br_nfe.md_event"].search(
+                [
+                    ("access_key", "=", record.access_key),
+                    ("state", "=", "done"),
+                ],
+                order="id desc",
+                limit=1,
+            )
+            record.manifestation_status = (
+                latest.event_type if latest else "sem_manifestacao"
+            )
+
+    @api.depends("access_key")
+    def _compute_manifestations_ids(self):
+        for record in self:
+            manifestations = self.env["l10n_br_nfe.md_event"].search(
+                [("access_key", "=", record.access_key)]
+            )
+            record.manifestations_ids = manifestations
 
     @api.depends("dfe_ids.dfe_nfe_document_type")
     def _compute_color_status(self):

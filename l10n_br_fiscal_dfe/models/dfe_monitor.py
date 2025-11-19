@@ -159,17 +159,19 @@ class DFeMonitor(models.Model):
                     },
                 }
 
-        if max_nsu and last_nsu >= max_nsu:
-            if self.last_status_code == "137":
-                # Bloqueado - Sem novos documentos
-                if fields.Datetime.now() - last_query < timedelta(hours=1):
-                    self.message_post(
-                        body=_(
-                            "No new documents to download.\n"
-                            "Waiting 1 hour before making a new request."
-                        )
-                    )
-                    return
+        # TODO: rever essa lógica
+        # Pode acontecer do usuário querer forçar uma nova consulta
+        # if max_nsu and last_nsu >= max_nsu:
+        #     if self.last_status_code == "137":
+        #         # Bloqueado - Sem novos documentos
+        #         if fields.Datetime.now() - last_query < timedelta(hours=1):
+        #             self.message_post(
+        #                 body=_(
+        #                     "No new documents to download.\n"
+        #                     "Waiting 1 hour before making a new request."
+        #                 )
+        #             )
+        #             return
 
         last_query_success = None
         result = False
@@ -331,20 +333,8 @@ class DFeMonitor(models.Model):
     @api.model
     def _create_dfe_from_procNFe(self, root, nsu):
         nfe_key = root.protNFe.infProt.chNFe
-
         access_key = self._get_or_create_document(nfe_key)
-
         supplier_cnpj = utils.mask_cnpj("%014d" % root.NFe.infNFe.emit.CNPJ)
-        partner = self.env["res.partner"].search([("vat", "=", supplier_cnpj)], limit=1)
-
-        cfop_codes = []
-        for det in root.NFe.infNFe.det:
-            cfop_code = str(det.prod.CFOP)
-            if cfop_code not in cfop_codes:
-                cfop_codes.append(cfop_code)
-        cfop_records = self.env["l10n_br_fiscal.cfop"].search(
-            [("code", "in", cfop_codes)]
-        )
 
         dfe = self.env["l10n_br_fiscal_dfe.dfe"].create(
             {
@@ -357,7 +347,6 @@ class DFeMonitor(models.Model):
                 "inclusion_datetime": datetime.now(),
                 "vat": supplier_cnpj,
                 "ie": root.NFe.infNFe.emit.IE,
-                "partner_id": partner.id,
                 "emission_datetime": datetime.strptime(
                     str(root.NFe.infNFe.ide.dhEmi)[:19],
                     "%Y-%m-%dT%H:%M:%S",
@@ -365,8 +354,8 @@ class DFeMonitor(models.Model):
                 "nsu": nsu,
                 "company_id": self.company_id.id,
                 "dfe_monitor_id": self.id,
-                "cfop_ids": [(6, 0, cfop_records.ids)],
                 "dfe_nfe_document_type": "dfe_nfe_complete",
+                "document_state": "1",  # Autorizada
             }
         )
 
@@ -376,11 +365,8 @@ class DFeMonitor(models.Model):
     @api.model
     def _create_dfe_from_resNFe(self, root, nsu):
         nfe_key = root.chNFe
-
         dfe_document_id = self._get_or_create_document(nfe_key)
-
         supplier_cnpj = utils.mask_cnpj("%014d" % root.CNPJ)
-        partner_id = self.env["res.partner"].search([("vat", "=", supplier_cnpj)])
 
         dfe = self.env["l10n_br_fiscal_dfe.dfe"].create(
             {
@@ -392,7 +378,6 @@ class DFeMonitor(models.Model):
                 "inclusion_datetime": datetime.now(),
                 "vat": supplier_cnpj,
                 "ie": root.IE,
-                "partner_id": partner_id.id,
                 "emission_datetime": datetime.strptime(
                     str(root.dhEmi)[:19], "%Y-%m-%dT%H:%M:%S"
                 ),
@@ -421,20 +406,14 @@ class DFeMonitor(models.Model):
     @api.model
     def _create_dfe_from_resEvento(self, root, nsu):
         nfe_key = root.chNFe
-
         access_key = self._get_or_create_document(nfe_key)
-
         supplier_cnpj = utils.mask_cnpj("%014d" % root.CNPJ)
-        partner_id = self.env["res.partner"].search(
-            [("vat", "=", supplier_cnpj)], limit=1
-        )
 
         dfe = self.env["l10n_br_fiscal_dfe.dfe"].create(
             {
                 "access_key": nfe_key,
                 "inclusion_datetime": datetime.now(),
                 "vat": supplier_cnpj,
-                "partner_id": partner_id.id,
                 "emission_datetime": datetime.strptime(
                     str(root.dhEvento)[:19], "%Y-%m-%dT%H:%M:%S"
                 ),
@@ -456,16 +435,12 @@ class DFeMonitor(models.Model):
         dfe_document_id = self._get_or_create_document(nfe_key)
 
         supplier_cnpj = utils.mask_cnpj("%014d" % root.evento.infEvento.CNPJ)
-        partner_id = self.env["res.partner"].search(
-            [("vat", "=", supplier_cnpj)], limit=1
-        )
 
         dfe = self.env["l10n_br_fiscal_dfe.dfe"].create(
             {
                 "access_key": nfe_key,
                 "inclusion_datetime": datetime.now(),
                 "vat": supplier_cnpj,
-                "partner_id": partner_id.id,
                 "emission_datetime": datetime.strptime(
                     str(root.evento.infEvento.dhEvento)[:19], "%Y-%m-%dT%H:%M:%S"
                 ),
@@ -480,12 +455,20 @@ class DFeMonitor(models.Model):
         return dfe
 
     def _get_or_create_document(self, nfe_key):
-        document = self.env["l10n_br_fiscal_dfe.document"].search(
-            [("access_key", "=", nfe_key)], limit=1
-        )
+        Document = self.env["l10n_br_fiscal_dfe.document"]
+        domain = [
+            ("access_key", "=", nfe_key),
+            ("company_id", "=", self.company_id.id),
+        ]
+
+        document = Document.search(domain, limit=1)
         if not document:
-            document = self.env["l10n_br_fiscal_dfe.document"].create(
-                {"access_key": nfe_key, "dfe_monitor_id": self.id}
+            document = Document.create(
+                {
+                    "access_key": nfe_key,
+                    "company_id": self.company_id.id,
+                    "dfe_monitor_id": self.id,
+                }
             )
         return document
 
