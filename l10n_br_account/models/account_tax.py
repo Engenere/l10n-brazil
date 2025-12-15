@@ -209,7 +209,21 @@ class AccountTax(models.Model):
         """
         taxes = base_line["taxes"]._origin
         line = base_line.get("record")
-        if not taxes or not line or not line.fiscal_tax_ids:
+        fiscal_taxes = self.env["l10n_br_fiscal.tax"]
+        if line:
+            # Depending on the model that triggered the computation, the fiscal
+            # taxes can come from:
+            # - account.move.line: delegated through `_inherits` to
+            #   `l10n_br_fiscal.document.line` (fiscal_document_line_id).
+            # - sale.order.line / purchase.order.line / etc.: directly from a
+            #   `fiscal_tax_ids` field provided by the respective l10n-br addon.
+            if "fiscal_document_line_id" in line._fields:
+                fiscal_taxes = (
+                    line.fiscal_document_line_id.fiscal_tax_ids or line.fiscal_tax_ids
+                )
+            elif "fiscal_tax_ids" in line._fields:
+                fiscal_taxes = line.fiscal_tax_ids
+        if not taxes or not line or not fiscal_taxes:
             return super()._compute_taxes_for_single_line(
                 base_line,
                 handle_price_include=True,
@@ -243,7 +257,7 @@ class AccountTax(models.Model):
                 is_refund=base_line["is_refund"],
                 handle_price_include=base_line["handle_price_include"],
                 include_caba_tags=include_caba_tags,
-                fiscal_taxes=line.fiscal_tax_ids,
+                fiscal_taxes=fiscal_taxes,
                 operation_line=line.fiscal_operation_line_id,
                 cfop=line.cfop_id or None,
                 ncm=line.ncm_id,

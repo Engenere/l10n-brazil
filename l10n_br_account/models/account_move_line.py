@@ -395,7 +395,11 @@ class AccountMoveLine(models.Model):
         "partner_id",
         "move_id.partner_id",
         "price_unit",
-        "fiscal_tax_ids",
+        # `fiscal_tax_ids` is delegated from `l10n_br_fiscal.document.line` through
+        # `_inherits` and can be stale during create/copy before the fiscal line
+        # record is fully flushed; depend on the source field to ensure proper
+        # invalidation and recomputation.
+        "fiscal_document_line_id.fiscal_tax_ids",
         "fiscal_operation_line_id",
         "cfop_id",
         "ncm_id",
@@ -446,7 +450,8 @@ class AccountMoveLine(models.Model):
                 handle_price_include=handle_price_include,
                 include_caba_tags=line.move_id.always_tax_exigible,
                 fixed_multiplicator=sign,
-                fiscal_taxes=line.fiscal_tax_ids,
+                fiscal_taxes=line.fiscal_document_line_id.fiscal_tax_ids
+                or line.fiscal_tax_ids,
                 operation_line=line.fiscal_operation_line_id,
                 cfop=line.cfop_id or None,
                 ncm=line.ncm_id,
