@@ -70,7 +70,7 @@ class SaleOrderLine(models.Model):
 
     # Add Fields in model sale.order.line
     price_gross = fields.Monetary(
-        compute="_compute_amount",
+        compute="_compute_fiscal_amounts",
         string="Gross Amount",
         store=True,
         precompute=True,
