@@ -491,11 +491,8 @@ class FiscalDocumentLineMixin(models.AbstractModel):
                     "estimate_tax": compute_result.get("estimate_tax", 0.0),
                 }
             )
-            in_draft_mode = line != line._origin
-            if in_draft_mode:
-                line.update(to_update)
-            else:
-                line.write(to_update)
+            # Avoid write() in compute to prevent side effects/locks.
+            line.update(to_update)
 
     def _prepare_tax_fields(self, compute_result):
         self.ensure_one()
