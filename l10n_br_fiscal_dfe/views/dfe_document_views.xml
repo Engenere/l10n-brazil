@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Copyright 2025-2026 Engenere
+    License AGPL-3 or later (http://www.gnu.org/licenses/agpl)
+-->
 <odoo>
 
     <record model="ir.ui.view" id="l10n_br_fiscal_dfe_document_form">
@@ -6,7 +10,7 @@
         <field name="model">l10n_br_fiscal_dfe.document</field>
         <field name="priority">1</field>
         <field name="arch" type="xml">
-            <form string="DF-e Access Key">
+            <form string="DF-e Document" create="false">
                 <header>
                     <button string="XML" name="action_download_xml" type="object" />
                     <button string="DANFE" name="make_pdf" type="object" />
@@ -37,6 +41,7 @@
                     <field name="emitter" readonly="1" />
                     <field name="vat" readonly="1" />
                     <field name="document_amount" widget="monetary" readonly="1" />
+                    <field name="cfop_ids" widget="many2many_tags" readonly="1" />
                 </group>
                 <field name="dfe_ids">
                     <tree>
@@ -61,16 +66,25 @@
         <field name="arch" type="xml">
             <tree
                 create="false"
+                banner_route="/l10n_br_fiscal_dfe/document_banner"
                 decoration-success="color_status == 'green'"
                 decoration-info="color_status == 'blue'"
                 decoration-muted="color_status == 'normal'"
             >
-                <field name="color_status" invisible="1" />
+                <field
+                    name="color_status"
+                    widget="badge"
+                    string="Type"
+                    decoration-success="color_status == 'green'"
+                    decoration-info="color_status == 'blue'"
+                    decoration-muted="color_status == 'normal'"
+                />
                 <field name="document_emission_date" string="Date" widget="date" />
                 <field name="access_key" />
                 <field name="emitter" />
                 <field name="vat" />
                 <field name="document_amount" string="Amount" />
+                <field name="cfop_ids" widget="many2many_tags" string="CFOPs" />
                 <field
                     name="manifestation_status"
                     widget="badge"
@@ -101,7 +115,7 @@
                     icon="fa-file-text-o"
                 />
                 <button
-                    string="Manifestar"
+                    string="Manifest"
                     name="create_nfe_md_action"
                     type="object"
                     icon="fa-check-square-o"
@@ -110,11 +124,36 @@
         </field>
     </record>
 
-    # TODO remover?
+    <record model="ir.ui.view" id="l10n_br_fiscal_dfe_document_search">
+        <field name="name">l10n_br_fiscal_dfe.document.search</field>
+        <field name="model">l10n_br_fiscal_dfe.document</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <search string="DF-e Documents">
+                <field name="access_key" />
+                <field name="emitter" />
+                <field name="vat" />
+                <field name="company_id" />
+                <separator />
+                <filter
+                    name="third_party"
+                    string="Third-party"
+                    domain="[('is_own_document', '=', False)]"
+                />
+                <filter
+                    name="own_documents"
+                    string="Own Documents"
+                    domain="[('is_own_document', '=', True)]"
+                />
+            </search>
+        </field>
+    </record>
+
     <record model="ir.actions.act_window" id="dfe_document_action">
-        <field name="name">DF-e Access Key</field>
+        <field name="name">Documents</field>
         <field name="res_model">l10n_br_fiscal_dfe.document</field>
         <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_third_party': 1}</field>
     </record>
 
 </odoo>

@@ -9,7 +9,7 @@
         <field name="model">l10n_br_fiscal_dfe.dfe</field>
         <field name="priority">1</field>
         <field name="arch" type="xml">
-            <form string="DF-e Consult">
+            <form string="DF-e Consult" create="false">
                 <separator string="Access Key" />
                 <field name="access_key" select="1" required="1" readonly="1" />
 
@@ -66,7 +66,7 @@
     </record>
 
     <record model="ir.actions.act_window" id="dfe_action">
-        <field name="name">DF-e Consult</field>
+        <field name="name">DF-e Records</field>
         <field name="res_model">l10n_br_fiscal_dfe.dfe</field>
         <field name="view_mode">tree,form</field>
     </record>
