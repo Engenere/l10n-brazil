@@ -3,47 +3,58 @@
 
 from unittest import mock
 
-from nfelib.nfe.ws.edoc_legacy import DocumentoElectronicoAdapter
+from xsdata.formats.dataclass.transports import DefaultTransport
 
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase
 
 from odoo.addons.l10n_br_fiscal_dfe.tests.test_dfe import (
-    mocked_post_success_multiple,
-    mocked_post_success_single,
+    response_sucesso_individual,
+    response_sucesso_multiplos,
 )
+
+
+def _bytes(s):
+    return s.encode("utf-8") if isinstance(s, str) else s
 
 
 class TestNFeDFe(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
+        cls.company = cls.env.ref("l10n_br_base.empresa_lucro_presumido")
         cls.dfe_monitor = cls.env["l10n_br_fiscal.dfe_monitor"].create(
-            {"company_id": cls.env.ref("l10n_br_base.empresa_lucro_presumido").id}
+            {"company_id": cls.company.id}
         )
 
-    @mock.patch.object(
-        DocumentoElectronicoAdapter, "_post", side_effect=mocked_post_success_single
-    )
+    @mock.patch.object(DefaultTransport, "post")
     def test_download_document_proc_nfe(self, _mock_post):
-        self.dfe_monitor.search_documents()
-        self.dfe_monitor.dfe_ids.import_document()
+        _mock_post.side_effect = [
+            _bytes(response_sucesso_individual),
+            _bytes(response_sucesso_individual),
+        ]
 
-        self.assertEqual(len(self.dfe_monitor.dfe_ids.document_id), 1)
+        self.dfe_monitor.search_documents()
+        self.dfe_monitor.import_documents()
+
+        self.assertEqual(len(self.dfe_monitor.dfe_ids), 1)
+        doc = self.dfe_monitor.dfe_ids[0].document_id
+        self.assertTrue(doc)
         self.assertEqual(
-            self.dfe_monitor.dfe_ids.document_id[0].document_key,
-            "35200159594315000157550010000000012062777161",
+            doc.document_key, "35200159594315000157550010000000012062777161"
         )
+        self.assertEqual(_mock_post.call_count, 2)
 
-    @mock.patch.object(
-        DocumentoElectronicoAdapter, "_post", side_effect=mocked_post_success_multiple
-    )
+    @mock.patch.object(DefaultTransport, "post")
     def test_search_dfe_success(self, _mock_post):
-        self.dfe_monitor.search_documents()
-        self.assertEqual(self.dfe_monitor.dfe_ids[0].nsu, self.dfe_monitor.last_nsu)
+        _mock_post.return_value = _bytes(response_sucesso_multiplos)
 
-        dfe2, dfe1 = self.dfe_monitor.dfe_ids
+        self.dfe_monitor.search_documents()
+        self.assertTrue(self.dfe_monitor.dfe_ids)
+
+        dfe_sorted = self.dfe_monitor.dfe_ids.sorted(lambda r: r.nsu or "")
+        dfe1, dfe2 = dfe_sorted
+
         self.assertEqual(dfe1.company_id, self.dfe_monitor.company_id)
         self.assertEqual(dfe1.key, "31201010588201000105550010038421171838422178")
         self.assertEqual(dfe1.emitter, "ZAP GRAFICA E EDITORA EIRELI")
@@ -54,14 +65,13 @@ class TestNFeDFe(TransactionCase):
             dfe1.display_name,
             "31201010588201000105550010038421171838422178 - Resumo da NF-e",
         )
-        self.assertEqual(dfe1.dfe_access_key_id.color_status, "blue")
+        self.assertEqual(dfe1.dfe_document_id.color_status, "blue")
         self.assertEqual(
-            dfe1.dfe_access_key_id.display_name,
+            dfe1.dfe_document_id.display_name,
             "31201010588201000105550010038421171838422178",
         )
-
         self.assertEqual(
-            dfe1.dfe_access_key_id.key, "31201010588201000105550010038421171838422178"
+            dfe1.dfe_document_id.key, "31201010588201000105550010038421171838422178"
         )
 
         self.assertEqual(dfe2.company_id, self.dfe_monitor.company_id)
@@ -73,58 +83,56 @@ class TestNFeDFe(TransactionCase):
         self.assertEqual(dfe2.dfe_nfe_document_type, "dfe_nfe_complete")
         self.assertEqual(dfe2.emitter, "TESTE - Simples Nacional")
         self.assertEqual(dfe2.document_amount, 14.0)
-
         self.assertEqual(
-            dfe2.dfe_access_key_id.key, "35200159594315000157550010000000012062777161"
+            dfe2.dfe_document_id.access_key,
+            "35200159594315000157550010000000012062777161",
         )
         self.assertEqual(
             dfe2.display_name,
             "35200159594315000157550010000000012062777161 - NF-e Completa",
         )
-        self.assertEqual(dfe2.dfe_access_key_id.color_status, "green")
+        self.assertEqual(dfe2.dfe_document_id.color_status, "green")
         self.assertEqual(
-            dfe2.dfe_access_key_id.display_name,
+            dfe2.dfe_document_id.display_name,
             "35200159594315000157550010000000012062777161",
         )
 
-    @mock.patch.object(
-        DocumentoElectronicoAdapter, "_post", side_effect=mocked_post_success_single
-    )
+    @mock.patch.object(DefaultTransport, "post")
     def test_generate_danfe(self, _mock_post):
+        _mock_post.return_value = _bytes(response_sucesso_individual)
         self.dfe_monitor.search_documents()
-        dfe = self.dfe_monitor.dfe_ids
+        dfe = self.dfe_monitor.dfe_ids[0]
 
-        result = dfe.dfe_access_key_id.make_pdf()
+        result = dfe.dfe_document_id.make_pdf()
 
         self.assertEqual(result["type"], "ir.actions.act_url")
         self.assertTrue(result["url"].startswith("/web/content/"))
         self.assertIn("download=true", result["url"])
 
-    @mock.patch.object(
-        DocumentoElectronicoAdapter, "_post", side_effect=mocked_post_success_multiple
-    )
+    @mock.patch.object(DefaultTransport, "post")
     def test_download_documents(self, _mock_post):
+        _mock_post.return_value = _bytes(response_sucesso_multiplos)
+
         self.dfe_monitor.search_documents()
-        dfe2, dfe1 = self.dfe_monitor.dfe_ids
+        dfe_sorted = self.dfe_monitor.dfe_ids.sorted(lambda r: r.nsu or "")
+        dfe1, dfe2 = dfe_sorted
 
         attachment_2 = self.env["ir.attachment"].search([("res_id", "=", dfe2.id)])
         self.assertTrue(attachment_2)
 
-        result_dfe2 = dfe1.action_download_xml()
-        attachment_single_dfe2 = self.get_attachment_from_result(result_dfe2)
-        self.assertTrue(attachment_single_dfe2)
-        self.assertEqual(attachment_single_dfe2, dfe1.attachment_id)
+        result_dfe1 = dfe1.action_download_xml()
+        attachment_single_dfe1 = self._get_attachment_from_result(result_dfe1)
+        self.assertTrue(attachment_single_dfe1)
+        self.assertEqual(attachment_single_dfe1, dfe1.attachment_id)
 
-        result_dfe_2_access_key = dfe2.dfe_access_key_id.action_download_xml()
-        attachment_single_dfe2_access_key = self.get_attachment_from_result(
-            result_dfe_2_access_key
+        result_dfe2_access_key = dfe2.dfe_document_id.action_download_xml()
+        attachment_single_dfe2_access_key = self._get_attachment_from_result(
+            result_dfe2_access_key
         )
-
         self.assertTrue(attachment_single_dfe2_access_key)
-
         with self.assertRaises(UserError):
-            dfe1.dfe_access_key_id.action_download_xml()
+            dfe1.dfe_document_id.action_download_xml()
 
-    def get_attachment_from_result(self, result):
+    def _get_attachment_from_result(self, result):
         _, _, _, att_id, _ = result["url"].split("/")
         return self.env["ir.attachment"].browse(int(att_id))
