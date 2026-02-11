@@ -8,19 +8,22 @@
     """,
     "version": "16.0.1.2.0",
     "license": "AGPL-3",
-    "author": "KMEE,Odoo Community Association (OCA)",
+    "author": "KMEE,Engenere,Odoo Community Association (OCA)",
+    "maintainers": ["felipemotter", "antoniospneto"],
     "website": "https://github.com/OCA/l10n-brazil",
     "depends": ["l10n_br_nfe"],
     "data": [
         # Data
         "data/ir_cron.xml",
+        "data/dfe_actions.xml",
         # Security
         "security/dfe_security.xml",
         "security/ir.model.access.csv",
         # Views
-        "views/dfe_monitor_views.xml",
+        "views/dfe_banner_template.xml",
         "views/dfe_views.xml",
         "views/dfe_document_views.xml",
+        "views/dfe_distribution_log_views.xml",
         "views/l10n_br_fiscal_menu.xml",
         "views/res_company_view.xml",
         # Wizards

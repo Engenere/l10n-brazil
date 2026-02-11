@@ -19,7 +19,12 @@ def mask_cnpj(cnpj):
 
 
 def format_nsu(nsu):
-    return str(nsu).zfill(15)
+    if nsu is None:
+        return False
+    nsu_str = str(nsu).strip()
+    if not nsu_str or not nsu_str.isdigit():
+        return False
+    return nsu_str.zfill(15)
 
 
 def parse_gzip_xml(xml):
