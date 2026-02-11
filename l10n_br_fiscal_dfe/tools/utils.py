@@ -26,5 +26,4 @@ def parse_gzip_xml(xml):
     arq = io.BytesIO()
     arq.write(base64.b64decode(xml))
     arq.seek(0)
-
     return gzip.GzipFile(mode="r", fileobj=arq)
