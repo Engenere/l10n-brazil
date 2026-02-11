@@ -52,6 +52,7 @@ Authors
 -------
 
 * KMEE
+* Engenere
 
 Contributors
 ------------
@@ -64,7 +65,9 @@ Contributors
 
 -  `Engenere <https://engenere.one>`__:
 
+   -  Antônio Neto <neto@engenere.one>
    -  Cristiano Mafra Junior
+   -  Felipe Motter <felipe@engenere.one>
 
 Maintainers
 -----------
@@ -78,6 +81,17 @@ This module is maintained by the OCA.
 OCA, or the Odoo Community Association, is a nonprofit organization whose
 mission is to support the collaborative development of Odoo features and
 promote its widespread use.
+
+.. |maintainer-felipemotter| image:: https://github.com/felipemotter.png?size=40px
+    :target: https://github.com/felipemotter
+    :alt: felipemotter
+.. |maintainer-antoniospneto| image:: https://github.com/antoniospneto.png?size=40px
+    :target: https://github.com/antoniospneto
+    :alt: antoniospneto
+
+Current `maintainers <https://odoo-community.org/page/maintainer-role>`__:
+
+|maintainer-felipemotter| |maintainer-antoniospneto| 
 
 This module is part of the `OCA/l10n-brazil <https://github.com/OCA/l10n-brazil/tree/16.0/l10n_br_fiscal_dfe>`_ project on GitHub.
 

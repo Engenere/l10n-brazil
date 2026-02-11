@@ -1,3 +1,6 @@
+# Copyright 2026 Engenere (<https://engenere.one>).
+# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
+
 from odoo import _, fields, models
 
 
@@ -12,8 +15,8 @@ class DFeSpecificSearchWizard(models.TransientModel):
     nsu = fields.Char(
         string="NSU",
         help=(
-            "NSU (Número Sequencial Único) is a unique sequential number assigned to "
-            " each document in the Brazilian electronic fiscal document system.",
+            "NSU (Numero Sequencial Unico) is a unique sequential number assigned to "
+            "each document in the Brazilian electronic fiscal document system."
         ),
     )
 
@@ -26,21 +29,22 @@ class DFeSpecificSearchWizard(models.TransientModel):
         required=True,
     )
 
-    dfe_monitor_id = fields.Many2one(
-        comodel_name="l10n_br_fiscal_dfe.dfe_monitor",
-        string="DF-e Monitor",
+    company_id = fields.Many2one(
+        comodel_name="res.company",
+        string="Company",
+        default=lambda self: self.env.company.id,
     )
 
     def action_confirm_search(self):
         self.ensure_one()
-        self.dfe_monitor_id._search_specific_document(
+        self.company_id._dfe_search_specific_document(
             access_key=self.access_key, nsu=self.nsu
         )
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
-                "title": _("Sucesso"),
+                "title": _("Success"),
                 "message": _("Specific search triggered successfully"),
                 "type": "success",
                 "next": {"type": "ir.actions.act_window_close"},

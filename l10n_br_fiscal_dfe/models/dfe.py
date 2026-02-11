@@ -1,8 +1,9 @@
 # Copyright (C) 2025-Today - Engenere (<https://engenere.one>).
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 import base64
+import logging
 
-from lxml import etree
+from lxml import etree, objectify
 
 from odoo import _, api, fields, models
 
@@ -10,6 +11,8 @@ from ..constants.dfe import (
     OPERATION_TYPE,
     SITUACAO_NFE,
 )
+
+_logger = logging.getLogger(__name__)
 
 DFE_DESCRIPTION_MAP = {
     "procNFe": "XML NF-e completo (procNFe) via distribuição DF-e",
@@ -91,6 +94,8 @@ class DFe(models.Model):
     cfop_ids = fields.Many2many(
         comodel_name="l10n_br_fiscal.cfop",
         string="CFOPs",
+        compute="_compute_cfop_ids",
+        store=True,
     )
 
     dfe_nfe_document_type = fields.Selection(
@@ -100,11 +105,6 @@ class DFe(models.Model):
             ("dfe_nfe_event", "Evento da NF-e"),
         ],
         string="DF-e Type (NF-e)",
-    )
-
-    dfe_monitor_id = fields.Many2one(
-        comodel_name="l10n_br_fiscal_dfe.dfe_monitor",
-        string="DFe Monitor",
     )
 
     attachment_id = fields.Many2one(
@@ -170,19 +170,40 @@ class DFe(models.Model):
     def import_document(self):
         self.ensure_one()
         try:
-            document = self.dfe_monitor_id._download_document(self.access_key)
-            document_id = self.dfe_monitor_id._parse_xml_document(document)
-        except Exception as e:
+            document = self.company_id._dfe_download_document(self.access_key)
+            document_id = self.company_id._dfe_parse_xml_document(document)
+        except Exception as exc:
             self.message_post(
-                body=_("Error importing document: \n\n %(error)s", error=e)
+                body=_("Error importing document: \n\n %(error)s", error=exc)
             )
             return
         if document_id:
-            self.fiscal_document_id = document_id
+            self.imported_document_id = document_id
 
     def import_document_multi(self):
         for rec in self:
             rec.import_document()
+
+    @api.depends("attachment_id")
+    def _compute_cfop_ids(self):
+        Cfop = self.env["l10n_br_fiscal.cfop"]
+        for rec in self:
+            rec.cfop_ids = Cfop
+            if rec.dfe_nfe_document_type != "dfe_nfe_complete":
+                continue
+            data = rec.attachment_id.with_context(bin_size=False).datas
+            if not data:
+                continue
+            try:
+                xml_bytes = base64.b64decode(data)
+                root = objectify.fromstring(xml_bytes)
+                cfop_codes = set()
+                for det in root.NFe.infNFe.det:
+                    cfop_codes.add(str(det.prod.CFOP))
+                if cfop_codes:
+                    rec.cfop_ids = Cfop.search([("code", "in", list(cfop_codes))])
+            except Exception:
+                _logger.debug("Could not extract CFOPs from DFe %s XML", rec.id)
 
     @api.depends("attachment_id")
     def _compute_xml_pretty(self):

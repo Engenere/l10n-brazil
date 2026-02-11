@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Copyright 2026 Engenere (<https://engenere.one>)
+    License AGPL-3 or later (http://www.gnu.org/licenses/agpl)
+-->
+<odoo>
+    <template id="dfe_document_banner" name="DF-e Document Banner">
+        <div class="o_dfe_banner container-fluid border-bottom py-3 px-4 bg-view">
+            <!-- Action Buttons -->
+            <div class="mb-3">
+                <a
+                    type="action"
+                    role="button"
+                    t-att-name="search_all_action_id"
+                    data-reload-on-close="true"
+                    class="btn btn-primary me-2"
+                >
+                    <i class="fa fa-search" /> Search All
+                </a>
+                <a
+                    type="action"
+                    role="button"
+                    t-att-name="specific_search_action_id"
+                    class="btn btn-secondary"
+                >
+                    <i class="fa fa-key" /> Specific Search
+                </a>
+            </div>
+
+            <div class="row g-3 align-items-stretch">
+                <!-- Last Query -->
+                <div class="col-sm-6 col-lg-3">
+                    <div class="border rounded h-100 p-3 bg-white shadow-sm">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fa fa-clock-o text-primary me-2" />
+                            <span class="text-muted small fw-bold">Last Query</span>
+                        </div>
+                        <div class="fs-5 fw-bold" t-esc="last_query_str" />
+                        <t t-if="company.dfe_last_status">
+                            <div
+                                class="text-muted small text-truncate mt-1"
+                                t-att-title="company.dfe_last_status"
+                            >
+                                <t t-esc="company.dfe_last_status_code" />
+                                - <t t-esc="company.dfe_last_status" />
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- NSU Progress -->
+                <div class="col-sm-6 col-lg-3">
+                    <div class="border rounded h-100 p-3 bg-white shadow-sm">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fa fa-signal text-info me-2" />
+                            <span class="text-muted small fw-bold">NSU</span>
+                        </div>
+                        <div class="d-flex align-items-baseline gap-1">
+                            <span class="fs-5 fw-bold">
+                                <t t-esc="company.last_nsu or '0'" />
+                            </span>
+                            <span class="text-muted small">
+                                / <t t-esc="company.max_nsu or '0'" />
+                            </span>
+                        </div>
+                        <div class="mt-1">
+                            <t t-if="nsu_synced">
+                                <span class="badge bg-success">
+                                    <i class="fa fa-check" /> Synced
+                                </span>
+                            </t>
+                            <t t-else="">
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fa fa-refresh" /> Pending
+                                </span>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents Today -->
+                <div class="col-sm-6 col-lg-3">
+                    <div class="border rounded h-100 p-3 bg-white shadow-sm">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fa fa-file-text-o text-success me-2" />
+                            <span
+                                class="text-muted small fw-bold"
+                            >Documents Today</span>
+                        </div>
+                        <div class="fs-5 fw-bold" t-esc="today_total" />
+                        <div class="text-muted small mt-1">
+                            <span t-esc="today_third_party" /> third-party
+                            · <span t-esc="today_own" /> own
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending Import -->
+                <div class="col-sm-6 col-lg-3">
+                    <div class="border rounded h-100 p-3 bg-white shadow-sm">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fa fa-download text-warning me-2" />
+                            <span class="text-muted small fw-bold">
+                                Pending Import
+                            </span>
+                        </div>
+                        <div class="fs-5 fw-bold">
+                            <t t-if="pending_import_count">
+                                <span class="text-warning">
+                                    <t t-esc="pending_import_count" />
+                                </span>
+                            </t>
+                            <t t-else="">
+                                <span class="text-success">0</span>
+                            </t>
+                        </div>
+                        <div class="text-muted small mt-1">
+                            Complete NF-e not imported
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+</odoo>

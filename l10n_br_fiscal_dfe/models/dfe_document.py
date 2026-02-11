@@ -1,6 +1,7 @@
 # Copyright (C) 2025-Today - Engenere (<https://engenere.one>).
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 import base64
+import re
 from io import BytesIO
 
 from brazilfiscalreport.danfe import Danfe
@@ -57,11 +58,6 @@ class L10nBrFiscalDfeDocument(models.Model):
 
     serie = fields.Char(compute="_compute_dfe_info")
 
-    dfe_monitor_id = fields.Many2one(
-        comodel_name="l10n_br_fiscal_dfe.dfe_monitor",
-        string="Monitor de DFe",
-    )
-
     color_status = fields.Selection(
         [
             ("green", "NF-e Completa"),
@@ -88,12 +84,40 @@ class L10nBrFiscalDfeDocument(models.Model):
         string="Manifestations",
     )
 
+    cfop_ids = fields.Many2many(
+        comodel_name="l10n_br_fiscal.cfop",
+        string="CFOPs",
+        compute="_compute_cfop_ids",
+    )
+
     company_id = fields.Many2one(
         comodel_name="res.company",
         required=True,
         default=lambda self: self.env.company.id,
         index=True,
     )
+
+    is_own_document = fields.Boolean(
+        string="Own Document",
+        compute="_compute_is_own_document",
+        store=True,
+        help="True when the emitter CNPJ in the access key matches the company CNPJ.",
+    )
+
+    @api.depends("access_key", "company_id.vat")
+    def _compute_is_own_document(self):
+        for record in self:
+            key = record.access_key or ""
+            company_cnpj = re.sub("[^0-9]", "", record.company_id.vat or "")
+            if len(key) == 44 and company_cnpj:
+                record.is_own_document = key[6:20] == company_cnpj
+            else:
+                record.is_own_document = False
+
+    @api.depends("dfe_ids.cfop_ids")
+    def _compute_cfop_ids(self):
+        for record in self:
+            record.cfop_ids = record.dfe_ids.mapped("cfop_ids")
 
     def _compute_dfe_info(self):
         for record in self:
@@ -230,3 +254,11 @@ class L10nBrFiscalDfeDocument(models.Model):
         if complete_dfe_ids:
             return complete_dfe_ids.import_document()
         raise UserError(_("You can only import the NF-e when the DF-e is completed."))
+
+    # ── Tree header actions (delegate to company) ───────────────────────
+
+    def action_search_all_dfe(self):
+        return self.env.company.action_document_distribution()
+
+    def action_search_specific_dfe(self):
+        return self.env.company.action_search_specific()
