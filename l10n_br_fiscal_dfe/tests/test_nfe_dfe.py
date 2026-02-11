@@ -1,0 +1,139 @@
+# Copyright (C) 2023 - TODAY Felipe Zago - KMEE
+# Copyright 2026 Engenere (<https://engenere.one>).
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
+
+from unittest import mock
+
+from xsdata.formats.dataclass.transports import DefaultTransport
+
+from odoo.exceptions import UserError
+from odoo.tests.common import TransactionCase
+
+from odoo.addons.l10n_br_fiscal_dfe.tests.test_dfe import (
+    response_sucesso_individual,
+    response_sucesso_multiplos,
+)
+
+
+def _bytes(string):
+    return string.encode("utf-8") if isinstance(string, str) else string
+
+
+class TestNFeDFe(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.company = cls.env.ref("l10n_br_base.empresa_lucro_presumido")
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_download_document_proc_nfe(self, _mock_post):
+        _mock_post.side_effect = [
+            _bytes(response_sucesso_individual),
+            _bytes(response_sucesso_individual),
+        ]
+
+        self.company.dfe_search_documents()
+        self.company.dfe_import_documents()
+
+        self.assertEqual(len(self.company.dfe_ids), 1)
+        dfe_record = self.company.dfe_ids[0]
+        self.assertTrue(dfe_record.imported_document_id)
+        self.assertEqual(
+            dfe_record.imported_document_id.document_key,
+            "35200159594315000157550010000000012062777161",
+        )
+        self.assertEqual(_mock_post.call_count, 2)
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_search_dfe_success(self, _mock_post):
+        _mock_post.return_value = _bytes(response_sucesso_multiplos)
+
+        self.company.dfe_search_documents()
+        self.assertTrue(self.company.dfe_ids)
+
+        dfe_sorted = self.company.dfe_ids.sorted(lambda record: record.nsu or "")
+        dfe1, dfe2 = dfe_sorted
+
+        self.assertEqual(dfe1.company_id, self.company)
+        self.assertEqual(
+            dfe1.access_key, "31201010588201000105550010038421171838422178"
+        )
+        self.assertEqual(dfe1.emitter, "ZAP GRAFICA E EDITORA EIRELI")
+        self.assertEqual(dfe1.vat, "10.588.201/0001-05")
+        self.assertEqual(dfe1.dfe_nfe_document_type, "dfe_nfe_summary")
+        self.assertEqual(dfe1.nsu, "000000000000200")
+        self.assertEqual(
+            dfe1.display_name,
+            "31201010588201000105550010038421171838422178 - Resumo da NF-e",
+        )
+        self.assertEqual(dfe1.dfe_document_id.color_status, "blue")
+        self.assertEqual(
+            dfe1.dfe_document_id.display_name,
+            "31201010588201000105550010038421171838422178",
+        )
+        self.assertEqual(
+            dfe1.dfe_document_id.access_key,
+            "31201010588201000105550010038421171838422178",
+        )
+
+        self.assertEqual(dfe2.company_id, self.company)
+        self.assertEqual(
+            dfe2.access_key, "35200159594315000157550010000000012062777161"
+        )
+        self.assertEqual(dfe2.vat, "59.594.315/0001-57")
+        self.assertEqual(dfe2.dfe_nfe_document_type, "dfe_nfe_complete")
+        self.assertEqual(dfe2.emitter, "TESTE - Simples Nacional")
+        self.assertEqual(dfe2.document_amount, 14.0)
+        self.assertEqual(
+            dfe2.dfe_document_id.access_key,
+            "35200159594315000157550010000000012062777161",
+        )
+        self.assertEqual(
+            dfe2.display_name,
+            "35200159594315000157550010000000012062777161 - NF-e Completa",
+        )
+        self.assertEqual(dfe2.dfe_document_id.color_status, "green")
+        self.assertEqual(
+            dfe2.dfe_document_id.display_name,
+            "35200159594315000157550010000000012062777161",
+        )
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_generate_danfe(self, _mock_post):
+        _mock_post.return_value = _bytes(response_sucesso_individual)
+        self.company.dfe_search_documents()
+        dfe_record = self.company.dfe_ids[0]
+
+        result = dfe_record.dfe_document_id.make_pdf()
+
+        self.assertEqual(result["type"], "ir.actions.act_url")
+        self.assertTrue(result["url"].startswith("/web/content/"))
+        self.assertIn("download=true", result["url"])
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_download_documents(self, _mock_post):
+        _mock_post.return_value = _bytes(response_sucesso_multiplos)
+
+        self.company.dfe_search_documents()
+        dfe_sorted = self.company.dfe_ids.sorted(lambda record: record.nsu or "")
+        dfe1, dfe2 = dfe_sorted
+
+        attachment_2 = self.env["ir.attachment"].search([("res_id", "=", dfe2.id)])
+        self.assertTrue(attachment_2)
+
+        result_dfe1 = dfe1.action_download_xml()
+        attachment_single_dfe1 = self._get_attachment_from_result(result_dfe1)
+        self.assertTrue(attachment_single_dfe1)
+        self.assertEqual(attachment_single_dfe1, dfe1.attachment_id)
+
+        result_dfe2_access_key = dfe2.dfe_document_id.action_download_xml()
+        attachment_single_dfe2_access_key = self._get_attachment_from_result(
+            result_dfe2_access_key
+        )
+        self.assertTrue(attachment_single_dfe2_access_key)
+        with self.assertRaises(UserError):
+            dfe1.dfe_document_id.action_download_xml()
+
+    def _get_attachment_from_result(self, result):
+        _, _, _, att_id, _ = result["url"].split("/")
+        return self.env["ir.attachment"].browse(int(att_id))
