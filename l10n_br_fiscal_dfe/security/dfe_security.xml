@@ -1,7 +1,10 @@
 <odoo>
-<record id="l10n_br_fiscal_dfe_monitor_rule" model="ir.rule">
+    <record id="l10n_br_fiscal_dfe_monitor_rule" model="ir.rule">
         <field name="name">Fiscal Document multi-company</field>
-        <field name="model_id" ref="model_l10n_br_fiscal_dfe_monitor" />
+        <field
+            name="model_id"
+            search="[('model', '=', 'l10n_br_fiscal_dfe.dfe_monitor')]"
+        />
         <field eval="True" name="global" />
         <field
             name="domain_force"

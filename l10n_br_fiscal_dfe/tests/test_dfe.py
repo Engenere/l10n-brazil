@@ -23,7 +23,7 @@ class TestDFe(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.ref("l10n_br_base.empresa_lucro_presumido")
-        cls.dfe = cls.env["l10n_br_fiscal.dfe_monitor"].create(
+        cls.dfe = cls.env["l10n_br_fiscal_dfe.dfe_monitor"].create(
             {"company_id": cls.company.id}
         )
 
@@ -82,7 +82,7 @@ class TestDFe(TransactionCase):
 
     def test_cron_search_documents(self):
         """Test the automated cron job for searching documents."""
-        self.dfe.use_cron = True
+        self.dfe.auto_fetch = True
 
         # Test that cron fails gracefully on an HTTP error
         # with mock.patch.object(
@@ -90,9 +90,9 @@ class TestDFe(TransactionCase):
         #     DefaultTransport, "post", side_effect=RequestException("Mocked HTTP 500")
         # ):
         if False:
-            self.env["l10n_br_fiscal.dfe_monitor"]._cron_search_documents()
+            self.env["l10n_br_fiscal_dfe.dfe_monitor"]._cron_search_documents()
             # Find the record again to check its state
-            dfe_record = self.env["l10n_br_fiscal.dfe"].search(
+            dfe_record = self.env["l10n_br_fiscal_dfe.dfe"].search(
                 [("company_id", "=", self.company.id)]
             )
             self.assertEqual(dfe_record.last_nsu, "0")
@@ -103,8 +103,8 @@ class TestDFe(TransactionCase):
             "post",
             return_value=response_sucesso_multiplos.encode("utf-8"),
         ):
-            self.env["l10n_br_fiscal.dfe_monitor"]._cron_search_documents()
-            dfe_record = self.env["l10n_br_fiscal.dfe_monitor"].search(
+            self.env["l10n_br_fiscal_dfe.dfe_monitor"]._cron_search_documents()
+            dfe_record = self.env["l10n_br_fiscal_dfe.dfe_monitor"].search(
                 [("company_id", "=", self.company.id)]
             )
             self.assertEqual(dfe_record.last_nsu, "000000000000201")
