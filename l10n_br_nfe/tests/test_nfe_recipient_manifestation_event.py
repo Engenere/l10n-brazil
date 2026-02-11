@@ -1,14 +1,11 @@
 # Copyright (C) 2023 - TODAY Felipe Zago - KMEE
+# Copyright 2026 Engenere (<https://engenere.one>).
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 from unittest import mock
 
-from xsdata.formats.dataclass.transports import DefaultTransport
-
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
-
-from odoo.addons.l10n_br_fiscal_dfe.tests.test_dfe import response_sucesso_multiplos
 
 response_confirmacao_operacao = """<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><soap:Body><nfeResultMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4"><retEnvEvento xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.00"><idLote /><tpAmb>2</tpAmb><verAplic>SVRS202305251555</verAplic><cStat>128</cStat><xMotivo>Lote de Evento Processado</xMotivo><retEvento versao="1.00"><infEvento><tpAmb>2</tpAmb><verAplic>SVRS202305251555</verAplic><cStat>135</cStat><xMotivo>Evento registrado e vinculado a NF-e</xMotivo><chNFe>31201010588201000105550010038421171838422178</chNFe><tpEvento>210200</tpEvento><xEvento>Confirmacao da Operacao</xEvento><nSeqEvento>1</nSeqEvento><CNPJDest>81583054000129</CNPJDest><dhRegEvento>2023-07-10T10:00:00-03:00</dhRegEvento><nProt>12345</nProt></infEvento></retEvento></retEnvEvento></nfeResultMsg></soap:Body></soap:Envelope>"""  # noqa: E501
 response_confirmacao_operacao_rejeicao = """<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><soap:Body><nfeResultMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4"><retEnvEvento xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.00"><idLote /><tpAmb>2</tpAmb><verAplic>SVRS202305251555</verAplic><cStat>128</cStat><xMotivo>Lote de Evento Processado</xMotivo><retEvento versao="1.00"><infEvento><tpAmb>2</tpAmb><verAplic>SVRS202305251555</verAplic><cStat>573</cStat><xMotivo>Rejeicao: Duplicidade de Evento</xMotivo><chNFe>31201010588201000105550010038421171838422178</chNFe><tpEvento>210200</tpEvento><nSeqEvento>1</nSeqEvento><CNPJDest>81583054000129</CNPJDest><dhRegEvento>2023-07-10T10:00:00-03:00</dhRegEvento><nProt>54321</nProt></infEvento></retEvento></retEnvEvento></nfeResultMsg></soap:Body></soap:Envelope>"""  # noqa: E501
@@ -21,6 +18,8 @@ class _InfEvento:
     def __init__(self, cStat="135", xMotivo="Evento registrado e vinculado a NF-e"):
         self.cStat = cStat
         self.xMotivo = xMotivo
+        self.nProt = "12345"
+        self.dhRegEvento = "2023-07-10T10:00:00-03:00"
 
 
 class _RetEvento:
@@ -38,6 +37,7 @@ class _Resposta:
 class _Retorno:
     def __init__(self, status_code=200):
         self.status_code = status_code
+        self._content = b"<xml>fake</xml>"
 
 
 class _FakeResult:
@@ -47,7 +47,7 @@ class _FakeResult:
 
 
 class _FakeProcessor:
-    """Emula o MDeAdapter retornando _FakeResult para cada operação."""
+    """Emulates the MDeAdapter returning _FakeResult for each operation."""
 
     def __init__(self, mapa=None):
         self._mapa = mapa or {}
@@ -72,28 +72,14 @@ class TestNFeMDE(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.dfe_monitor = cls.env["l10n_br_fiscal.dfe_monitor"].create(
-            {
-                "last_nsu": "000000000000001",
-                "company_id": cls.env.ref("l10n_br_base.empresa_simples_nacional").id,
-            }
-        )
-        with mock.patch.object(
-            DefaultTransport,
-            "post",
-            return_value=response_sucesso_multiplos.encode("utf-8"),
-        ):
-            cls.dfe_monitor.search_documents()
-            cls.dfe = cls.dfe_monitor.dfe_ids[0]
+        cls.company = cls.env.ref("l10n_br_base.empresa_simples_nacional")
         cls.mde_id = cls.env["l10n_br_nfe.md_event"].create(
             {
-                "company_id": cls.dfe.company_id.id,
-                "key": cls.dfe.key,
-                "document_number": cls.dfe.document_number,
+                "company_id": cls.company.id,
+                "access_key": "31201010588201000105550010038421171838422178",
+                "document_number": 3842117,
                 "event_type": "ciente",
                 "state": "draft",
-                "dfe_document_id": cls.dfe.dfe_document_id.id,
-                "document_type": "nfe",
             }
         )
 
@@ -108,7 +94,7 @@ class TestNFeMDE(TransactionCase):
         )
 
         with mock.patch(
-            "odoo.addons.l10n_br_nfe.models.nfe_recipient_manifestation_event.NfeRecipientManifestationEvent._get_processor",
+            "odoo.addons.l10n_br_nfe.models.nfe_md_event.NfeRecipientManifestationEvent._get_processor",
             return_value=proc,
         ):
             self.mde_id.event_type = "confirmado"
@@ -119,7 +105,8 @@ class TestNFeMDE(TransactionCase):
             self.mde_id.action_confirm()
             self.assertEqual(self.mde_id.event_type, "ciente")
             self.assertEqual(
-                self.mde_id.display_name, "31201010588201000105550010038421171838422178"
+                self.mde_id.display_name,
+                "31201010588201000105550010038421171838422178",
             )
 
             self.mde_id.event_type = "desconhecido"
@@ -136,7 +123,7 @@ class TestNFeMDE(TransactionCase):
         )
         with (
             mock.patch(
-                "odoo.addons.l10n_br_nfe.models.nfe_recipient_manifestation_event.NfeRecipientManifestationEvent._get_processor",
+                "odoo.addons.l10n_br_nfe.models.nfe_md_event.NfeRecipientManifestationEvent._get_processor",
                 return_value=proc_http,
             ),
             self.assertRaises(ValidationError),
@@ -153,45 +140,10 @@ class TestNFeMDE(TransactionCase):
         )
         with (
             mock.patch(
-                "odoo.addons.l10n_br_nfe.models.nfe_recipient_manifestation_event.NfeRecipientManifestationEvent._get_processor",
+                "odoo.addons.l10n_br_nfe.models.nfe_md_event.NfeRecipientManifestationEvent._get_processor",
                 return_value=proc_negocio,
             ),
             self.assertRaises(ValidationError),
         ):
             self.mde_id.event_type = "confirmado"
             self.mde_id.action_confirm()
-
-    # @mock.patch.object(MDe, "action_ciencia_emissao", return_value=None)
-    # def test_download_documents(self, mock_ciencia):
-    #     """Test downloading XMLs for one or more MDE records."""
-    #     mde_ids = self.mde + self.mde.copy()
-
-    #     # The download action itself triggers a new DFe search to get the full XML.
-    #     # We mock this call to return the full document.
-    #     with mock.patch.object(
-    #         DefaultTransport,
-    #         "post",
-    #         return_value=response_sucesso_multiplos.encode("utf-8"),
-    #     ):
-    #         result_single = self.mde.action_download_xml()
-    #         result_multiple = mde_ids.action_download_xml()
-
-    #     attachment_single = self.get_attachment_from_result(result_single)
-    #     attachment_multiple = self.get_attachment_from_result(result_multiple)
-
-    #     self.assertTrue(attachment_single)
-    #     self.assertEqual(attachment_single, self.mde.attachment_id)
-    #     self.assertTrue(attachment_multiple)
-    #     self.assertEqual(attachment_multiple.name, "attachments.tar.gz")
-
-    # def get_attachment_from_result(self, result):
-    #     """Helper to extract the attachment record from the download action result."""
-    #     # The URL is in the format /web/content/{attachment_id}/{filename}
-    #     url_parts = result["url"].split("/")
-    #     # e.g., ['', 'web', 'content', '591', 'filename.xml?download=true']
-    #     self.assertGreaterEqual(len(url_parts), 4, "URL format seems incorrect.")
-    #     self.assertEqual(url_parts[1], "web")
-    #     self.assertEqual(url_parts[2], "content")
-
-    #     attachment_id = int(url_parts[3])
-    #     return self.env["ir.attachment"].browse(attachment_id)
