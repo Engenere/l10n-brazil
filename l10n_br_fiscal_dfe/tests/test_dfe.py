@@ -1,4 +1,5 @@
 # Copyright (C) 2023 - TODAY Felipe Zago - KMEE
+# Copyright 2026 Engenere (<https://engenere.one>).
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 # pylint: disable=line-too-long
 
@@ -23,26 +24,28 @@ class TestDFe(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.ref("l10n_br_base.empresa_lucro_presumido")
-        cls.dfe = cls.env["l10n_br_fiscal_dfe.dfe_monitor"].create(
-            {"company_id": cls.company.id}
-        )
 
     @mock.patch.object(DefaultTransport, "post")
     def test_search_dfe_success(self, mock_post):
         """Test a successful DFe search with multiple documents returned."""
-        # The mock simply returns the raw SOAP response bytes.
         mock_post.return_value = response_sucesso_multiplos.encode("utf-8")
 
-        self.assertEqual(self.dfe.display_name, "Empresa Lucro Presumido - NSU: 0")
+        self.company.dfe_search_documents()
 
-        # The search_documents method will now use NfeClient,
-        # which is mocked at the transport layer.
-        self.dfe.search_documents()
-
-        # The application logic should correctly parse
-        # the response and update the last_nsu.
-        self.assertEqual(self.dfe.last_nsu, utils.format_nsu("201"))
+        self.assertEqual(self.company.last_nsu, utils.format_nsu("201"))
         mock_post.assert_called_once()
+
+        # The procNFe in the mock contains CFOP 5102
+        dfe_record = self.env["l10n_br_fiscal_dfe.dfe"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("dfe_nfe_document_type", "=", "dfe_nfe_complete"),
+            ],
+            limit=1,
+        )
+        self.assertTrue(dfe_record, "procNFe should create a dfe_nfe_complete record")
+        cfop_codes = dfe_record.cfop_ids.mapped("code")
+        self.assertIn("5102", cfop_codes, "CFOP 5102 should be extracted from procNFe")
 
     def test_search_dfe_error_conditions(self):
         """Test various error conditions during DFe search."""
@@ -50,52 +53,31 @@ class TestDFe(TransactionCase):
         with mock.patch.object(
             DefaultTransport, "post", side_effect=RequestException("Mocked HTTP 500")
         ) as mock_post_http_error:
-            self.dfe.search_documents()
-            # The application should log the error and not update the NSU.
-            self.assertEqual(self.dfe.last_nsu, "0")
+            self.company.dfe_search_documents()
+            self.assertEqual(self.company.last_nsu, "0")
             mock_post_http_error.assert_called_once()
 
         # 2. Test a business-level rejection from SEFAZ
         with mock.patch.object(
             DefaultTransport, "post", return_value=response_rejeicao.encode("utf-8")
         ) as mock_post_rejection:
-            # Reset last_nsu to ensure this test is isolated
-            self.dfe.last_nsu = "0"
-            self.dfe.search_documents()
-            # The app should process the rejection and not update the
-            # NSU from the response.
-            # However, the dfe.py logic updates last_nsu *before* validation.
-            # Let's check that.
-            # The response has ultNSU = 0, so last_nsu will be set to '0' again.
-            self.assertEqual(self.dfe.last_nsu, "000000000000000")
+            self.company.last_nsu = "0"
+            self.company.dfe_search_documents()
+            self.assertEqual(self.company.last_nsu, "000000000000000")
             mock_post_rejection.assert_called_once()
 
         # 3. Test a generic exception during processing
         with mock.patch.object(
             DefaultTransport, "post", side_effect=Exception("Generic Mock Error")
         ) as mock_post_generic_error:
-            self.dfe.last_nsu = "0"
-            self.dfe.search_documents()
-            # The app should catch the generic error and not update the NSU.
-            self.assertEqual(self.dfe.last_nsu, "0")
+            self.company.last_nsu = "0"
+            self.company.dfe_search_documents()
+            self.assertEqual(self.company.last_nsu, "0")
             mock_post_generic_error.assert_called_once()
 
     def test_cron_search_documents(self):
         """Test the automated cron job for searching documents."""
-        self.dfe.auto_fetch = True
-
-        # Test that cron fails gracefully on an HTTP error
-        # with mock.patch.object(
-        #
-        #     DefaultTransport, "post", side_effect=RequestException("Mocked HTTP 500")
-        # ):
-        if False:
-            self.env["l10n_br_fiscal_dfe.dfe_monitor"]._cron_search_documents()
-            # Find the record again to check its state
-            dfe_record = self.env["l10n_br_fiscal_dfe.dfe"].search(
-                [("company_id", "=", self.company.id)]
-            )
-            self.assertEqual(dfe_record.last_nsu, "0")
+        self.company.auto_fetch = True
 
         # Test that cron succeeds
         with mock.patch.object(
@@ -103,16 +85,21 @@ class TestDFe(TransactionCase):
             "post",
             return_value=response_sucesso_multiplos.encode("utf-8"),
         ):
-            self.env["l10n_br_fiscal_dfe.dfe_monitor"]._cron_search_documents()
-            dfe_record = self.env["l10n_br_fiscal_dfe.dfe_monitor"].search(
-                [("company_id", "=", self.company.id)]
-            )
-            self.assertEqual(dfe_record.last_nsu, "000000000000201")
+            self.env["res.company"]._cron_dfe_search_documents()
+            self.assertEqual(self.company.last_nsu, "000000000000201")
 
     def test_utils(self):
-        nsu_formatted = utils.format_nsu("100")
-        self.assertEqual(nsu_formatted, "000000000000100")
+        # format_nsu with valid values
+        self.assertEqual(utils.format_nsu("100"), "000000000000100")
+        self.assertEqual(utils.format_nsu("0"), "000000000000000")
+        self.assertEqual(utils.format_nsu(200), "000000000000200")
 
+        # format_nsu with invalid values should return False
+        self.assertFalse(utils.format_nsu(None))
+        self.assertFalse(utils.format_nsu(""))
+        self.assertFalse(utils.format_nsu("abc"))
+
+        # mask_cnpj tests
         cnpj_masked = utils.mask_cnpj(False)
         self.assertFalse(cnpj_masked)
 
@@ -121,3 +108,60 @@ class TestDFe(TransactionCase):
 
         cnpj_masked = utils.mask_cnpj("31282204000196")
         self.assertEqual(cnpj_masked, "31.282.204/0001-96")
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_search_specific_zero_nsu(self, mock_post):
+        """consChNFe with NSU=0 creates record with nsu=False and dedup works."""
+        # Build response with zero NSU (typical for consChNFe in homologation)
+        response_zero_nsu = response_sucesso_individual.replace(
+            'NSU="000000000000201"', 'NSU="000000000000000"'
+        )
+        mock_post.return_value = response_zero_nsu.encode("utf-8")
+
+        DfeRecord = self.env["l10n_br_fiscal_dfe.dfe"]
+        access_key = "35200159594315000157550010000000012062777161"
+
+        # First call: should create exactly 1 record
+        self.company._dfe_search_specific_document(access_key=access_key)
+        records = DfeRecord.search(
+            [
+                ("company_id", "=", self.company.id),
+                ("schema_type", "=", "procNFe"),
+            ]
+        )
+        self.assertEqual(len(records), 1)
+        self.assertFalse(records.nsu, "NSU should be False for zero-NSU documents")
+
+        # Second call: dedup by access_key should prevent duplicate
+        self.company._dfe_search_specific_document(access_key=access_key)
+        records = DfeRecord.search(
+            [
+                ("company_id", "=", self.company.id),
+                ("schema_type", "=", "procNFe"),
+            ]
+        )
+        self.assertEqual(
+            len(records),
+            1,
+            "No duplicate should be created for same access_key with zero NSU",
+        )
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_zero_nsu_different_documents(self, mock_post):
+        """Two documents with NSU=0 but different schemas should both be created."""
+        response_zero_multi = response_sucesso_multiplos.replace(
+            'NSU="000000000000200"', 'NSU="000000000000000"'
+        ).replace('NSU="000000000000201"', 'NSU="000000000000000"')
+        mock_post.return_value = response_zero_multi.encode("utf-8")
+
+        DfeRecord = self.env["l10n_br_fiscal_dfe.dfe"]
+        self.company._dfe_search_specific_document(access_key="any_key")
+
+        records = DfeRecord.search([("company_id", "=", self.company.id)])
+        self.assertGreaterEqual(
+            len(records),
+            2,
+            "Documents with zero NSU but different schemas should both be created",
+        )
+        for record in records:
+            self.assertFalse(record.nsu)
