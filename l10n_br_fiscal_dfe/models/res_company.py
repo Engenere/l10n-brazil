@@ -137,16 +137,18 @@ class ResCompany(models.Model):
             uf=self.state_id.ibge_code,
             pkcs12_data=cert,
             pkcs12_password=self.certificate.password,
-            wrap_response=True,
+            wrap_response=False,
         )
+
+    def _dfe_consultar_distribuicao(self, **kwargs):
+        return self._dfe_get_processor().consultar_distribuicao(**kwargs)
 
     def _dfe_validate_distribution_response(self, result, raise_message=False):
         valid = False
-        message = result.resposta.xMotivo
-        if result.retorno.status_code != 200:
-            code = result.retorno.status_code
-        elif result.resposta.cStat != "138":
-            code = result.resposta.cStat
+        message = getattr(result, "xMotivo", "")
+        # 138 = Documento(s) localizado(s) no serviço de distribuição DF-e.
+        if result.cStat != "138":
+            code = result.cStat
         else:
             valid = True
 
@@ -172,7 +174,7 @@ class ResCompany(models.Model):
     def _dfe_search_specific_document(self, access_key=None, nsu=None):
         """Search for a specific document by access key or NSU."""
         self.ensure_one()
-        result = self._dfe_get_processor().consultar_distribuicao(
+        result = self._dfe_consultar_distribuicao(
             chave=access_key,
             nsu_especifico=utils.format_nsu(nsu) if nsu else None,
             cnpj_cpf=re.sub("[^0-9]", "", self.vat),
@@ -182,8 +184,8 @@ class ResCompany(models.Model):
         self._dfe_log(
             _(
                 "Specific search OK: %(cstat)s - %(motivo)s",
-                cstat=result.resposta.cStat,
-                motivo=result.resposta.xMotivo,
+                cstat=result.cStat,
+                motivo=result.xMotivo,
             ),
             result=result,
         )
@@ -217,7 +219,7 @@ class ResCompany(models.Model):
         result = False
         while True:
             try:
-                result = self._dfe_get_processor().consultar_distribuicao(
+                result = self._dfe_consultar_distribuicao(
                     cnpj_cpf=re.sub("[^0-9]", "", self.vat),
                     ultimo_nsu=utils.format_nsu(last_nsu),
                 )
@@ -229,8 +231,8 @@ class ResCompany(models.Model):
                 break
 
             last_query_success = fields.Datetime.now()
-            last_nsu = result.resposta.ultNSU
-            max_nsu = result.resposta.maxNSU
+            last_nsu = result.ultNSU
+            max_nsu = result.maxNSU
 
             if not self._dfe_validate_distribution_response(result):
                 break
@@ -240,8 +242,8 @@ class ResCompany(models.Model):
                     "Distribution query OK: "
                     "%(cstat)s - %(motivo)s "
                     "(ultNSU=%(ult)s, maxNSU=%(mx)s)",
-                    cstat=result.resposta.cStat,
-                    motivo=result.resposta.xMotivo,
+                    cstat=result.cStat,
+                    motivo=result.xMotivo,
                     ult=last_nsu,
                     mx=max_nsu,
                 ),
@@ -257,12 +259,8 @@ class ResCompany(models.Model):
             {
                 "last_nsu": last_nsu,
                 "dfe_last_query": last_query_success or self.dfe_last_query,
-                "dfe_last_status": getattr(result.resposta, "xMotivo", "")
-                if result
-                else "",
-                "dfe_last_status_code": getattr(result.resposta, "cStat", "")
-                if result
-                else "",
+                "dfe_last_status": getattr(result, "xMotivo", "") if result else "",
+                "dfe_last_status_code": getattr(result, "cStat", "") if result else "",
                 "max_nsu": max_nsu,
             }
         )
@@ -293,7 +291,7 @@ class ResCompany(models.Model):
     def _dfe_process_distribution(self, result):
         DfeRecord = self.env["l10n_br_fiscal_dfe.dfe"]
 
-        for doc in result.resposta.loteDistDFeInt.docZip:
+        for doc in result.loteDistDFeInt.docZip:
             payload = getattr(doc, "value", None)
             if payload is None:
                 payload = getattr(doc, "valueOf_", None)
@@ -503,7 +501,7 @@ class ResCompany(models.Model):
 
     def _dfe_download_document(self, nfe_key):
         try:
-            result = self._dfe_get_processor().consultar_distribuicao(
+            result = self._dfe_consultar_distribuicao(
                 chave=nfe_key, cnpj_cpf=re.sub("[^0-9]", "", self.vat)
             )
         except Exception as exc:
@@ -523,7 +521,7 @@ class ResCompany(models.Model):
             ),
             result=result,
         )
-        return result.resposta.loteDistDFeInt.docZip[0]
+        return result.loteDistDFeInt.docZip[0]
 
     def _dfe_parse_xml_document(self, document):
         """
