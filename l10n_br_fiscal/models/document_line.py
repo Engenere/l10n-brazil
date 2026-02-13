@@ -95,6 +95,10 @@ class DocumentLine(models.Model):
         related="document_id.edoc_purpose",
     )
 
+    @api.depends("document_id.ind_final")
+    def _compute_ind_final(self):
+        return super()._compute_ind_final()
+
     additional_data = fields.Text()
 
     @api.depends("product_id")
