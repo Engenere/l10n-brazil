@@ -217,6 +217,21 @@ class FiscalDocumentMixin(models.AbstractModel):
                 if line.ind_final != doc.ind_final:
                     line.ind_final = doc.ind_final
 
+    def write(self, vals):
+        old_ind_final = {doc.id: doc.ind_final for doc in self}
+        result = super().write(vals)
+        # ind_final may change directly (manual edit) or indirectly
+        # (partner_id change triggers _compute_ind_final). Flush to
+        # ensure the post-compute value is available, then propagate
+        # to lines when it actually changed.
+        self.flush_recordset(["ind_final"])
+        for doc in self:
+            if doc.ind_final != old_ind_final.get(doc.id):
+                for line in doc._get_amount_lines():
+                    if line.ind_final != doc.ind_final:
+                        line.ind_final = doc.ind_final
+        return result
+
     @api.depends("fiscal_operation_id")
     def _compute_operation_name(self):
         for doc in self:
