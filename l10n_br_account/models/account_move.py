@@ -341,6 +341,32 @@ class AccountMove(models.Model):
                 protected.update(self.pool.field_computed.get(field, [field]))
         return [(protected, rec) for rec in records] if protected else []
 
+    def write(self, vals):
+        old_ind_final = {move.id: move.ind_final for move in self}
+        result = super().write(vals)
+        if "partner_id" in vals or "ind_final" in vals:
+            # partner_id is a "shadowed" field: it exists on both
+            # account.move and l10n_br_fiscal.document. Writing to
+            # account.move does NOT delegate to the fiscal document,
+            # so _compute_ind_final on the fiscal document won't fire.
+            # We flush and propagate ind_final to fiscal lines manually.
+            self.flush_recordset(["ind_final"])
+            for move in self:
+                if move.ind_final != old_ind_final.get(move.id):
+                    for line in move.fiscal_line_ids:
+                        if line.ind_final != move.ind_final:
+                            line.ind_final = move.ind_final
+        return result
+
+    @api.onchange("ind_final")
+    def _onchange_ind_final(self):
+        """Propagate ind_final to existing invoice lines when it
+        changes in the form."""
+        for move in self:
+            for line in move.invoice_line_ids:
+                if line.ind_final != move.ind_final:
+                    line.ind_final = move.ind_final
+
     @contextmanager
     def _sync_dynamic_lines(self, container):
         with self._disable_recursion(container, "skip_invoice_sync") as disabled:
