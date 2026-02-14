@@ -248,6 +248,15 @@ class FiscalDocument(models.Model):
         else:
             return super().create(vals_list)
 
+    def write(self, vals):
+        result = super().write(vals)
+        # The mixin's write checks "partner_id" in vals but with the proxy
+        # pattern the fiscal doc receives "proxy_partner_id" instead. Trigger
+        # ind_final propagation explicitly when the proxy changes.
+        if "proxy_partner_id" in vals:
+            self._propagate_ind_final_to_lines()
+        return result
+
     def _update_cache(self, values, validate=True):
         """
         Overriden to avoid raising error with ensure_one() in super()
