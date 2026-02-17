@@ -27,6 +27,13 @@
                 </a>
             </div>
 
+            <t t-if="inactivity_warning">
+                <div class="alert alert-warning d-flex align-items-center mb-3">
+                    <i class="fa fa-exclamation-triangle me-2 fs-4" />
+                    <span t-esc="inactivity_message" />
+                </div>
+            </t>
+
             <div class="row g-3 align-items-stretch">
                 <!-- Last Query -->
                 <div class="col-sm-6 col-lg-3">
