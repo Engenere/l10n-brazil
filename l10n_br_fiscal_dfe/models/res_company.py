@@ -202,21 +202,25 @@ class ResCompany(models.Model):
         max_nsu = raw_max if (raw_max and raw_max != "000000000000000") else False
         last_query = self.dfe_last_query or fields.Datetime.now()
 
-        if self.dfe_last_status_code == "656":
+        if self.dfe_last_status_code in ("656", "137"):
             if fields.Datetime.now() - last_query < timedelta(hours=1):
-                return {
-                    "type": "ir.actions.client",
-                    "tag": "display_notification",
-                    "params": {
-                        "title": _("Consumo Indevido detected"),
-                        "message": _("Waiting 1 hour before making a new request."),
-                        "type": "warning",
-                        "sticky": False,
-                    },
-                }
+                if not max_nsu or last_nsu >= max_nsu:
+                    return {
+                        "type": "ir.actions.client",
+                        "tag": "display_notification",
+                        "params": {
+                            "title": _(
+                                "Cooldown active (%(code)s)",
+                                code=self.dfe_last_status_code,
+                            ),
+                            "message": _("Waiting 1 hour before making a new request."),
+                            "type": "warning",
+                            "sticky": False,
+                        },
+                    }
 
         last_query_success = None
-        result = False
+        last_result = False
         while True:
             try:
                 result = self._dfe_consultar_distribuicao(
@@ -230,12 +234,25 @@ class ResCompany(models.Model):
                 )
                 break
 
-            last_query_success = fields.Datetime.now()
-            last_nsu = result.ultNSU
-            max_nsu = result.maxNSU
+            last_result = result
 
             if not self._dfe_validate_distribution_response(result):
+                # For 656: recover ultNSU if present and non-zero
+                if result.cStat == "656":
+                    resp_nsu = getattr(result, "ultNSU", None)
+                    if resp_nsu and resp_nsu != "000000000000000":
+                        last_nsu = resp_nsu
                 break
+
+            # Only update NSU from successful responses (cStat=138)
+            resp_ult = getattr(result, "ultNSU", None)
+            resp_max = getattr(result, "maxNSU", None)
+            if resp_ult:
+                last_nsu = resp_ult
+            if resp_max:
+                max_nsu = resp_max
+
+            last_query_success = fields.Datetime.now()
 
             self._dfe_log(
                 _(
@@ -252,18 +269,22 @@ class ResCompany(models.Model):
 
             self._dfe_process_distribution(result)
 
-            if last_nsu >= max_nsu:
+            if max_nsu and last_nsu >= max_nsu:
                 break
 
-        self.write(
-            {
-                "last_nsu": last_nsu,
-                "dfe_last_query": last_query_success or self.dfe_last_query,
-                "dfe_last_status": getattr(result, "xMotivo", "") if result else "",
-                "dfe_last_status_code": getattr(result, "cStat", "") if result else "",
-                "max_nsu": max_nsu,
-            }
-        )
+        write_vals = {
+            "last_nsu": last_nsu,
+            "dfe_last_query": last_query_success or self.dfe_last_query,
+            "dfe_last_status": (
+                getattr(last_result, "xMotivo", "") if last_result else ""
+            ),
+            "dfe_last_status_code": (
+                getattr(last_result, "cStat", "") if last_result else ""
+            ),
+        }
+        if max_nsu:
+            write_vals["max_nsu"] = max_nsu
+        self.write(write_vals)
 
     def dfe_search_documents(self):
         for record in self:
