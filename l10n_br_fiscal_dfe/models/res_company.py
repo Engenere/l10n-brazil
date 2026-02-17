@@ -17,6 +17,9 @@ from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 from ..constants.dfe import (
+    CSTAT_CONSUMO_INDEVIDO,
+    CSTAT_NO_DOCS,
+    CSTAT_SUCCESS,
     DFE_ENVIRONMENT_DEFAULT,
     DFE_ENVIRONMENTS,
     DFE_VERSION_DEFAULT,
@@ -146,8 +149,7 @@ class ResCompany(models.Model):
     def _dfe_validate_distribution_response(self, result, raise_message=False):
         valid = False
         message = getattr(result, "xMotivo", "")
-        # 138 = Documento(s) localizado(s) no serviço de distribuição DF-e.
-        if result.cStat != "138":
+        if result.cStat != CSTAT_SUCCESS:
             code = result.cStat
         else:
             valid = True
@@ -202,7 +204,7 @@ class ResCompany(models.Model):
         max_nsu = raw_max if (raw_max and raw_max != "000000000000000") else False
         last_query = self.dfe_last_query or fields.Datetime.now()
 
-        if self.dfe_last_status_code in ("656", "137"):
+        if self.dfe_last_status_code in (CSTAT_CONSUMO_INDEVIDO, CSTAT_NO_DOCS):
             if fields.Datetime.now() - last_query < timedelta(hours=1):
                 if not max_nsu or last_nsu >= max_nsu:
                     return {
@@ -237,8 +239,7 @@ class ResCompany(models.Model):
             last_result = result
 
             if not self._dfe_validate_distribution_response(result):
-                # For 656: recover ultNSU if present and non-zero
-                if result.cStat == "656":
+                if result.cStat == CSTAT_CONSUMO_INDEVIDO:
                     resp_nsu = getattr(result, "ultNSU", None)
                     if resp_nsu and resp_nsu != "000000000000000":
                         last_nsu = resp_nsu
