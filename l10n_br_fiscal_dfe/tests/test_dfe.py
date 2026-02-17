@@ -8,6 +8,7 @@ from unittest import mock
 from requests.exceptions import RequestException
 from xsdata.formats.dataclass.transports import DefaultTransport
 
+from odoo import fields
 from odoo.tests.common import TransactionCase
 
 from ..tools import utils
@@ -17,6 +18,10 @@ response_sucesso_multiplos = """<?xml version="1.0" encoding="UTF-8"?><soap:Enve
 response_sucesso_individual = """<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><nfeDistDFeInteresseResponse xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe"><nfeDistDFeInteresseResult><retDistDFeInt xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.01"><tpAmb>1</tpAmb><verAplic>1.4.0</verAplic><cStat>138</cStat><xMotivo>Documento(s) localizado(s)</xMotivo><dhResp>2022-04-04T11:54:49-03:00</dhResp><ultNSU>000000000000201</ultNSU><maxNSU>000000000000201</maxNSU><loteDistDFeInt><docZip NSU="000000000000201" schema="procNFe_v4.00.xsd">H4sIAAAAAAAAA51WzXKjRhC+5ykoX1MWMyAssTWeiozQhpSFKEu7dwxjmwQYLUJYldfJOS+QY/bF0t0DWF5nt7JRqejub3q6p3/mR9QPKml0ZnWqOaT6+mI6YezCOlVlfbi+eGrb/Tvbfn5+nux106blQ3HI0nJS1A+T+8aGuRdSxCv1Xfog4JTXDqP8+gJQ13MY457v+VOXewz5mQeUs/7HHXblzGYzfsXRVK6kyD6spOsJG6nI4pUcNAACSdRpu9nLj6rOU2EbQVQ6lx7MQSoOqimU5MI2jKhhFkhIRP4UVoV0mMMuGYf/jjvvGIP/j4zDV9hGAfS2aRHW7bdVex3R7o0LohDFUh1alHtOZOtjvXoPUTHOPQfiMDLMi6q9mYgMyOD8YADiRLb8iCISGF1U99LBQWTEQwEhUaA9B6XIV0WdluR74BFNGnWQjEBixR56BAMFbGAFVBBbR25yra2bJj0UpbUJFlbHp8IeBjEo8KSqAuIK4uQX+bq6wiZQnGJdKbkLt7vQurS2RbUv1cGK06zQsChhm3FxWqWQwG+o0biAYqsmJJ+n28dG3h1TK0mPpbaWRXoANQRF3WjpzaFPkKGkv045TMbvojxWn/+sCw3zCIVG2ybCxn4LwkTyOXcwGggFJJElKdaEeXOwQrw4ETEpAiMGfNC1kg53obl9/wqakQBhn609CiW0v+vOwT53XWEDIIK7HdYLCSiTXk5dQ4mc86nv+jMfszv3X2c3Xl2GVriOdtFyAdRarG+iMIZMLkPr5816c7t5vwgWG0wsjH5c3G7urFW0DRa3Y/5pcaZJx8Ru0+qoSmutm4M6Ty3HXUmpPQX7EnbG339ZKezCBhwEuv71WLfa4h7EQuPidJMWDajfNFr/VhY14D0y1MZjLpu/qs328x/aVPYrxWFTb3bFrv5XcTyPc3c6mzvQrK/LYzIAuyMKx707Cli26RWbOj6cQq47NWVTVVqUMisLVbeK/zQwk0xXcDZiJXEcTgkykavWqqNWVdcXeNDBnstx8UjCy2Cz5rjJE4OGi1hiwd7vohhQFCEoHAvS+6IGS89F+2QtNRQIA6RZcbCW/pS5LjUuSiJYbRLpcQbdT6w4BrqSH+JoKWxixSf88gmjOSSI7kNN4HTCxh/sfoOKjpzRIIAv6901xf0XayZIHIn0Pg30icjo1YDgwMBv/JpxqMZOD3VBjs4t8A4nhj600FJRsN6a7zbmjEuhm+IRzzeiIthutjE0Cu40YsU+aFQOjDOZka9BFh0yxpBkExc66xyB6r/4sHuvSYR5qD9J3/cxfOAQjHfoeCc9F73i/u5Bm2Yk0ZY+m2PbGMWp3yt2NwH4phQAJ/aoyvqUkQCl6CEsBAL2aMkmOdisonik/8FHP2F0MxjozgYwFz1snxu2R3QsCHQ+Xo26xTsI80Rl+8JpRwnsAZNMIrDxdH2OG0B0qyAZYGTRHsQyWqS4XgASQe8FMUIP3sEKz3GU/7XHu1WjWjXqkgB+1OPoCFjRwSKzASEegonGKCIUkxc56YGl6nR5hhr5bYG/UocOK6AH1AiiwwdJHwK+SeyxAHZfkbZJ64N5Opl4fHo+9bHZw/A+faTTK0GKz4f0cXhIIEI4biqj0OF3TB0i9jDX3hsLD4u8yHpmBc9JLZc6O1YKLw+8/YpcW/DYfGet0yazlqrS6G1U7oUiMxw9e2z6wnnQvnmIkiOoYUsv0iiHO8xx+NxxvKnD5t7F21dV9oTWvufhChue5ogaHckvXMCVSbDItm0Ko5gaw8KNp9ui03JxbOGQ+j2FyLV1PGgrTy242/Hy7TUoVmPG7uMErn/ryx/+AZs2W+n2CwAA</docZip></loteDistDFeInt></retDistDFeInt></nfeDistDFeInteresseResult></nfeDistDFeInteresseResponse></soap:Body></soap:Envelope>"""  # noqa: E501
 
 response_rejeicao = """<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><nfeDistDFeInteresseResponse xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe"><nfeDistDFeInteresseResult><retDistDFeInt xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.01"><tpAmb>2</tpAmb><verAplic>1.4.0</verAplic><cStat>589</cStat><xMotivo>Rejeicao: Numero do NSU informado superior ao maior NSU da base de dados doAmbiente Nacional</xMotivo><dhResp>2022-04-04T11:54:49-03:00</dhResp><ultNSU>000000000000000</ultNSU><maxNSU>000000000000000</maxNSU></retDistDFeInt></nfeDistDFeInteresseResult></nfeDistDFeInteresseResponse></soap:Body></soap:Envelope>"""  # noqa: E501
+
+response_137 = """<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><nfeDistDFeInteresseResponse xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe"><nfeDistDFeInteresseResult><retDistDFeInt xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.01"><tpAmb>1</tpAmb><verAplic>1.4.0</verAplic><cStat>137</cStat><xMotivo>Nenhum documento localizado para o Contribuinte</xMotivo><dhResp>2022-04-04T11:54:49-03:00</dhResp><ultNSU>000000000000200</ultNSU><maxNSU>000000000000200</maxNSU></retDistDFeInt></nfeDistDFeInteresseResult></nfeDistDFeInteresseResponse></soap:Body></soap:Envelope>"""  # noqa: E501
+
+response_656_with_nsu = """<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><nfeDistDFeInteresseResponse xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe"><nfeDistDFeInteresseResult><retDistDFeInt xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.01"><tpAmb>1</tpAmb><verAplic>1.4.0</verAplic><cStat>656</cStat><xMotivo>Consumo Indevido</xMotivo><dhResp>2022-04-04T11:54:49-03:00</dhResp><ultNSU>000000000000300</ultNSU><maxNSU>000000000000300</maxNSU></retDistDFeInt></nfeDistDFeInteresseResult></nfeDistDFeInteresseResponse></soap:Body></soap:Envelope>"""  # noqa: E501
 
 
 class TestDFe(TransactionCase):
@@ -63,7 +68,11 @@ class TestDFe(TransactionCase):
         ) as mock_post_rejection:
             self.company.last_nsu = "0"
             self.company.dfe_search_documents()
-            self.assertEqual(self.company.last_nsu, "000000000000000")
+            self.assertEqual(
+                self.company.last_nsu,
+                "0",
+                "last_nsu must not be overwritten by error response zeros",
+            )
             mock_post_rejection.assert_called_once()
 
         # 3. Test a generic exception during processing
@@ -165,3 +174,85 @@ class TestDFe(TransactionCase):
         )
         for record in records:
             self.assertFalse(record.nsu)
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_nsu_not_reset_on_error_589(self, mock_post):
+        """NSU values must not be reset when SEFAZ returns a 589 rejection."""
+        mock_post.return_value = response_rejeicao.encode("utf-8")
+
+        self.company.last_nsu = "150"
+        self.company.max_nsu = "200"
+        self.company.dfe_search_documents()
+
+        self.assertEqual(
+            self.company.last_nsu,
+            "150",
+            "last_nsu must be preserved on 589 error",
+        )
+        self.assertEqual(
+            self.company.max_nsu,
+            "200",
+            "max_nsu must be preserved on 589 error",
+        )
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_cooldown_after_137(self, mock_post):
+        """Immediate retry after cStat=137 with synced NSU should return cooldown."""
+        mock_post.return_value = response_137.encode("utf-8")
+
+        # First call: sets status_code to 137
+        self.company.dfe_search_documents()
+        self.assertEqual(self.company.dfe_last_status_code, "137")
+
+        # Second call: should be blocked by cooldown (last_nsu >= max_nsu)
+        mock_post.reset_mock()
+        result = self.company._dfe_document_distribution()
+        self.assertTrue(result, "Should return a notification action")
+        self.assertEqual(result.get("tag"), "display_notification")
+        self.assertIn("137", result["params"]["title"])
+        mock_post.assert_not_called()
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_cooldown_137_skipped_when_not_synced(self, mock_post):
+        """Cooldown should be skipped when last_nsu < max_nsu even with 137."""
+        mock_post.return_value = response_137.encode("utf-8")
+
+        self.company.dfe_last_status_code = "137"
+        self.company.dfe_last_query = fields.Datetime.now()
+        self.company.last_nsu = "100"
+        self.company.max_nsu = "200"
+
+        self.company._dfe_document_distribution()
+        mock_post.assert_called_once()
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_656_nsu_recovery(self, mock_post):
+        """656 response with non-zero ultNSU should update last_nsu."""
+        mock_post.return_value = response_656_with_nsu.encode("utf-8")
+
+        self.company.last_nsu = "100"
+        self.company.dfe_search_documents()
+
+        self.assertEqual(
+            self.company.last_nsu,
+            "000000000000300",
+            "last_nsu should be recovered from 656 response ultNSU",
+        )
+
+    def test_max_nsu_not_written_as_false(self):
+        """Exception on SEFAZ call must not overwrite max_nsu with False."""
+        self.company.last_nsu = "100"
+        self.company.max_nsu = "500"
+
+        with mock.patch.object(
+            DefaultTransport,
+            "post",
+            side_effect=Exception("Connection error"),
+        ):
+            self.company.dfe_search_documents()
+
+        self.assertEqual(
+            self.company.max_nsu,
+            "500",
+            "max_nsu must not be overwritten when no successful response",
+        )
