@@ -3,6 +3,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 # pylint: disable=line-too-long
 
+from datetime import timedelta
 from unittest import mock
 
 from requests.exceptions import RequestException
@@ -11,6 +12,11 @@ from xsdata.formats.dataclass.transports import DefaultTransport
 from odoo import fields
 from odoo.tests.common import TransactionCase
 
+from ..constants.dfe import (
+    DFE_INTERVAL_ERROR,
+    DFE_INTERVAL_NO_DOCS,
+    DFE_INTERVAL_SUCCESS,
+)
 from ..tools import utils
 
 response_sucesso_multiplos = """<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><nfeDistDFeInteresseResponse xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe"><nfeDistDFeInteresseResult><retDistDFeInt xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.01"><tpAmb>1</tpAmb><verAplic>1.4.0</verAplic><cStat>138</cStat><xMotivo>Documento(s) localizado(s)</xMotivo><dhResp>2022-04-04T11:54:49-03:00</dhResp><ultNSU>000000000000201</ultNSU><maxNSU>000000000000201</maxNSU><loteDistDFeInt><docZip NSU="000000000000200" schema="resNFe_v1.00.xsd">H4sIAAAAAAAEAIVS22qDQBD9FfFdd9Z7ZLKQphosqQ3mQuibMZto8RJcifn8rjG9PZUdZg7DOWeGYbHlIg65cqvKWvg3cZyqedddfEL6vtd7U2/aMzEAKNm/LtdZzqtU/SYX/5O1ohZdWmdcVa68FWkzVakO8PD4o780bZeWp0JkaakX9Uk/tKQ+cZVhlssVmUkNoPLZnjcAGKBtDwVMzzIodak3AIO6HpJRg/N49cL+apDcm3iLm4qz99lKWSSzMJrPlEAJnqPNWyJRlATLCMnIwShgUkqpNLEAHBOJ7OAxD6qCGWCARkEDZwPg30MDU2YkIwG7SxwyiuRe8SqTN3H1iXQZMB6L8y4t2W73sXdtJ+6TUDhGveaLbc9DsXyyt1NpNZLkzIRnh675PZZOfMP2LfNn7IOD9aptOkaHy5meDS44FnWRjG3M1kU3HEmu9gWRjP+BfQI6BY33GAIAAA==</docZip><docZip NSU="000000000000201" schema="procNFe_v4.00.xsd">H4sIAAAAAAAAA51WzXKjRhC+5ykoX1MWMyAssTWeiozQhpSFKEu7dwxjmwQYLUJYldfJOS+QY/bF0t0DWF5nt7JRqejub3q6p3/mR9QPKml0ZnWqOaT6+mI6YezCOlVlfbi+eGrb/Tvbfn5+nux106blQ3HI0nJS1A+T+8aGuRdSxCv1Xfog4JTXDqP8+gJQ13MY457v+VOXewz5mQeUs/7HHXblzGYzfsXRVK6kyD6spOsJG6nI4pUcNAACSdRpu9nLj6rOU2EbQVQ6lx7MQSoOqimU5MI2jKhhFkhIRP4UVoV0mMMuGYf/jjvvGIP/j4zDV9hGAfS2aRHW7bdVex3R7o0LohDFUh1alHtOZOtjvXoPUTHOPQfiMDLMi6q9mYgMyOD8YADiRLb8iCISGF1U99LBQWTEQwEhUaA9B6XIV0WdluR74BFNGnWQjEBixR56BAMFbGAFVBBbR25yra2bJj0UpbUJFlbHp8IeBjEo8KSqAuIK4uQX+bq6wiZQnGJdKbkLt7vQurS2RbUv1cGK06zQsChhm3FxWqWQwG+o0biAYqsmJJ+n28dG3h1TK0mPpbaWRXoANQRF3WjpzaFPkKGkv045TMbvojxWn/+sCw3zCIVG2ybCxn4LwkTyOXcwGggFJJElKdaEeXOwQrw4ETEpAiMGfNC1kg53obl9/wqakQBhn609CiW0v+vOwT53XWEDIIK7HdYLCSiTXk5dQ4mc86nv+jMfszv3X2c3Xl2GVriOdtFyAdRarG+iMIZMLkPr5816c7t5vwgWG0wsjH5c3G7urFW0DRa3Y/5pcaZJx8Ru0+qoSmutm4M6Ty3HXUmpPQX7EnbG339ZKezCBhwEuv71WLfa4h7EQuPidJMWDajfNFr/VhY14D0y1MZjLpu/qs328x/aVPYrxWFTb3bFrv5XcTyPc3c6mzvQrK/LYzIAuyMKx707Cli26RWbOj6cQq47NWVTVVqUMisLVbeK/zQwk0xXcDZiJXEcTgkykavWqqNWVdcXeNDBnstx8UjCy2Cz5rjJE4OGi1hiwd7vohhQFCEoHAvS+6IGS89F+2QtNRQIA6RZcbCW/pS5LjUuSiJYbRLpcQbdT6w4BrqSH+JoKWxixSf88gmjOSSI7kNN4HTCxh/sfoOKjpzRIIAv6901xf0XayZIHIn0Pg30icjo1YDgwMBv/JpxqMZOD3VBjs4t8A4nhj600FJRsN6a7zbmjEuhm+IRzzeiIthutjE0Cu40YsU+aFQOjDOZka9BFh0yxpBkExc66xyB6r/4sHuvSYR5qD9J3/cxfOAQjHfoeCc9F73i/u5Bm2Yk0ZY+m2PbGMWp3yt2NwH4phQAJ/aoyvqUkQCl6CEsBAL2aMkmOdisonik/8FHP2F0MxjozgYwFz1snxu2R3QsCHQ+Xo26xTsI80Rl+8JpRwnsAZNMIrDxdH2OG0B0qyAZYGTRHsQyWqS4XgASQe8FMUIP3sEKz3GU/7XHu1WjWjXqkgB+1OPoCFjRwSKzASEegonGKCIUkxc56YGl6nR5hhr5bYG/UocOK6AH1AiiwwdJHwK+SeyxAHZfkbZJ64N5Opl4fHo+9bHZw/A+faTTK0GKz4f0cXhIIEI4biqj0OF3TB0i9jDX3hsLD4u8yHpmBc9JLZc6O1YKLw+8/YpcW/DYfGet0yazlqrS6G1U7oUiMxw9e2z6wnnQvnmIkiOoYUsv0iiHO8xx+NxxvKnD5t7F21dV9oTWvufhChue5ogaHckvXMCVSbDItm0Ko5gaw8KNp9ui03JxbOGQ+j2FyLV1PGgrTy242/Hy7TUoVmPG7uMErn/ryx/+AZs2W+n2CwAA</docZip></loteDistDFeInt></retDistDFeInt></nfeDistDFeInteresseResult></nfeDistDFeInteresseResponse></soap:Body></soap:Envelope>"""  # noqa: E501
@@ -67,6 +73,7 @@ class TestDFe(TransactionCase):
             DefaultTransport, "post", return_value=response_rejeicao.encode("utf-8")
         ) as mock_post_rejection:
             self.company.last_nsu = "0"
+            self.company.dfe_next_query = False
             self.company.dfe_search_documents()
             self.assertEqual(
                 self.company.last_nsu,
@@ -80,6 +87,7 @@ class TestDFe(TransactionCase):
             DefaultTransport, "post", side_effect=Exception("Generic Mock Error")
         ) as mock_post_generic_error:
             self.company.last_nsu = "0"
+            self.company.dfe_next_query = False
             self.company.dfe_search_documents()
             self.assertEqual(self.company.last_nsu, "0")
             mock_post_generic_error.assert_called_once()
@@ -197,14 +205,15 @@ class TestDFe(TransactionCase):
 
     @mock.patch.object(DefaultTransport, "post")
     def test_cooldown_after_137(self, mock_post):
-        """Immediate retry after cStat=137 with synced NSU should return cooldown."""
+        """Immediate retry after cStat=137 should return cooldown notification."""
         mock_post.return_value = response_137.encode("utf-8")
 
-        # First call: sets status_code to 137
+        # First call: sets dfe_next_query to ~1h in the future
         self.company.dfe_search_documents()
         self.assertEqual(self.company.dfe_last_status_code, "137")
+        self.assertTrue(self.company.dfe_next_query)
 
-        # Second call: should be blocked by cooldown (last_nsu >= max_nsu)
+        # Second call: should be blocked by dfe_next_query
         mock_post.reset_mock()
         result = self.company._dfe_document_distribution()
         self.assertTrue(result, "Should return a notification action")
@@ -213,14 +222,11 @@ class TestDFe(TransactionCase):
         mock_post.assert_not_called()
 
     @mock.patch.object(DefaultTransport, "post")
-    def test_cooldown_137_skipped_when_not_synced(self, mock_post):
-        """Cooldown should be skipped when last_nsu < max_nsu even with 137."""
+    def test_cooldown_skipped_when_next_query_passed(self, mock_post):
+        """Cooldown should be skipped when dfe_next_query is in the past."""
         mock_post.return_value = response_137.encode("utf-8")
 
-        self.company.dfe_last_status_code = "137"
-        self.company.dfe_last_query = fields.Datetime.now()
-        self.company.last_nsu = "100"
-        self.company.max_nsu = "200"
+        self.company.dfe_next_query = fields.Datetime.now() - timedelta(minutes=1)
 
         self.company._dfe_document_distribution()
         mock_post.assert_called_once()
@@ -256,3 +262,119 @@ class TestDFe(TransactionCase):
             "500",
             "max_nsu must not be overwritten when no successful response",
         )
+
+    # ── Dynamic scheduling tests ─────────────────────────────────────────
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_schedule_after_success(self, mock_post):
+        """After cStat=138, dfe_next_query should be ~now + 10min."""
+        mock_post.return_value = response_sucesso_multiplos.encode("utf-8")
+        before = fields.Datetime.now()
+        self.company.dfe_search_documents()
+        after = fields.Datetime.now()
+
+        self.assertTrue(self.company.dfe_next_query)
+        self.assertGreaterEqual(
+            self.company.dfe_next_query, before + DFE_INTERVAL_SUCCESS
+        )
+        self.assertLessEqual(self.company.dfe_next_query, after + DFE_INTERVAL_SUCCESS)
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_schedule_after_137(self, mock_post):
+        """After cStat=137, dfe_next_query should be ~now + 1h."""
+        mock_post.return_value = response_137.encode("utf-8")
+        before = fields.Datetime.now()
+        self.company.dfe_search_documents()
+        after = fields.Datetime.now()
+
+        self.assertTrue(self.company.dfe_next_query)
+        self.assertGreaterEqual(
+            self.company.dfe_next_query, before + DFE_INTERVAL_NO_DOCS
+        )
+        self.assertLessEqual(self.company.dfe_next_query, after + DFE_INTERVAL_NO_DOCS)
+
+    def test_schedule_after_exception(self):
+        """After a network exception, dfe_next_query should be ~now + 15min."""
+        with mock.patch.object(
+            DefaultTransport,
+            "post",
+            side_effect=Exception("Connection error"),
+        ):
+            before = fields.Datetime.now()
+            self.company.dfe_search_documents()
+            after = fields.Datetime.now()
+
+        self.assertTrue(self.company.dfe_next_query)
+        self.assertGreaterEqual(
+            self.company.dfe_next_query, before + DFE_INTERVAL_ERROR
+        )
+        self.assertLessEqual(self.company.dfe_next_query, after + DFE_INTERVAL_ERROR)
+
+    def test_cron_skips_company_not_ready(self):
+        """Cron should skip companies whose dfe_next_query is in the future."""
+        self.company.auto_fetch = True
+        self.company.dfe_next_query = fields.Datetime.now() + timedelta(hours=2)
+
+        with mock.patch.object(DefaultTransport, "post") as mock_post:
+            self.env["res.company"]._cron_dfe_search_documents()
+            mock_post.assert_not_called()
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_cron_runs_company_ready(self, mock_post):
+        """Cron should run for companies whose dfe_next_query is in the past."""
+        mock_post.return_value = response_sucesso_multiplos.encode("utf-8")
+        self.company.auto_fetch = True
+        self.company.dfe_next_query = fields.Datetime.now() - timedelta(minutes=1)
+
+        self.env["res.company"]._cron_dfe_search_documents()
+        mock_post.assert_called_once()
+
+    def test_ciencia_does_not_reschedule_during_656(self):
+        """Ciência must not reschedule when company has active 656 status."""
+        self.company.dfe_last_status_code = "656"
+        self.company.dfe_next_query = fields.Datetime.now() + timedelta(hours=1)
+        original_next_query = self.company.dfe_next_query
+
+        mde = self.env["l10n_br_nfe.md_event"].create(
+            {
+                "access_key": "35200159594315000157550010000000012062777161",
+                "event_type": "ciente",
+                "company_id": self.company.id,
+                "document_type": "nfe",
+                "state": "draft",
+            }
+        )
+        with mock.patch.object(type(mde), "_send_event"):
+            mde.action_confirm()
+
+        self.assertEqual(
+            self.company.dfe_next_query,
+            original_next_query,
+            "dfe_next_query must not be changed during 656 cooldown",
+        )
+
+    def test_ciencia_reschedules_after_137(self):
+        """Ciência should reschedule even when NSUs are synced (137)."""
+        self.company.dfe_last_status_code = "137"
+        self.company.last_nsu = "200"
+        self.company.max_nsu = "200"
+        self.company.dfe_next_query = fields.Datetime.now() + timedelta(hours=1)
+
+        mde = self.env["l10n_br_nfe.md_event"].create(
+            {
+                "access_key": "35200159594315000157550010000000012062777161",
+                "event_type": "ciente",
+                "company_id": self.company.id,
+                "document_type": "nfe",
+                "state": "draft",
+            }
+        )
+        before = fields.Datetime.now()
+        with mock.patch.object(type(mde), "_send_event"):
+            mde.action_confirm()
+        after = fields.Datetime.now()
+
+        self.assertGreaterEqual(
+            self.company.dfe_next_query, before + DFE_INTERVAL_SUCCESS
+        )
+        self.assertLessEqual(self.company.dfe_next_query, after + DFE_INTERVAL_SUCCESS)

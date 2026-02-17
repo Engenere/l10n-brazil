@@ -33,14 +33,21 @@ class DfeDocumentBannerController(http.Controller):
             today_domain + [("is_own_document", "=", True)]
         )
 
+        import pytz
+
+        user_tz = pytz.timezone(request.env.user.tz or "UTC")
+
         last_query = company.dfe_last_query
         if last_query:
-            user_tz = request.env.user.tz or "UTC"
-            last_query_str = last_query.astimezone(
-                __import__("pytz").timezone(user_tz)
-            ).strftime("%d/%m/%Y %H:%M")
+            last_query_str = last_query.astimezone(user_tz).strftime("%d/%m/%Y %H:%M")
         else:
             last_query_str = "-"
+
+        next_query = company.dfe_next_query
+        if next_query:
+            next_query_str = next_query.astimezone(user_tz).strftime("%d/%m/%Y %H:%M")
+        else:
+            next_query_str = "-"
 
         nsu_synced = (
             company.last_nsu and company.max_nsu and company.last_nsu >= company.max_nsu
@@ -86,6 +93,8 @@ class DfeDocumentBannerController(http.Controller):
                     "today_own": today_own,
                     "search_all_action_id": search_all_action_id,
                     "specific_search_action_id": specific_search_action_id,
+                    "auto_fetch": company.auto_fetch,
+                    "next_query_str": next_query_str,
                     "inactivity_warning": inactivity_warning,
                     "inactivity_message": inactivity_message,
                 },

@@ -6,7 +6,7 @@ import base64
 import gzip
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from io import BytesIO
 
 from lxml import objectify
@@ -22,6 +22,10 @@ from ..constants.dfe import (
     CSTAT_SUCCESS,
     DFE_ENVIRONMENT_DEFAULT,
     DFE_ENVIRONMENTS,
+    DFE_INTERVAL_ERROR,
+    DFE_INTERVAL_NO_DOCS,
+    DFE_INTERVAL_RATE_LIMITED,
+    DFE_INTERVAL_SUCCESS,
     DFE_VERSION_DEFAULT,
     DFE_VERSIONS,
 )
@@ -58,6 +62,11 @@ class ResCompany(models.Model):
     dfe_last_status = fields.Char(string="Last Status", readonly=True)
 
     dfe_last_status_code = fields.Char(string="Last Status Code", readonly=True)
+
+    dfe_next_query = fields.Datetime(
+        string="Next Scheduled Query",
+        help="DF-e distribution will not be queried before this time.",
+    )
 
     auto_fetch = fields.Boolean(
         default=False,
@@ -132,6 +141,42 @@ class ResCompany(models.Model):
                     )
         self.env["l10n_br_fiscal_dfe.distribution_log"].create(vals)
 
+    def _dfe_schedule_next_query(self, status_code, had_exception=False):
+        """Schedule the next DF-e query based on the last response status."""
+        if had_exception:
+            interval = DFE_INTERVAL_ERROR
+        elif status_code == CSTAT_SUCCESS:
+            interval = DFE_INTERVAL_SUCCESS
+        elif status_code == CSTAT_NO_DOCS:
+            interval = DFE_INTERVAL_NO_DOCS
+        elif status_code == CSTAT_CONSUMO_INDEVIDO:
+            interval = DFE_INTERVAL_RATE_LIMITED
+        else:
+            interval = DFE_INTERVAL_NO_DOCS
+        self.dfe_next_query = fields.Datetime.now() + interval
+        self._dfe_sync_cron_nextcall()
+
+    def _dfe_sync_cron_nextcall(self):
+        """Sync cron nextcall to the earliest dfe_next_query across companies."""
+        cron = self.env.ref(
+            "l10n_br_fiscal_dfe.ir_cron_search_dfe_documents",
+            raise_if_not_found=False,
+        )
+        if not cron:
+            return
+        earliest = (
+            self.env["res.company"]
+            .sudo()
+            .search(
+                [("auto_fetch", "=", True), ("dfe_next_query", "!=", False)],
+                order="dfe_next_query asc",
+                limit=1,
+            )
+            .dfe_next_query
+        )
+        if earliest and earliest != cron.nextcall:
+            cron.sudo().nextcall = earliest
+
     def _dfe_get_processor(self):
         self.ensure_one()
         cert = base64.b64decode(self.certificate.file)
@@ -202,24 +247,26 @@ class ResCompany(models.Model):
         )
         raw_max = (self.max_nsu or "").strip()
         max_nsu = raw_max if (raw_max and raw_max != "000000000000000") else False
-        last_query = self.dfe_last_query or fields.Datetime.now()
-
-        if self.dfe_last_status_code in (CSTAT_CONSUMO_INDEVIDO, CSTAT_NO_DOCS):
-            if fields.Datetime.now() - last_query < timedelta(hours=1):
-                if not max_nsu or last_nsu >= max_nsu:
-                    return {
-                        "type": "ir.actions.client",
-                        "tag": "display_notification",
-                        "params": {
-                            "title": _(
-                                "Cooldown active (%(code)s)",
-                                code=self.dfe_last_status_code,
-                            ),
-                            "message": _("Waiting 1 hour before making a new request."),
-                            "type": "warning",
-                            "sticky": False,
-                        },
-                    }
+        now = fields.Datetime.now()
+        if self.dfe_next_query and self.dfe_next_query > now:
+            remaining = self.dfe_next_query - now
+            minutes = int(remaining.total_seconds() // 60)
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _(
+                        "Cooldown active (%(code)s)",
+                        code=self.dfe_last_status_code or "—",
+                    ),
+                    "message": _(
+                        "Next query scheduled in %(minutes)s minutes.",
+                        minutes=minutes,
+                    ),
+                    "type": "warning",
+                    "sticky": False,
+                },
+            }
 
         last_query_success = None
         last_result = False
@@ -286,6 +333,10 @@ class ResCompany(models.Model):
         if max_nsu:
             write_vals["max_nsu"] = max_nsu
         self.write(write_vals)
+        self._dfe_schedule_next_query(
+            status_code=write_vals.get("dfe_last_status_code", ""),
+            had_exception=not last_result,
+        )
 
     def dfe_search_documents(self):
         for record in self:
@@ -306,7 +357,15 @@ class ResCompany(models.Model):
 
     @api.model
     def _cron_dfe_search_documents(self):
-        self.search([("auto_fetch", "=", True)]).dfe_search_documents()
+        now = fields.Datetime.now()
+        self.search(
+            [
+                ("auto_fetch", "=", True),
+                "|",
+                ("dfe_next_query", "=", False),
+                ("dfe_next_query", "<=", now),
+            ]
+        ).dfe_search_documents()
 
     # ── Distribution processing ─────────────────────────────────────────
 
