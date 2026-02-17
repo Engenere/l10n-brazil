@@ -36,7 +36,7 @@
 
             <div class="row g-3 align-items-stretch">
                 <!-- Last Query -->
-                <div class="col-sm-6 col-lg-3">
+                <div class="col-sm-6 col-xl">
                     <div class="border rounded h-100 p-3 bg-white shadow-sm">
                         <div class="d-flex align-items-center mb-1">
                             <i class="fa fa-clock-o text-primary me-2" />
@@ -55,8 +55,31 @@
                     </div>
                 </div>
 
+                <!-- Next Query / Auto-fetch -->
+                <div class="col-sm-6 col-xl">
+                    <div class="border rounded h-100 p-3 bg-white shadow-sm">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fa fa-calendar text-primary me-2" />
+                            <span class="text-muted small fw-bold">Next Query</span>
+                        </div>
+                        <div class="fs-5 fw-bold" t-esc="next_query_str" />
+                        <div class="mt-1">
+                            <t t-if="auto_fetch">
+                                <span class="badge bg-success">
+                                    <i class="fa fa-check" /> Auto-fetch active
+                                </span>
+                            </t>
+                            <t t-else="">
+                                <span class="badge bg-secondary">
+                                    <i class="fa fa-pause" /> Auto-fetch off
+                                </span>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- NSU Progress -->
-                <div class="col-sm-6 col-lg-3">
+                <div class="col-sm-6 col-xl">
                     <div class="border rounded h-100 p-3 bg-white shadow-sm">
                         <div class="d-flex align-items-center mb-1">
                             <i class="fa fa-signal text-info me-2" />
@@ -86,7 +109,7 @@
                 </div>
 
                 <!-- Documents Today -->
-                <div class="col-sm-6 col-lg-3">
+                <div class="col-sm-6 col-xl">
                     <div class="border rounded h-100 p-3 bg-white shadow-sm">
                         <div class="d-flex align-items-center mb-1">
                             <i class="fa fa-file-text-o text-success me-2" />
@@ -103,7 +126,7 @@
                 </div>
 
                 <!-- Pending Import -->
-                <div class="col-sm-6 col-lg-3">
+                <div class="col-sm-6 col-xl">
                     <div class="border rounded h-100 p-3 bg-white shadow-sm">
                         <div class="d-flex align-items-center mb-1">
                             <i class="fa fa-download text-warning me-2" />
