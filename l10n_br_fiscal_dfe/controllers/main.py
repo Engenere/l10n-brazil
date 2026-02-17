@@ -1,7 +1,7 @@
 # Copyright 2026 Engenere (<https://engenere.one>).
 # License AGPL-3 or later (http://www.gnu.org/licenses/agpl)
 
-from odoo import fields, http
+from odoo import _, fields, http
 from odoo.http import request
 
 
@@ -46,6 +46,26 @@ class DfeDocumentBannerController(http.Controller):
             company.last_nsu and company.max_nsu and company.last_nsu >= company.max_nsu
         )
 
+        inactivity_warning = False
+        inactivity_message = ""
+        now = fields.Datetime.now()
+        if company.dfe_last_query:
+            inactivity_days = (now - company.dfe_last_query).days
+            if inactivity_days > 30:
+                inactivity_warning = True
+                inactivity_message = _(
+                    "Last DF-e query was %(days)s days ago. After 60 days of "
+                    "inactivity, SEFAZ stops generating NSUs for this CNPJ "
+                    "(no retroactive recovery).",
+                    days=inactivity_days,
+                )
+        else:
+            inactivity_warning = True
+            inactivity_message = _(
+                "DF-e distribution has never been queried. Configure and run "
+                "the first query to start receiving documents."
+            )
+
         search_all_action_id = request.env.ref(
             "l10n_br_fiscal_dfe.action_server_search_all_dfe"
         ).id
@@ -66,6 +86,8 @@ class DfeDocumentBannerController(http.Controller):
                     "today_own": today_own,
                     "search_all_action_id": search_all_action_id,
                     "specific_search_action_id": specific_search_action_id,
+                    "inactivity_warning": inactivity_warning,
+                    "inactivity_message": inactivity_message,
                 },
             )
         }
