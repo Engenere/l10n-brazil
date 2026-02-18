@@ -62,11 +62,6 @@ class DFe(models.Model):
 
     ie = fields.Char(string="Inscrição estadual", size=18)
 
-    partner_id = fields.Many2one(
-        comodel_name="res.partner",
-        string="Supplier (partner)",
-    )
-
     company_id = fields.Many2one(
         comodel_name="res.company",
         string="Company",

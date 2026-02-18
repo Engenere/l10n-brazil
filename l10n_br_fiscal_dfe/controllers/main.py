@@ -1,6 +1,8 @@
 # Copyright 2026 Engenere (<https://engenere.one>).
 # License AGPL-3 or later (http://www.gnu.org/licenses/agpl)
 
+import pytz
+
 from odoo import _, fields, http
 from odoo.http import request
 
@@ -32,8 +34,6 @@ class DfeDocumentBannerController(http.Controller):
         today_own = DfeDocument.search_count(
             today_domain + [("is_own_document", "=", True)]
         )
-
-        import pytz
 
         user_tz = pytz.timezone(request.env.user.tz or "UTC")
 
