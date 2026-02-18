@@ -588,9 +588,13 @@ class ResCompany(models.Model):
                     "company_id": self.id,
                     "document_type": "nfe",
                     "state": "draft",
+                    "dfe_document_id": dfe_document.id,
                 }
             )
-            mde.action_confirm()
+            mde.with_delay(
+                channel="root.dfe",
+                description=f"Auto-manifest ciência: {nfe_key}",
+            ).action_confirm()
 
         dfe_document.dfe_ids = [(4, dfe_record.id)]
         return dfe_record
