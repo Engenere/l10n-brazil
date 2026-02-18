@@ -27,6 +27,14 @@
                 </a>
             </div>
 
+            <t t-if="is_homologation">
+                <div class="alert alert-warning d-flex align-items-center mb-3">
+                    <i class="fa fa-exclamation-triangle me-2 fs-4" />
+                    <span>DF-e environment is set to <b
+                        >Homologação</b> (testing).</span>
+                </div>
+            </t>
+
             <t t-if="inactivity_warning">
                 <div class="alert alert-warning d-flex align-items-center mb-3">
                     <i class="fa fa-exclamation-triangle me-2 fs-4" />
