@@ -275,6 +275,11 @@ class ResCompany(models.Model):
 
         last_query_time = None
         last_result = False
+        existing_doc_ids = set(
+            self.env["l10n_br_fiscal_dfe.document"]
+            .search([("company_id", "=", self.id)])
+            .ids
+        )
         while True:
             try:
                 result = self._dfe_consultar_distribuicao(
@@ -325,6 +330,17 @@ class ResCompany(models.Model):
             if max_nsu and last_nsu >= max_nsu:
                 break
 
+        # Notify opted-in users about newly found documents
+        current_doc_ids = set(
+            self.env["l10n_br_fiscal_dfe.document"]
+            .search([("company_id", "=", self.id)])
+            .ids
+        )
+        new_doc_ids = current_doc_ids - existing_doc_ids
+        if new_doc_ids:
+            new_documents = self.env["l10n_br_fiscal_dfe.document"].browse(new_doc_ids)
+            self._dfe_notify_users(new_documents)
+
         last_resp = last_result.resposta if last_result else False
         write_vals = {
             "last_nsu": last_nsu,
@@ -341,6 +357,61 @@ class ResCompany(models.Model):
             status_code=write_vals.get("dfe_last_status_code", ""),
             had_exception=not last_result,
         )
+
+    def _dfe_notify_users(self, new_documents):
+        """Send Inbox notifications to opted-in users about new DF-e documents."""
+        self.ensure_one()
+        own_count = len(new_documents.filtered("is_own_document"))
+        third_party_count = len(new_documents) - own_count
+
+        users = (
+            self.env["res.users"]
+            .sudo()
+            .search(
+                [
+                    ("dfe_notification", "!=", False),
+                    ("company_ids", "in", self.id),
+                ]
+            )
+        )
+        if not users:
+            return
+
+        action = self.env.ref(
+            "l10n_br_fiscal_dfe.dfe_document_action", raise_if_not_found=False
+        )
+        action_url = (
+            f"/web#action={action.id}"
+            if action
+            else "/web#model=l10n_br_fiscal_dfe.document"
+        )
+
+        for user in users:
+            pref = user.dfe_notification
+            if pref == "own" and not own_count:
+                continue
+            if pref == "third_party" and not third_party_count:
+                continue
+
+            parts = []
+            if pref in ("all", "own") and own_count:
+                parts.append(_("%(count)s own document(s)", count=own_count))
+            if pref in ("all", "third_party") and third_party_count:
+                parts.append(
+                    _("%(count)s third-party document(s)", count=third_party_count)
+                )
+            body_text = ", ".join(parts)
+            body = _(
+                "<p>New DF-e documents found: %(summary)s.</p>"
+                '<p><a href="%(url)s">View documents</a></p>',
+                summary=body_text,
+                url=action_url,
+            )
+            self.env["mail.thread"].message_notify(
+                partner_ids=user.partner_id.ids,
+                subject=_("DF-e: new documents found for %s", self.name),
+                body=body,
+            )
 
     def dfe_search_documents(self):
         for record in self:
