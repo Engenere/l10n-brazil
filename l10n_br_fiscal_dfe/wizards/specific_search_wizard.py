@@ -1,7 +1,12 @@
 # Copyright 2026 Engenere (<https://engenere.one>).
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
-from odoo import _, fields, models
+import re
+
+from erpbrasil.base.fiscal.edoc import ChaveEdoc
+
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 
 class DFeSpecificSearchWizard(models.TransientModel):
@@ -35,11 +40,34 @@ class DFeSpecificSearchWizard(models.TransientModel):
         default=lambda self: self.env.company.id,
     )
 
+    @api.onchange("access_key")
+    def _onchange_access_key(self):
+        if self.access_key:
+            self.access_key = re.sub(r"[^0-9]", "", self.access_key)
+
+    @staticmethod
+    def _sanitize_access_key(raw_key):
+        """Strip non-digit characters from the access key."""
+        return re.sub(r"[^0-9]", "", raw_key or "")
+
+    @staticmethod
+    def _validate_access_key(key):
+        """Validate access key using ChaveEdoc (format + check digit)."""
+        if not key:
+            raise UserError(_("Please enter an access key."))
+        try:
+            ChaveEdoc(chave=key, validar=True)
+        except ValueError as exc:
+            raise UserError(str(exc)) from exc
+
     def action_confirm_search(self):
         self.ensure_one()
-        self.company_id._dfe_search_specific_document(
-            access_key=self.access_key, nsu=self.nsu
-        )
+        if self.search_type == "access_key":
+            access_key = self._sanitize_access_key(self.access_key)
+            self._validate_access_key(access_key)
+            self.company_id._dfe_search_specific_document(access_key=access_key)
+        else:
+            self.company_id._dfe_search_specific_document(nsu=self.nsu)
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
