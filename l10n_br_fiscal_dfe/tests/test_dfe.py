@@ -215,7 +215,7 @@ class TestDFe(TransactionCase):
 
         # Second call: should be blocked by dfe_next_query
         mock_post.reset_mock()
-        result = self.company._dfe_document_distribution()
+        result = self.company.action_document_distribution()
         self.assertTrue(result, "Should return a notification action")
         self.assertEqual(result.get("tag"), "display_notification")
         self.assertIn("137", result["params"]["title"])
