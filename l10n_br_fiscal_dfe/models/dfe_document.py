@@ -11,13 +11,6 @@ from odoo.exceptions import UserError
 
 from ..constants.dfe import SITUACAO_NFE
 
-EVENT_TYPE_MAP = {
-    "210200": "Confirmada operação",
-    "210210": "Ciente da Operação",
-    "210220": "Desconhecimento da Operação",
-    "210240": "Operação não realizada",
-}
-
 
 class L10nBrFiscalDfeDocument(models.Model):
     _name = "l10n_br_fiscal_dfe.document"
