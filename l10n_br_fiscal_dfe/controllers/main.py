@@ -95,6 +95,7 @@ class DfeDocumentBannerController(http.Controller):
                     "specific_search_action_id": specific_search_action_id,
                     "auto_fetch": company.auto_fetch,
                     "next_query_str": next_query_str,
+                    "is_homologation": company.dfe_environment == "2",
                     "inactivity_warning": inactivity_warning,
                     "inactivity_message": inactivity_message,
                 },
