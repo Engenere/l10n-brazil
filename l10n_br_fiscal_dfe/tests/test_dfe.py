@@ -10,6 +10,7 @@ from requests.exceptions import RequestException
 from xsdata.formats.dataclass.transports import DefaultTransport
 
 from odoo import fields
+from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase
 
 from ..constants.dfe import (
@@ -378,3 +379,72 @@ class TestDFe(TransactionCase):
             self.company.dfe_next_query, before + DFE_INTERVAL_SUCCESS
         )
         self.assertLessEqual(self.company.dfe_next_query, after + DFE_INTERVAL_SUCCESS)
+
+    # ── Access key validation tests ──────────────────────────────────────
+
+    def _create_wizard(self, **kwargs):
+        defaults = {
+            "search_type": "access_key",
+            "company_id": self.company.id,
+        }
+        defaults.update(kwargs)
+        return self.env["dfe_specific_search_wizard"].create(defaults)
+
+    def test_wizard_strips_non_digits_from_access_key(self):
+        """Wizard should strip spaces and non-digit chars before searching."""
+        key_with_spaces = "3520 0159 5943 1500 0157 5500 1000 0000 0120 6277 7161"
+        wizard = self._create_wizard(access_key=key_with_spaces)
+        with mock.patch.object(
+            DefaultTransport,
+            "post",
+            return_value=response_sucesso_individual.encode("utf-8"),
+        ):
+            wizard.action_confirm_search()
+
+    def test_wizard_rejects_short_access_key(self):
+        """Wizard should raise UserError for keys shorter than 44 digits."""
+        wizard = self._create_wizard(access_key="1234567890")
+        with self.assertRaises(UserError):
+            wizard.action_confirm_search()
+
+    def test_wizard_rejects_empty_access_key(self):
+        """Wizard should raise UserError when access key is empty."""
+        wizard = self._create_wizard(access_key="")
+        with self.assertRaises(UserError):
+            wizard.action_confirm_search()
+
+    def test_wizard_rejects_invalid_check_digit(self):
+        """Wizard should raise UserError for wrong check digit."""
+        # Valid key ends in 1; change last digit to 2
+        invalid_key = "35200159594315000157550010000000012062777162"
+        wizard = self._create_wizard(access_key=invalid_key)
+        with self.assertRaises(UserError):
+            wizard.action_confirm_search()
+
+    def test_wizard_accepts_valid_access_key(self):
+        """Wizard should accept a valid 44-digit key with correct check digit."""
+        valid_key = "35200159594315000157550010000000012062777161"
+        wizard = self._create_wizard(access_key=valid_key)
+        with mock.patch.object(
+            DefaultTransport,
+            "post",
+            return_value=response_sucesso_individual.encode("utf-8"),
+        ):
+            result = wizard.action_confirm_search()
+        self.assertEqual(result["tag"], "display_notification")
+        self.assertEqual(result["params"]["type"], "success")
+
+    def test_wizard_nsu_search_skips_key_validation(self):
+        """NSU search should not validate access_key."""
+        wizard = self._create_wizard(
+            search_type="nsu",
+            nsu="200",
+            access_key="invalid",
+        )
+        with mock.patch.object(
+            DefaultTransport,
+            "post",
+            return_value=response_sucesso_individual.encode("utf-8"),
+        ):
+            result = wizard.action_confirm_search()
+        self.assertEqual(result["tag"], "display_notification")
