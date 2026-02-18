@@ -14,4 +14,10 @@
         <field name="method">_dfe_document_distribution</field>
         <field name="channel_id" ref="channel_dfe" />
     </record>
+
+    <record id="job_function_md_event_action_confirm" model="queue.job.function">
+        <field name="model_id" ref="l10n_br_nfe.model_l10n_br_nfe_md_event" />
+        <field name="method">action_confirm</field>
+        <field name="channel_id" ref="channel_dfe" />
+    </record>
 </odoo>
