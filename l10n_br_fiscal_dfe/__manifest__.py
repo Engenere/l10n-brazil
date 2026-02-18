@@ -11,11 +11,12 @@
     "author": "KMEE,Engenere,Odoo Community Association (OCA)",
     "maintainers": ["felipemotter", "antoniospneto"],
     "website": "https://github.com/OCA/l10n-brazil",
-    "depends": ["l10n_br_nfe"],
+    "depends": ["l10n_br_nfe", "queue_job"],
     "data": [
         # Data
         "data/ir_cron.xml",
         "data/dfe_actions.xml",
+        "data/queue_job_data.xml",
         # Security
         "security/dfe_security.xml",
         "security/ir.model.access.csv",

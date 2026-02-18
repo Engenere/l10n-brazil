@@ -433,14 +433,16 @@ class ResCompany(models.Model):
     @api.model
     def _cron_dfe_search_documents(self):
         now = fields.Datetime.now()
-        self.search(
+        companies = self.search(
             [
                 ("auto_fetch", "=", True),
                 "|",
                 ("dfe_next_query", "=", False),
                 ("dfe_next_query", "<=", now),
             ]
-        ).dfe_search_documents()
+        )
+        for company in companies:
+            company.with_delay()._dfe_document_distribution()
 
     # ── Distribution processing ─────────────────────────────────────────
 
