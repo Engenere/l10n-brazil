@@ -10,8 +10,8 @@
         <field name="state">code</field>
         <field name="code">
 company = env.company
-company.action_document_distribution()
-action = {"type": "ir.actions.client", "tag": "reload"}
+result = company.action_document_distribution()
+action = result or {"type": "ir.actions.client", "tag": "reload"}
         </field>
     </record>
 
