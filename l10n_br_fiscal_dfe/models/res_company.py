@@ -268,7 +268,7 @@ class ResCompany(models.Model):
                 },
             }
 
-        last_query_success = None
+        last_query_time = None
         last_result = False
         while True:
             try:
@@ -284,6 +284,7 @@ class ResCompany(models.Model):
                 break
 
             last_result = result
+            last_query_time = fields.Datetime.now()
 
             if not self._dfe_validate_distribution_response(result):
                 if result.cStat == CSTAT_CONSUMO_INDEVIDO:
@@ -299,8 +300,6 @@ class ResCompany(models.Model):
                 last_nsu = resp_ult
             if resp_max:
                 max_nsu = resp_max
-
-            last_query_success = fields.Datetime.now()
 
             self._dfe_log(
                 _(
@@ -322,7 +321,7 @@ class ResCompany(models.Model):
 
         write_vals = {
             "last_nsu": last_nsu,
-            "dfe_last_query": last_query_success or self.dfe_last_query,
+            "dfe_last_query": last_query_time or self.dfe_last_query,
             "dfe_last_status": (
                 getattr(last_result, "xMotivo", "") if last_result else ""
             ),
