@@ -10,8 +10,10 @@ from requests.exceptions import RequestException
 from xsdata.formats.dataclass.transports import DefaultTransport
 
 from odoo import fields
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase
+
+from odoo.addons.queue_job.tests.common import trap_jobs
 
 from ..constants.dfe import (
     DFE_INTERVAL_ERROR,
@@ -97,13 +99,15 @@ class TestDFe(TransactionCase):
         """Test the automated cron job for searching documents."""
         self.company.auto_fetch = True
 
-        # Test that cron succeeds
+        # Test that cron succeeds (queue_job__no_delay makes with_delay run inline)
         with mock.patch.object(
             DefaultTransport,
             "post",
             return_value=response_sucesso_multiplos.encode("utf-8"),
         ):
-            self.env["res.company"]._cron_dfe_search_documents()
+            self.env["res.company"].with_context(
+                queue_job__no_delay=True,
+            )._cron_dfe_search_documents()
             self.assertEqual(self.company.last_nsu, "000000000000201")
 
     def test_utils(self):
@@ -327,7 +331,9 @@ class TestDFe(TransactionCase):
         self.company.auto_fetch = True
         self.company.dfe_next_query = fields.Datetime.now() - timedelta(minutes=1)
 
-        self.env["res.company"]._cron_dfe_search_documents()
+        self.env["res.company"].with_context(
+            queue_job__no_delay=True,
+        )._cron_dfe_search_documents()
         mock_post.assert_called_once()
 
     def test_ciencia_does_not_reschedule_during_656(self):
@@ -379,6 +385,87 @@ class TestDFe(TransactionCase):
             self.company.dfe_next_query, before + DFE_INTERVAL_SUCCESS
         )
         self.assertLessEqual(self.company.dfe_next_query, after + DFE_INTERVAL_SUCCESS)
+
+    # ── Auto-manifest tests ────────────────────────────────────────────
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_auto_manifest_enqueues_job(self, mock_post):
+        """resNFe with auto_manifest_nfe=True should enqueue action_confirm job."""
+        mock_post.return_value = response_sucesso_multiplos.encode("utf-8")
+        self.company.auto_manifest_nfe = True
+
+        with trap_jobs() as trap:
+            self.company.dfe_search_documents()
+            trap.assert_jobs_count(1)
+
+        mde = self.env["l10n_br_nfe.md_event"].search(
+            [("company_id", "=", self.company.id)]
+        )
+        self.assertEqual(len(mde), 1)
+        self.assertEqual(mde.event_type, "ciente")
+        self.assertEqual(mde.state, "draft")
+        self.assertTrue(mde.dfe_document_id, "MDE should be linked to DFe document")
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_auto_manifest_not_triggered_when_disabled(self, mock_post):
+        """resNFe with auto_manifest_nfe=False should NOT create MDE."""
+        mock_post.return_value = response_sucesso_multiplos.encode("utf-8")
+        self.company.auto_manifest_nfe = False
+
+        self.company.dfe_search_documents()
+
+        mde = self.env["l10n_br_nfe.md_event"].search(
+            [("company_id", "=", self.company.id)]
+        )
+        self.assertFalse(mde, "No MDE should be created when auto_manifest is disabled")
+
+    # ── MDE error 573 (duplicate event) tests ────────────────────────────
+
+    def test_573_duplicate_event_treated_as_done(self):
+        """Error 573 (duplicate event) should mark MDE as done, not raise."""
+        mde = self.env["l10n_br_nfe.md_event"].create(
+            {
+                "access_key": "35200159594315000157550010000000012062777161",
+                "event_type": "ciente",
+                "company_id": self.company.id,
+                "document_type": "nfe",
+                "state": "draft",
+            }
+        )
+
+        result = mock.MagicMock()
+        result.retorno.status_code = 200
+        result.retorno._content = b"<xml>573 response</xml>"
+        inf_evento = result.resposta.retEvento.__getitem__.return_value.infEvento
+        inf_evento.cStat = "573"
+        inf_evento.xMotivo = "Duplicidade de Evento"
+
+        mde.validate_event_response(result, ["135"])
+        self.assertEqual(mde.state, "done")
+        self.assertIn("573", mde.response_xml)
+
+    def test_non_573_error_still_raises(self):
+        """Non-573 SEFAZ error should still raise ValidationError."""
+        mde = self.env["l10n_br_nfe.md_event"].create(
+            {
+                "access_key": "35200159594315000157550010000000012062777161",
+                "event_type": "ciente",
+                "company_id": self.company.id,
+                "document_type": "nfe",
+                "state": "draft",
+            }
+        )
+
+        result = mock.MagicMock()
+        result.retorno.status_code = 200
+        result.retorno._content = b"<xml>response</xml>"
+        inf_evento = result.resposta.retEvento.__getitem__.return_value.infEvento
+        inf_evento.cStat = "999"
+        inf_evento.xMotivo = "Outro erro qualquer"
+
+        with self.assertRaises(ValidationError):
+            mde.validate_event_response(result, ["135"])
+        self.assertEqual(mde.state, "draft")
 
     # ── Access key validation tests ──────────────────────────────────────
 
