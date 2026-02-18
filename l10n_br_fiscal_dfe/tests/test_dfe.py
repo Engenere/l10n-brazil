@@ -448,3 +448,122 @@ class TestDFe(TransactionCase):
         ):
             result = wizard.action_confirm_search()
         self.assertEqual(result["tag"], "display_notification")
+
+    # ── DF-e Inbox notification tests ────────────────────────────────────
+
+    def _create_dfe_notification_user(self, login, dfe_notification=False):
+        """Helper to create a user with the given dfe_notification preference."""
+        return self.env["res.users"].create(
+            {
+                "name": f"DFe Test {login}",
+                "login": login,
+                "company_id": self.company.id,
+                "company_ids": [(6, 0, [self.company.id])],
+                "dfe_notification": dfe_notification,
+            }
+        )
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_notification_all_receives(self, mock_post):
+        """User with dfe_notification='all' receives notification on new documents."""
+        mock_post.return_value = response_sucesso_multiplos.encode("utf-8")
+        user = self._create_dfe_notification_user("dfe_all", dfe_notification="all")
+
+        self.company.dfe_search_documents()
+
+        notifications = self.env["mail.message"].search(
+            [
+                ("message_type", "=", "user_notification"),
+                ("partner_ids", "in", user.partner_id.id),
+                ("subject", "ilike", "DF-e%"),
+            ]
+        )
+        self.assertTrue(
+            notifications,
+            "User with dfe_notification='all' should receive notification",
+        )
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_notification_false_skips(self, mock_post):
+        """User without dfe_notification preference should NOT receive notification."""
+        mock_post.return_value = response_sucesso_multiplos.encode("utf-8")
+        user = self._create_dfe_notification_user("dfe_none", dfe_notification=False)
+
+        self.company.dfe_search_documents()
+
+        notifications = self.env["mail.message"].search(
+            [
+                ("message_type", "=", "user_notification"),
+                ("partner_ids", "in", user.partner_id.id),
+                ("subject", "ilike", "DF-e%"),
+            ]
+        )
+        self.assertFalse(
+            notifications,
+            "User without dfe_notification should not receive notification",
+        )
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_notification_third_party_receives(self, mock_post):
+        """User with 'third_party' receives when mock returns third-party docs."""
+        mock_post.return_value = response_sucesso_multiplos.encode("utf-8")
+        user = self._create_dfe_notification_user(
+            "dfe_third", dfe_notification="third_party"
+        )
+
+        # Mock response CNPJ (59594315000157) != company CNPJ (81583054000129)
+        # so all documents are third-party
+        self.company.dfe_search_documents()
+
+        notifications = self.env["mail.message"].search(
+            [
+                ("message_type", "=", "user_notification"),
+                ("partner_ids", "in", user.partner_id.id),
+                ("subject", "ilike", "DF-e%"),
+            ]
+        )
+        self.assertTrue(
+            notifications,
+            "User with 'third_party' should receive notification for third-party docs",
+        )
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_notification_own_skips_third_party_only(self, mock_post):
+        """User with 'own' should NOT receive when only third-party docs found."""
+        mock_post.return_value = response_sucesso_multiplos.encode("utf-8")
+        user = self._create_dfe_notification_user("dfe_own", dfe_notification="own")
+
+        # All docs in mock are third-party (emitter CNPJ != company CNPJ)
+        self.company.dfe_search_documents()
+
+        notifications = self.env["mail.message"].search(
+            [
+                ("message_type", "=", "user_notification"),
+                ("partner_ids", "in", user.partner_id.id),
+                ("subject", "ilike", "DF-e%"),
+            ]
+        )
+        self.assertFalse(
+            notifications,
+            "User with 'own' should not receive when only third-party docs exist",
+        )
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_notification_no_new_docs_137(self, mock_post):
+        """Response 137 (no documents) should not trigger any notification."""
+        mock_post.return_value = response_137.encode("utf-8")
+        user = self._create_dfe_notification_user("dfe_137", dfe_notification="all")
+
+        self.company.dfe_search_documents()
+
+        notifications = self.env["mail.message"].search(
+            [
+                ("message_type", "=", "user_notification"),
+                ("partner_ids", "in", user.partner_id.id),
+                ("subject", "ilike", "DF-e%"),
+            ]
+        )
+        self.assertFalse(
+            notifications,
+            "No notification should be sent when no new documents found (137)",
+        )
