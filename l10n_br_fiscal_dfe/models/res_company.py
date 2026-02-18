@@ -216,6 +216,26 @@ class ResCompany(models.Model):
 
     def action_document_distribution(self):
         self.ensure_one()
+        now = fields.Datetime.now()
+        if self.dfe_next_query and self.dfe_next_query > now:
+            remaining = self.dfe_next_query - now
+            minutes = int(remaining.total_seconds() // 60)
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _(
+                        "Cooldown active (%(code)s)",
+                        code=self.dfe_last_status_code or "—",
+                    ),
+                    "message": _(
+                        "Next query scheduled in %(minutes)s minutes.",
+                        minutes=minutes,
+                    ),
+                    "type": "warning",
+                    "sticky": False,
+                },
+            }
         return self._dfe_document_distribution()
 
     def _dfe_search_specific_document(self, access_key=None, nsu=None):
@@ -249,24 +269,7 @@ class ResCompany(models.Model):
         max_nsu = raw_max if (raw_max and raw_max != "000000000000000") else False
         now = fields.Datetime.now()
         if self.dfe_next_query and self.dfe_next_query > now:
-            remaining = self.dfe_next_query - now
-            minutes = int(remaining.total_seconds() // 60)
-            return {
-                "type": "ir.actions.client",
-                "tag": "display_notification",
-                "params": {
-                    "title": _(
-                        "Cooldown active (%(code)s)",
-                        code=self.dfe_last_status_code or "—",
-                    ),
-                    "message": _(
-                        "Next query scheduled in %(minutes)s minutes.",
-                        minutes=minutes,
-                    ),
-                    "type": "warning",
-                    "sticky": False,
-                },
-            }
+            return
 
         last_query_time = None
         last_result = False
