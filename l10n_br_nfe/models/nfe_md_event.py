@@ -1,6 +1,7 @@
 # Copyright (C) 2023 KMEE Informatica LTDA
 # License AGPL-3 or later (http://www.gnu.org/licenses/agpl)
 
+import logging
 import re
 from datetime import datetime
 
@@ -12,6 +13,8 @@ from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 from ..constants import mdest as MD
+
+_logger = logging.getLogger(__name__)
 
 
 class NfeRecipientManifestationEvent(models.Model):
@@ -86,8 +89,17 @@ class NfeRecipientManifestationEvent(models.Model):
         else:
             inf_evento = result.resposta.retEvento[0].infEvento
             if inf_evento.cStat not in valid_codes:
-                code = inf_evento.cStat
-                message = inf_evento.xMotivo
+                if inf_evento.cStat == "573":
+                    _logger.warning(
+                        "MDE duplicate event (573) for key %s — marking as done",
+                        self.access_key,
+                    )
+                    self.response_xml = result.retorno._content.decode("utf-8")
+                    self.state = "done"
+                    valid = True
+                else:
+                    code = inf_evento.cStat
+                    message = inf_evento.xMotivo
             else:
                 valid = True
                 self.protocol = inf_evento.nProt
