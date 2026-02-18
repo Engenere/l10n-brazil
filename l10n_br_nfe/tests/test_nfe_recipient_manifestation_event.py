@@ -131,19 +131,22 @@ class TestNFeMDE(TransactionCase):
             self.mde_id.event_type = "confirmado"
             self.mde_id.action_confirm()
 
-        proc_negocio = _FakeProcessor(
+    def test_event_573_duplicate_treated_as_done(self):
+        """Error 573 (duplicate event) should mark MDE as done, not raise."""
+        proc_573 = _FakeProcessor(
             {
                 "confirmacao_da_operacao": _FakeResult(
                     inf_cstat="573", inf_xmotivo="Rejeicao: Duplicidade de Evento"
                 )
             }
         )
-        with (
-            mock.patch(
-                "odoo.addons.l10n_br_nfe.models.nfe_md_event.NfeRecipientManifestationEvent._get_processor",
-                return_value=proc_negocio,
-            ),
-            self.assertRaises(ValidationError),
+        with mock.patch(
+            "odoo.addons.l10n_br_nfe.models.nfe_md_event.NfeRecipientManifestationEvent._get_processor",
+            return_value=proc_573,
         ):
             self.mde_id.event_type = "confirmado"
+            self.mde_id.state = "draft"
             self.mde_id.action_confirm()
+
+        self.assertEqual(self.mde_id.state, "done")
+        self.assertTrue(self.mde_id.response_xml)
