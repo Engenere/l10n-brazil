@@ -185,17 +185,18 @@ class ResCompany(models.Model):
             uf=self.state_id.ibge_code,
             pkcs12_data=cert,
             pkcs12_password=self.certificate.password,
-            wrap_response=False,
+            wrap_response=True,
         )
 
     def _dfe_consultar_distribuicao(self, **kwargs):
         return self._dfe_get_processor().consultar_distribuicao(**kwargs)
 
     def _dfe_validate_distribution_response(self, result, raise_message=False):
+        resp = result.resposta
         valid = False
-        message = getattr(result, "xMotivo", "")
-        if result.cStat != CSTAT_SUCCESS:
-            code = result.cStat
+        message = getattr(resp, "xMotivo", "")
+        if resp.cStat != CSTAT_SUCCESS:
+            code = resp.cStat
         else:
             valid = True
 
@@ -248,15 +249,16 @@ class ResCompany(models.Model):
         )
         if not self._dfe_validate_distribution_response(result, raise_message=True):
             return
+        resp = result.resposta
         self._dfe_log(
             _(
                 "Specific search OK: %(cstat)s - %(motivo)s",
-                cstat=result.cStat,
-                motivo=result.xMotivo,
+                cstat=resp.cStat,
+                motivo=resp.xMotivo,
             ),
             result=result,
         )
-        self._dfe_process_distribution(result)
+        self._dfe_process_distribution(resp)
 
     def _dfe_document_distribution(self):
         self.ensure_one()
@@ -288,17 +290,18 @@ class ResCompany(models.Model):
 
             last_result = result
             last_query_time = fields.Datetime.now()
+            resp = result.resposta
 
             if not self._dfe_validate_distribution_response(result):
-                if result.cStat == CSTAT_CONSUMO_INDEVIDO:
-                    resp_nsu = getattr(result, "ultNSU", None)
+                if resp.cStat == CSTAT_CONSUMO_INDEVIDO:
+                    resp_nsu = getattr(resp, "ultNSU", None)
                     if resp_nsu and resp_nsu != "000000000000000":
                         last_nsu = resp_nsu
                 break
 
             # Only update NSU from successful responses (cStat=138)
-            resp_ult = getattr(result, "ultNSU", None)
-            resp_max = getattr(result, "maxNSU", None)
+            resp_ult = getattr(resp, "ultNSU", None)
+            resp_max = getattr(resp, "maxNSU", None)
             if resp_ult:
                 last_nsu = resp_ult
             if resp_max:
@@ -309,27 +312,26 @@ class ResCompany(models.Model):
                     "Distribution query OK: "
                     "%(cstat)s - %(motivo)s "
                     "(ultNSU=%(ult)s, maxNSU=%(mx)s)",
-                    cstat=result.cStat,
-                    motivo=result.xMotivo,
+                    cstat=resp.cStat,
+                    motivo=resp.xMotivo,
                     ult=last_nsu,
                     mx=max_nsu,
                 ),
                 result=result,
             )
 
-            self._dfe_process_distribution(result)
+            self._dfe_process_distribution(resp)
 
             if max_nsu and last_nsu >= max_nsu:
                 break
 
+        last_resp = last_result.resposta if last_result else False
         write_vals = {
             "last_nsu": last_nsu,
             "dfe_last_query": last_query_time or self.dfe_last_query,
-            "dfe_last_status": (
-                getattr(last_result, "xMotivo", "") if last_result else ""
-            ),
+            "dfe_last_status": (getattr(last_resp, "xMotivo", "") if last_resp else ""),
             "dfe_last_status_code": (
-                getattr(last_result, "cStat", "") if last_result else ""
+                getattr(last_resp, "cStat", "") if last_resp else ""
             ),
         }
         if max_nsu:
@@ -604,7 +606,7 @@ class ResCompany(models.Model):
             ),
             result=result,
         )
-        return result.loteDistDFeInt.docZip[0]
+        return result.resposta.loteDistDFeInt.docZip[0]
 
     def _dfe_parse_xml_document(self, document):
         """
