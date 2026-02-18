@@ -46,14 +46,6 @@
                             />
                         </group>
                     </group>
-                    <separator string="Distribution Log" />
-                    <field name="dfe_log_ids" nolabel="1" readonly="1">
-                        <tree>
-                            <field name="create_date" string="Date" />
-                            <field name="log_type" />
-                            <field name="message" />
-                        </tree>
-                    </field>
                 </page>
             </xpath>
         </field>
