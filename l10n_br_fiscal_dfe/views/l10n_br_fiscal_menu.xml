@@ -15,7 +15,7 @@
     <menuitem
         id="dfe_document_menu"
         action="dfe_document_action"
-        name="Documents"
+        name="Received NF-es"
         parent="dfe_distribution_menu"
         sequence="10"
     />
