@@ -654,3 +654,69 @@ class TestDFe(TransactionCase):
             notifications,
             "No notification should be sent when no new documents found (137)",
         )
+
+    # ── Partner matching tests ───────────────────────────────────────────
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_partner_id_computed_on_dfe_search(self, mock_post):
+        """partner_id should be set when a partner matches the access key CNPJ."""
+        mock_post.return_value = response_sucesso_individual.encode("utf-8")
+
+        # Access key CNPJ = 59594315000157 (positions 6-20)
+        self.company.dfe_search_documents()
+
+        dfe_doc = self.env["l10n_br_fiscal_dfe.document"].search(
+            [("company_id", "=", self.company.id)], limit=1
+        )
+        self.assertTrue(
+            dfe_doc.partner_id,
+            "partner_id should be set when a partner with matching CNPJ exists",
+        )
+        self.assertEqual(
+            dfe_doc.partner_id.cnpj_cpf_stripped,
+            "59594315000157",
+            "partner_id CNPJ should match the access key CNPJ",
+        )
+
+    def test_partner_id_false_when_no_match(self):
+        """partner_id should be False when no partner matches the CNPJ."""
+        # Use a CNPJ that doesn't exist in demo data (positions 6-20)
+        fake_key = "35200199999999999999550010000000012062777161"
+        dfe_doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": fake_key,
+                "company_id": self.company.id,
+            }
+        )
+        self.assertFalse(
+            dfe_doc.partner_id,
+            "partner_id should be False when no partner matches",
+        )
+
+    def test_action_match_partner_rematch(self):
+        """action_match_partner should update partner_id for existing documents."""
+        # Use a unique CNPJ that doesn't exist yet
+        test_cnpj = "12345678000195"
+        fake_key = "352001" + test_cnpj + "550010000000012062777161"
+        dfe_doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": fake_key,
+                "company_id": self.company.id,
+            }
+        )
+        self.assertFalse(dfe_doc.partner_id)
+
+        # Now create the partner and trigger re-match
+        partner = self.env["res.partner"].create(
+            {
+                "name": "Late Partner DFe",
+                "cnpj_cpf": "12.345.678/0001-95",
+            }
+        )
+        dfe_doc.action_match_partner()
+
+        self.assertEqual(
+            dfe_doc.partner_id,
+            partner,
+            "action_match_partner should find the newly created partner",
+        )
