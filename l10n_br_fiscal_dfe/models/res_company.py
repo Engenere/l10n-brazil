@@ -6,7 +6,7 @@ import base64
 import gzip
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from io import BytesIO
 
 from lxml import objectify
@@ -22,6 +22,10 @@ from ..constants.dfe import (
     CSTAT_SUCCESS,
     DFE_ENVIRONMENT_DEFAULT,
     DFE_ENVIRONMENTS,
+    DFE_INTERVAL_ERROR,
+    DFE_INTERVAL_NO_DOCS,
+    DFE_INTERVAL_RATE_LIMITED,
+    DFE_INTERVAL_SUCCESS,
     DFE_VERSION_DEFAULT,
     DFE_VERSIONS,
 )
@@ -58,6 +62,11 @@ class ResCompany(models.Model):
     dfe_last_status = fields.Char(string="Last Status", readonly=True)
 
     dfe_last_status_code = fields.Char(string="Last Status Code", readonly=True)
+
+    dfe_next_query = fields.Datetime(
+        string="Next Scheduled Query",
+        help="DF-e distribution will not be queried before this time.",
+    )
 
     auto_fetch = fields.Boolean(
         default=False,
@@ -130,7 +139,43 @@ class ResCompany(models.Model):
                         if isinstance(content, bytes)
                         else str(content)
                     )
-        self.env["l10n_br_fiscal_dfe.distribution_log"].create(vals)
+        self.env["l10n_br_fiscal_dfe.distribution_log"].sudo().create(vals)
+
+    def _dfe_schedule_next_query(self, status_code, had_exception=False):
+        """Schedule the next DF-e query based on the last response status."""
+        if had_exception:
+            interval = DFE_INTERVAL_ERROR
+        elif status_code == CSTAT_SUCCESS:
+            interval = DFE_INTERVAL_SUCCESS
+        elif status_code == CSTAT_NO_DOCS:
+            interval = DFE_INTERVAL_NO_DOCS
+        elif status_code == CSTAT_CONSUMO_INDEVIDO:
+            interval = DFE_INTERVAL_RATE_LIMITED
+        else:
+            interval = DFE_INTERVAL_NO_DOCS
+        self.sudo().dfe_next_query = fields.Datetime.now() + interval
+        self._dfe_sync_cron_nextcall()
+
+    def _dfe_sync_cron_nextcall(self):
+        """Sync cron nextcall to the earliest dfe_next_query across companies."""
+        cron = self.env.ref(
+            "l10n_br_fiscal_dfe.ir_cron_search_dfe_documents",
+            raise_if_not_found=False,
+        )
+        if not cron:
+            return
+        earliest = (
+            self.env["res.company"]
+            .sudo()
+            .search(
+                [("auto_fetch", "=", True), ("dfe_next_query", "!=", False)],
+                order="dfe_next_query asc",
+                limit=1,
+            )
+            .dfe_next_query
+        )
+        if earliest and earliest != cron.nextcall:
+            cron.sudo().nextcall = earliest
 
     def _dfe_get_processor(self):
         self.ensure_one()
@@ -140,17 +185,18 @@ class ResCompany(models.Model):
             uf=self.state_id.ibge_code,
             pkcs12_data=cert,
             pkcs12_password=self.certificate.password,
-            wrap_response=False,
+            wrap_response=True,
         )
 
     def _dfe_consultar_distribuicao(self, **kwargs):
         return self._dfe_get_processor().consultar_distribuicao(**kwargs)
 
     def _dfe_validate_distribution_response(self, result, raise_message=False):
+        resp = result.resposta
         valid = False
-        message = getattr(result, "xMotivo", "")
-        if result.cStat != CSTAT_SUCCESS:
-            code = result.cStat
+        message = getattr(resp, "xMotivo", "")
+        if resp.cStat != CSTAT_SUCCESS:
+            code = resp.cStat
         else:
             valid = True
 
@@ -169,8 +215,40 @@ class ResCompany(models.Model):
 
     # ── Distribution actions ────────────────────────────────────────────
 
+    @api.model
+    def action_banner_search_all(self):
+        """Called from banner button — delegates to current company."""
+        company = self.env.company
+        result = company.action_document_distribution()
+        return result or {"type": "ir.actions.client", "tag": "reload"}
+
+    @api.model
+    def action_banner_specific_search(self):
+        """Called from banner button — delegates to current company."""
+        return self.env.company.action_search_specific()
+
     def action_document_distribution(self):
         self.ensure_one()
+        now = fields.Datetime.now()
+        if self.dfe_next_query and self.dfe_next_query > now:
+            remaining = self.dfe_next_query - now
+            minutes = int(remaining.total_seconds() // 60)
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _(
+                        "Cooldown active (%(code)s)",
+                        code=self.dfe_last_status_code or "—",
+                    ),
+                    "message": _(
+                        "Next query scheduled in %(minutes)s minutes.",
+                        minutes=minutes,
+                    ),
+                    "type": "warning",
+                    "sticky": False,
+                },
+            }
         return self._dfe_document_distribution()
 
     def _dfe_search_specific_document(self, access_key=None, nsu=None):
@@ -183,15 +261,16 @@ class ResCompany(models.Model):
         )
         if not self._dfe_validate_distribution_response(result, raise_message=True):
             return
+        resp = result.resposta
         self._dfe_log(
             _(
                 "Specific search OK: %(cstat)s - %(motivo)s",
-                cstat=result.cStat,
-                motivo=result.xMotivo,
+                cstat=resp.cStat,
+                motivo=resp.xMotivo,
             ),
             result=result,
         )
-        self._dfe_process_distribution(result)
+        self._dfe_process_distribution(resp)
 
     def _dfe_document_distribution(self):
         self.ensure_one()
@@ -202,27 +281,17 @@ class ResCompany(models.Model):
         )
         raw_max = (self.max_nsu or "").strip()
         max_nsu = raw_max if (raw_max and raw_max != "000000000000000") else False
-        last_query = self.dfe_last_query or fields.Datetime.now()
+        now = fields.Datetime.now()
+        if self.dfe_next_query and self.dfe_next_query > now:
+            return
 
-        if self.dfe_last_status_code in (CSTAT_CONSUMO_INDEVIDO, CSTAT_NO_DOCS):
-            if fields.Datetime.now() - last_query < timedelta(hours=1):
-                if not max_nsu or last_nsu >= max_nsu:
-                    return {
-                        "type": "ir.actions.client",
-                        "tag": "display_notification",
-                        "params": {
-                            "title": _(
-                                "Cooldown active (%(code)s)",
-                                code=self.dfe_last_status_code,
-                            ),
-                            "message": _("Waiting 1 hour before making a new request."),
-                            "type": "warning",
-                            "sticky": False,
-                        },
-                    }
-
-        last_query_success = None
+        last_query_time = None
         last_result = False
+        existing_doc_ids = set(
+            self.env["l10n_br_fiscal_dfe.document"]
+            .search([("company_id", "=", self.id)])
+            .ids
+        )
         while True:
             try:
                 result = self._dfe_consultar_distribuicao(
@@ -237,55 +306,124 @@ class ResCompany(models.Model):
                 break
 
             last_result = result
+            last_query_time = fields.Datetime.now()
+            resp = result.resposta
 
             if not self._dfe_validate_distribution_response(result):
-                if result.cStat == CSTAT_CONSUMO_INDEVIDO:
-                    resp_nsu = getattr(result, "ultNSU", None)
+                if resp.cStat == CSTAT_CONSUMO_INDEVIDO:
+                    resp_nsu = getattr(resp, "ultNSU", None)
                     if resp_nsu and resp_nsu != "000000000000000":
                         last_nsu = resp_nsu
                 break
 
             # Only update NSU from successful responses (cStat=138)
-            resp_ult = getattr(result, "ultNSU", None)
-            resp_max = getattr(result, "maxNSU", None)
+            resp_ult = getattr(resp, "ultNSU", None)
+            resp_max = getattr(resp, "maxNSU", None)
             if resp_ult:
                 last_nsu = resp_ult
             if resp_max:
                 max_nsu = resp_max
-
-            last_query_success = fields.Datetime.now()
 
             self._dfe_log(
                 _(
                     "Distribution query OK: "
                     "%(cstat)s - %(motivo)s "
                     "(ultNSU=%(ult)s, maxNSU=%(mx)s)",
-                    cstat=result.cStat,
-                    motivo=result.xMotivo,
+                    cstat=resp.cStat,
+                    motivo=resp.xMotivo,
                     ult=last_nsu,
                     mx=max_nsu,
                 ),
                 result=result,
             )
 
-            self._dfe_process_distribution(result)
+            self._dfe_process_distribution(resp)
 
             if max_nsu and last_nsu >= max_nsu:
                 break
 
+        # Notify opted-in users about newly found documents
+        current_doc_ids = set(
+            self.env["l10n_br_fiscal_dfe.document"]
+            .search([("company_id", "=", self.id)])
+            .ids
+        )
+        new_doc_ids = current_doc_ids - existing_doc_ids
+        if new_doc_ids:
+            new_documents = self.env["l10n_br_fiscal_dfe.document"].browse(new_doc_ids)
+            self._dfe_notify_users(new_documents)
+
+        last_resp = last_result.resposta if last_result else False
         write_vals = {
             "last_nsu": last_nsu,
-            "dfe_last_query": last_query_success or self.dfe_last_query,
-            "dfe_last_status": (
-                getattr(last_result, "xMotivo", "") if last_result else ""
-            ),
+            "dfe_last_query": last_query_time or self.dfe_last_query,
+            "dfe_last_status": (getattr(last_resp, "xMotivo", "") if last_resp else ""),
             "dfe_last_status_code": (
-                getattr(last_result, "cStat", "") if last_result else ""
+                getattr(last_resp, "cStat", "") if last_resp else ""
             ),
         }
         if max_nsu:
             write_vals["max_nsu"] = max_nsu
-        self.write(write_vals)
+        self.sudo().write(write_vals)
+        self._dfe_schedule_next_query(
+            status_code=write_vals.get("dfe_last_status_code", ""),
+            had_exception=not last_result,
+        )
+
+    def _dfe_notify_users(self, new_documents):
+        """Send Inbox notifications to opted-in users about new DF-e documents."""
+        self.ensure_one()
+        own_count = len(new_documents.filtered("is_own_document"))
+        third_party_count = len(new_documents) - own_count
+
+        users = (
+            self.env["res.users"]
+            .sudo()
+            .search(
+                [
+                    ("dfe_notification", "!=", False),
+                    ("company_ids", "in", self.id),
+                ]
+            )
+        )
+        if not users:
+            return
+
+        action = self.env.ref(
+            "l10n_br_fiscal_dfe.dfe_document_action", raise_if_not_found=False
+        )
+        action_url = (
+            f"/web#action={action.id}"
+            if action
+            else "/web#model=l10n_br_fiscal_dfe.document"
+        )
+
+        for user in users:
+            pref = user.dfe_notification
+            if pref == "own" and not own_count:
+                continue
+            if pref == "third_party" and not third_party_count:
+                continue
+
+            parts = []
+            if pref in ("all", "own") and own_count:
+                parts.append(_("%(count)s own document(s)", count=own_count))
+            if pref in ("all", "third_party") and third_party_count:
+                parts.append(
+                    _("%(count)s third-party document(s)", count=third_party_count)
+                )
+            body_text = ", ".join(parts)
+            body = _(
+                "<p>New DF-e documents found: %(summary)s.</p>"
+                '<p><a href="%(url)s">View documents</a></p>',
+                summary=body_text,
+                url=action_url,
+            )
+            self.env["mail.thread"].message_notify(
+                partner_ids=user.partner_id.ids,
+                subject=_("DF-e: new documents found for %s", self.name),
+                body=body,
+            )
 
     def dfe_search_documents(self):
         for record in self:
@@ -297,7 +435,7 @@ class ResCompany(models.Model):
             "name": _("Specific Document Search"),
             "type": "ir.actions.act_window",
             "res_model": "dfe_specific_search_wizard",
-            "view_mode": "form",
+            "views": [[False, "form"]],
             "target": "new",
             "context": {"default_company_id": self.id},
         }
@@ -306,12 +444,24 @@ class ResCompany(models.Model):
 
     @api.model
     def _cron_dfe_search_documents(self):
-        self.search([("auto_fetch", "=", True)]).dfe_search_documents()
+        now = fields.Datetime.now()
+        companies = self.search(
+            [
+                ("auto_fetch", "=", True),
+                "|",
+                ("dfe_next_query", "=", False),
+                ("dfe_next_query", "<=", now),
+            ]
+        )
+        for company in companies:
+            company.with_company(company).with_delay(
+                description=f"NF-e: consulta distribuição DF-e ({company.name})",
+            )._dfe_document_distribution()
 
     # ── Distribution processing ─────────────────────────────────────────
 
     def _dfe_process_distribution(self, result):
-        DfeRecord = self.env["l10n_br_fiscal_dfe.dfe"]
+        DfeRecord = self.env["l10n_br_fiscal_dfe.dfe"].sudo()
 
         for doc in result.loteDistDFeInt.docZip:
             payload = getattr(doc, "value", None)
@@ -395,29 +545,33 @@ class ResCompany(models.Model):
         dfe_document = self._dfe_get_or_create_document(nfe_key)
         supplier_cnpj = utils.mask_cnpj("%014d" % root.NFe.infNFe.emit.CNPJ)
 
-        dfe_record = self.env["l10n_br_fiscal_dfe.dfe"].create(
-            {
-                "document_number": root.NFe.infNFe.ide.nNF,
-                "emitter": root.NFe.infNFe.emit.xNome,
-                "access_key": nfe_key,
-                "serie": root.NFe.infNFe.ide.serie,
-                "operation_type": str(root.NFe.infNFe.ide.tpNF),
-                "document_amount": root.NFe.infNFe.total.ICMSTot.vNF,
-                "inclusion_datetime": datetime.now(),
-                "vat": supplier_cnpj,
-                "ie": root.NFe.infNFe.emit.IE,
-                "emission_datetime": datetime.strptime(
-                    str(root.NFe.infNFe.ide.dhEmi)[:19],
-                    "%Y-%m-%dT%H:%M:%S",
-                ),
-                "nsu": nsu,
-                "company_id": self.id,
-                "dfe_nfe_document_type": "dfe_nfe_complete",
-                "document_state": "1",
-            }
+        dfe_record = (
+            self.env["l10n_br_fiscal_dfe.dfe"]
+            .sudo()
+            .create(
+                {
+                    "document_number": root.NFe.infNFe.ide.nNF,
+                    "emitter": root.NFe.infNFe.emit.xNome,
+                    "access_key": nfe_key,
+                    "serie": root.NFe.infNFe.ide.serie,
+                    "operation_type": str(root.NFe.infNFe.ide.tpNF),
+                    "document_amount": root.NFe.infNFe.total.ICMSTot.vNF,
+                    "inclusion_datetime": datetime.now(),
+                    "vat": supplier_cnpj,
+                    "ie": root.NFe.infNFe.emit.IE,
+                    "emission_datetime": datetime.strptime(
+                        str(root.NFe.infNFe.ide.dhEmi)[:19],
+                        "%Y-%m-%dT%H:%M:%S",
+                    ),
+                    "nsu": nsu,
+                    "company_id": self.id,
+                    "dfe_nfe_document_type": "dfe_nfe_complete",
+                    "document_state": "1",
+                }
+            )
         )
 
-        dfe_document.dfe_ids = [(4, dfe_record.id)]
+        dfe_document.sudo().dfe_ids = [(4, dfe_record.id)]
         return dfe_record
 
     def _dfe_create_from_resNFe(self, root, nsu):
@@ -425,23 +579,27 @@ class ResCompany(models.Model):
         dfe_document = self._dfe_get_or_create_document(nfe_key)
         supplier_cnpj = utils.mask_cnpj("%014d" % root.CNPJ)
 
-        dfe_record = self.env["l10n_br_fiscal_dfe.dfe"].create(
-            {
-                "access_key": nfe_key,
-                "emitter": root.xNome,
-                "operation_type": str(root.tpNF),
-                "document_amount": root.vNF,
-                "document_state": str(root.cSitNFe),
-                "inclusion_datetime": datetime.now(),
-                "vat": supplier_cnpj,
-                "ie": root.IE,
-                "emission_datetime": datetime.strptime(
-                    str(root.dhEmi)[:19], "%Y-%m-%dT%H:%M:%S"
-                ),
-                "company_id": self.id,
-                "dfe_nfe_document_type": "dfe_nfe_summary",
-                "nsu": nsu,
-            }
+        dfe_record = (
+            self.env["l10n_br_fiscal_dfe.dfe"]
+            .sudo()
+            .create(
+                {
+                    "access_key": nfe_key,
+                    "emitter": root.xNome,
+                    "operation_type": str(root.tpNF),
+                    "document_amount": root.vNF,
+                    "document_state": str(root.cSitNFe),
+                    "inclusion_datetime": datetime.now(),
+                    "vat": supplier_cnpj,
+                    "ie": root.IE,
+                    "emission_datetime": datetime.strptime(
+                        str(root.dhEmi)[:19], "%Y-%m-%dT%H:%M:%S"
+                    ),
+                    "company_id": self.id,
+                    "dfe_nfe_document_type": "dfe_nfe_summary",
+                    "nsu": nsu,
+                }
+            )
         )
 
         if self.auto_manifest_nfe:
@@ -452,11 +610,15 @@ class ResCompany(models.Model):
                     "company_id": self.id,
                     "document_type": "nfe",
                     "state": "draft",
+                    "dfe_document_id": dfe_document.id,
                 }
             )
-            mde.action_confirm()
+            mde.with_delay(
+                channel="root.dfe",
+                description=f"Auto-manifest ciência: {nfe_key}",
+            ).action_confirm()
 
-        dfe_document.dfe_ids = [(4, dfe_record.id)]
+        dfe_document.sudo().dfe_ids = [(4, dfe_record.id)]
         return dfe_record
 
     def _dfe_create_from_resEvento(self, root, nsu):
@@ -464,22 +626,26 @@ class ResCompany(models.Model):
         dfe_document = self._dfe_get_or_create_document(nfe_key)
         supplier_cnpj = utils.mask_cnpj("%014d" % root.CNPJ)
 
-        dfe_record = self.env["l10n_br_fiscal_dfe.dfe"].create(
-            {
-                "access_key": nfe_key,
-                "inclusion_datetime": datetime.now(),
-                "vat": supplier_cnpj,
-                "emission_datetime": datetime.strptime(
-                    str(root.dhEvento)[:19], "%Y-%m-%dT%H:%M:%S"
-                ),
-                "company_id": self.id,
-                "event_type_dfe": str(root.tpEvento),
-                "dfe_nfe_document_type": "dfe_nfe_event",
-                "nsu": nsu,
-            }
+        dfe_record = (
+            self.env["l10n_br_fiscal_dfe.dfe"]
+            .sudo()
+            .create(
+                {
+                    "access_key": nfe_key,
+                    "inclusion_datetime": datetime.now(),
+                    "vat": supplier_cnpj,
+                    "emission_datetime": datetime.strptime(
+                        str(root.dhEvento)[:19], "%Y-%m-%dT%H:%M:%S"
+                    ),
+                    "company_id": self.id,
+                    "event_type_dfe": str(root.tpEvento),
+                    "dfe_nfe_document_type": "dfe_nfe_event",
+                    "nsu": nsu,
+                }
+            )
         )
 
-        dfe_document.dfe_ids = [(4, dfe_record.id)]
+        dfe_document.sudo().dfe_ids = [(4, dfe_record.id)]
         return dfe_record
 
     def _dfe_create_from_procEventoNFe(self, root, nsu):
@@ -487,25 +653,29 @@ class ResCompany(models.Model):
         dfe_document = self._dfe_get_or_create_document(nfe_key)
         supplier_cnpj = utils.mask_cnpj("%014d" % root.evento.infEvento.CNPJ)
 
-        dfe_record = self.env["l10n_br_fiscal_dfe.dfe"].create(
-            {
-                "access_key": nfe_key,
-                "inclusion_datetime": datetime.now(),
-                "vat": supplier_cnpj,
-                "emission_datetime": datetime.strptime(
-                    str(root.evento.infEvento.dhEvento)[:19], "%Y-%m-%dT%H:%M:%S"
-                ),
-                "company_id": self.id,
-                "dfe_nfe_document_type": "dfe_nfe_event",
-                "nsu": nsu,
-            }
+        dfe_record = (
+            self.env["l10n_br_fiscal_dfe.dfe"]
+            .sudo()
+            .create(
+                {
+                    "access_key": nfe_key,
+                    "inclusion_datetime": datetime.now(),
+                    "vat": supplier_cnpj,
+                    "emission_datetime": datetime.strptime(
+                        str(root.evento.infEvento.dhEvento)[:19], "%Y-%m-%dT%H:%M:%S"
+                    ),
+                    "company_id": self.id,
+                    "dfe_nfe_document_type": "dfe_nfe_event",
+                    "nsu": nsu,
+                }
+            )
         )
 
-        dfe_document.dfe_ids = [(4, dfe_record.id)]
+        dfe_document.sudo().dfe_ids = [(4, dfe_record.id)]
         return dfe_record
 
     def _dfe_get_or_create_document(self, nfe_key):
-        Document = self.env["l10n_br_fiscal_dfe.document"]
+        Document = self.env["l10n_br_fiscal_dfe.document"].sudo()
         domain = [
             ("access_key", "=", nfe_key),
             ("company_id", "=", self.id),
@@ -543,7 +713,7 @@ class ResCompany(models.Model):
             ),
             result=result,
         )
-        return result.loteDistDFeInt.docZip[0]
+        return result.resposta.loteDistDFeInt.docZip[0]
 
     def _dfe_parse_xml_document(self, document):
         """

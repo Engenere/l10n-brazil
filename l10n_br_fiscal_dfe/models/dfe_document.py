@@ -11,13 +11,6 @@ from odoo.exceptions import UserError
 
 from ..constants.dfe import SITUACAO_NFE
 
-EVENT_TYPE_MAP = {
-    "210200": "Confirmada operação",
-    "210210": "Ciente da Operação",
-    "210220": "Desconhecimento da Operação",
-    "210240": "Operação não realizada",
-}
-
 
 class L10nBrFiscalDfeDocument(models.Model):
     _name = "l10n_br_fiscal_dfe.document"
@@ -49,12 +42,17 @@ class L10nBrFiscalDfeDocument(models.Model):
     )
 
     document_state = fields.Selection(
-        selection=SITUACAO_NFE, compute="_compute_dfe_info"
+        selection=SITUACAO_NFE,
+        compute="_compute_document_state",
+        store=True,
     )
 
     document_number = fields.Float(compute="_compute_dfe_info")
 
-    document_emission_date = fields.Datetime(compute="_compute_dfe_info")
+    document_emission_date = fields.Datetime(
+        compute="_compute_document_emission_date",
+        store=True,
+    )
 
     serie = fields.Char(compute="_compute_dfe_info")
 
@@ -62,9 +60,10 @@ class L10nBrFiscalDfeDocument(models.Model):
         [
             ("green", "NF-e Completa"),
             ("blue", "Resumo da NF-e"),
-            ("normal", "Evento da NF-e"),
+            ("muted", "Cancelada/Denegada"),
         ],
         compute="_compute_color_status",
+        store=True,
     )
 
     manifestation_status = fields.Selection(
@@ -97,12 +96,37 @@ class L10nBrFiscalDfeDocument(models.Model):
         index=True,
     )
 
+    partner_id = fields.Many2one(
+        comodel_name="res.partner",
+        string="Partner",
+        compute="_compute_partner_id",
+        store=True,
+    )
+
     is_own_document = fields.Boolean(
         string="Own Document",
         compute="_compute_is_own_document",
         store=True,
         help="True when the emitter CNPJ in the access key matches the company CNPJ.",
     )
+
+    @api.depends("access_key")
+    def _compute_partner_id(self):
+        Partner = self.env["res.partner"]
+        for record in self:
+            key = record.access_key or ""
+            if len(key) == 44:
+                cnpj_digits = key[6:20]
+                partner = Partner.search(
+                    [("cnpj_cpf_stripped", "=", cnpj_digits)],
+                    limit=1,
+                )
+                record.partner_id = partner
+            else:
+                record.partner_id = False
+
+    def action_match_partner(self):
+        self.sudo()._compute_partner_id()
 
     @api.depends("access_key", "company_id.vat")
     def _compute_is_own_document(self):
@@ -121,36 +145,46 @@ class L10nBrFiscalDfeDocument(models.Model):
 
     def _compute_dfe_info(self):
         for record in self:
-            dfe_ids = record.dfe_ids
-
-            complete = dfe_ids.filtered(
-                lambda d: d.dfe_nfe_document_type == "dfe_nfe_complete"
-            )
-            summary = dfe_ids.filtered(
-                lambda d: d.dfe_nfe_document_type == "dfe_nfe_summary"
-            )
-
-            dfe = (
-                (complete and complete[0])
-                or (summary and summary[0])
-                or (dfe_ids and dfe_ids[0])
-                or False
-            )
-
+            dfe = record._get_priority_dfe()
             if dfe:
                 record.emitter = dfe.emitter
                 record.document_amount = dfe.document_amount
-                record.document_state = dfe.document_state
                 record.document_number = dfe.document_number
-                record.document_emission_date = dfe.emission_datetime
                 record.serie = dfe.serie
             else:
                 record.emitter = False
                 record.document_amount = 0.0
-                record.document_state = False
                 record.document_number = 0.0
-                record.document_emission_date = False
                 record.serie = False
+
+    def _get_priority_dfe(self):
+        """Return the best DFe record (complete > summary > first)."""
+        self.ensure_one()
+        dfe_ids = self.dfe_ids
+        complete = dfe_ids.filtered(
+            lambda d: d.dfe_nfe_document_type == "dfe_nfe_complete"
+        )
+        summary = dfe_ids.filtered(
+            lambda d: d.dfe_nfe_document_type == "dfe_nfe_summary"
+        )
+        return (
+            (complete and complete[0])
+            or (summary and summary[0])
+            or (dfe_ids and dfe_ids[0])
+            or False
+        )
+
+    @api.depends("dfe_ids.emission_datetime", "dfe_ids.dfe_nfe_document_type")
+    def _compute_document_emission_date(self):
+        for record in self:
+            dfe = record._get_priority_dfe()
+            record.document_emission_date = dfe.emission_datetime if dfe else False
+
+    @api.depends("dfe_ids.document_state", "dfe_ids.dfe_nfe_document_type")
+    def _compute_document_state(self):
+        for record in self:
+            dfe = record._get_priority_dfe()
+            record.document_state = dfe.document_state if dfe else False
 
     def _compute_manifestation_status(self):
         for record in self:
@@ -174,16 +208,19 @@ class L10nBrFiscalDfeDocument(models.Model):
             )
             record.manifestations_ids = manifestations
 
-    @api.depends("dfe_ids.dfe_nfe_document_type")
+    @api.depends("dfe_ids.dfe_nfe_document_type", "document_state")
     def _compute_color_status(self):
         for record in self:
+            if record.document_state in ("2", "3"):
+                record.color_status = "muted"
+                continue
             types = record.dfe_ids.mapped("dfe_nfe_document_type")
             if "dfe_nfe_complete" in types:
                 record.color_status = "green"
             elif "dfe_nfe_summary" in types:
                 record.color_status = "blue"
             else:
-                record.color_status = "normal"
+                record.color_status = False
 
     def name_get(self):
         return [(record.id, record.access_key) for record in self]
