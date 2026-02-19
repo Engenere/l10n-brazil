@@ -9,7 +9,7 @@
         <field name="model">l10n_br_fiscal_dfe.dfe</field>
         <field name="priority">1</field>
         <field name="arch" type="xml">
-            <form string="DF-e Consult" create="false">
+            <form string="DF-e Consult" create="false" edit="false" delete="false">
                 <separator string="Access Key" />
                 <field name="access_key" select="1" required="1" readonly="1" />
 
@@ -50,7 +50,7 @@
         <field name="model">l10n_br_fiscal_dfe.dfe</field>
         <field name="priority">1</field>
         <field name="arch" type="xml">
-            <tree create="false">
+            <tree create="false" edit="false" delete="false">
                 <field name="nsu" />
                 <field name="access_key" />
                 <field name="dfe_nfe_document_type" string="DF-e" />
