@@ -11,7 +11,8 @@
                 <a
                     type="action"
                     role="button"
-                    t-att-name="search_all_action_id"
+                    data-model="res.company"
+                    data-method="action_banner_search_all"
                     data-reload-on-close="true"
                     class="btn btn-primary me-2"
                 >
@@ -20,7 +21,8 @@
                 <a
                     type="action"
                     role="button"
-                    t-att-name="specific_search_action_id"
+                    data-model="res.company"
+                    data-method="action_banner_specific_search"
                     class="btn btn-secondary"
                 >
                     <i class="fa fa-key" /> Specific Search
@@ -89,9 +91,22 @@
                 <!-- NSU Progress -->
                 <div class="col-sm-6 col-xl">
                     <div class="border rounded h-100 p-3 bg-white shadow-sm">
-                        <div class="d-flex align-items-center mb-1">
-                            <i class="fa fa-signal text-info me-2" />
-                            <span class="text-muted small fw-bold">NSU</span>
+                        <div
+                            class="d-flex align-items-center justify-content-between mb-1"
+                        >
+                            <div class="d-flex align-items-center">
+                                <i class="fa fa-signal text-info me-2" />
+                                <span class="text-muted small fw-bold">NSU</span>
+                            </div>
+                            <a
+                                type="action"
+                                role="button"
+                                t-att-name="dfe_nsu_action_id"
+                                class="btn btn-sm btn-outline-info py-0 px-1"
+                                title="View NSU records"
+                            >
+                                <i class="fa fa-external-link" />
+                            </a>
                         </div>
                         <div class="d-flex align-items-baseline gap-1">
                             <span class="fs-5 fw-bold">
@@ -125,11 +140,7 @@
                                 class="text-muted small fw-bold"
                             >Documents Today</span>
                         </div>
-                        <div class="fs-5 fw-bold" t-esc="today_total" />
-                        <div class="text-muted small mt-1">
-                            <span t-esc="today_third_party" /> third-party
-                            · <span t-esc="today_own" /> own
-                        </div>
+                        <div class="fs-5 fw-bold" t-esc="today_count" />
                     </div>
                 </div>
 
