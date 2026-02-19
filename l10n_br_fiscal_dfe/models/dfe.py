@@ -28,6 +28,7 @@ class DFe(models.Model):
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "id desc"
     _rec_name = "display_name"
+    _mail_post_access = "read"
 
     dfe_document_id = fields.Many2one(
         comodel_name="l10n_br_fiscal_dfe.document", string="DF-e Document"
@@ -131,7 +132,7 @@ class DFe(models.Model):
         return result
 
     def create_xml_attachment(self, xml):
-        self.attachment_id = self.env["ir.attachment"].create(
+        self.sudo().attachment_id = self.env["ir.attachment"].create(
             {
                 "name": f"{self.schema_type}{self.access_key}.xml",
                 "datas": base64.b64encode(xml),
@@ -173,7 +174,7 @@ class DFe(models.Model):
             )
             return
         if document_id:
-            self.imported_document_id = document_id
+            self.sudo().imported_document_id = document_id
 
     def import_document_multi(self):
         for rec in self:
