@@ -13,10 +13,17 @@
         sequence="15"
     />
     <menuitem
+        id="dfe_queries_menu"
+        name="DF-e Queries"
+        parent="l10n_br_fiscal.fiscal_menu"
+        groups="l10n_br_fiscal.group_user,l10n_br_fiscal.group_manager"
+        sequence="15"
+    />
+    <menuitem
         id="dfe_document_menu"
         action="dfe_document_action"
-        name="Received NF-es"
-        parent="dfe_distribution_menu"
+        name="Third-party NF-e"
+        parent="dfe_queries_menu"
         sequence="10"
     />
     <menuitem
