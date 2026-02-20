@@ -83,26 +83,6 @@ class ResCompany(models.Model):
         ),
     )
 
-    # ── DF-e relationships ──────────────────────────────────────────────
-
-    dfe_document_ids = fields.One2many(
-        comodel_name="l10n_br_fiscal_dfe.document",
-        inverse_name="company_id",
-        string="DF-e Documents",
-    )
-
-    dfe_ids = fields.One2many(
-        comodel_name="l10n_br_fiscal_dfe.dfe",
-        inverse_name="company_id",
-        string="DF-e Records",
-    )
-
-    dfe_log_ids = fields.One2many(
-        comodel_name="l10n_br_fiscal_dfe.distribution_log",
-        inverse_name="company_id",
-        string="DF-e Distribution Log",
-    )
-
     # ── Helpers ─────────────────────────────────────────────────────────
 
     @staticmethod

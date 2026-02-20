@@ -25,6 +25,11 @@ class TestNFeDFe(TransactionCase):
         super().setUpClass()
         cls.company = cls.env.ref("l10n_br_base.empresa_lucro_presumido")
 
+    def _search_dfe(self):
+        return self.env["l10n_br_fiscal_dfe.dfe"].search(
+            [("company_id", "=", self.company.id)]
+        )
+
     @mock.patch.object(DefaultTransport, "post")
     def test_download_document_proc_nfe(self, _mock_post):
         _mock_post.side_effect = [
@@ -35,7 +40,7 @@ class TestNFeDFe(TransactionCase):
         self.company.dfe_search_documents()
         self.company.dfe_import_documents()
 
-        self.assertEqual(len(self.company.dfe_ids), 1)
+        self.assertEqual(len(self._search_dfe()), 1)
         access_key = "35200159594315000157550010000000012062777161"
         fiscal_doc = self.env["l10n_br_fiscal.document"].search(
             [("document_key", "=", access_key)], limit=1
@@ -49,9 +54,10 @@ class TestNFeDFe(TransactionCase):
         _mock_post.return_value = _bytes(response_sucesso_multiplos)
 
         self.company.dfe_search_documents()
-        self.assertTrue(self.company.dfe_ids)
+        dfe_records = self._search_dfe()
+        self.assertTrue(dfe_records)
 
-        dfe_sorted = self.company.dfe_ids.sorted(lambda record: record.nsu or "")
+        dfe_sorted = dfe_records.sorted(lambda record: record.nsu or "")
         dfe1, dfe2 = dfe_sorted
 
         self.assertEqual(dfe1.company_id, self.company)
@@ -102,7 +108,7 @@ class TestNFeDFe(TransactionCase):
     def test_generate_danfe(self, _mock_post):
         _mock_post.return_value = _bytes(response_sucesso_individual)
         self.company.dfe_search_documents()
-        dfe_record = self.company.dfe_ids[0]
+        dfe_record = self._search_dfe()[0]
 
         result = dfe_record.dfe_document_id.make_pdf()
 
@@ -115,7 +121,7 @@ class TestNFeDFe(TransactionCase):
         _mock_post.return_value = _bytes(response_sucesso_multiplos)
 
         self.company.dfe_search_documents()
-        dfe_sorted = self.company.dfe_ids.sorted(lambda record: record.nsu or "")
+        dfe_sorted = self._search_dfe().sorted(lambda record: record.nsu or "")
         dfe1, dfe2 = dfe_sorted
 
         attachment_2 = self.env["ir.attachment"].search([("res_id", "=", dfe2.id)])
