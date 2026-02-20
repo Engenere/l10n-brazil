@@ -831,7 +831,9 @@ class Tax(models.Model):
 
         for tax in self.sorted(key=lambda t: sequence.get(t.tax_domain)):
             taxes[tax.tax_domain] = dict(TAX_DICT_VALUES)
-            # Define CST FROM TAX
+            # Define CST from tax record — used by IPI, PIS, COFINS etc.
+            # ICMS/ICMSSN CST is managed separately by _compute_icms_cst_id
+            # in document_line_mixin and passed via kwargs["icms_cst_id"].
             operation_line = kwargs.get("operation_line")
             fiscal_operation_type = operation_line.fiscal_operation_type or FISCAL_OUT
             kwargs.update({"cst": tax.cst_from_tax(fiscal_operation_type)})
