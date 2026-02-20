@@ -18,6 +18,7 @@ class DfeDistributionLog(models.Model):
 
     log_type = fields.Selection(
         selection=[
+            ("success", "Success"),
             ("info", "Info"),
             ("warning", "Warning"),
             ("error", "Error"),
