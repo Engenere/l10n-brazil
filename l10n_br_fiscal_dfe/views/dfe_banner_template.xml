@@ -48,9 +48,22 @@
                 <!-- Last Query -->
                 <div class="col-sm-6 col-xl">
                     <div class="border rounded h-100 p-3 bg-white shadow-sm">
-                        <div class="d-flex align-items-center mb-1">
-                            <i class="fa fa-clock-o text-primary me-2" />
-                            <span class="text-muted small fw-bold">Last Query</span>
+                        <div
+                            class="d-flex align-items-center justify-content-between mb-1"
+                        >
+                            <div class="d-flex align-items-center">
+                                <i class="fa fa-clock-o text-primary me-2" />
+                                <span class="text-muted small fw-bold">Last Query</span>
+                            </div>
+                            <a
+                                type="action"
+                                role="button"
+                                t-att-name="dfe_log_action_id"
+                                class="btn btn-sm btn-outline-primary py-0 px-1"
+                                title="View query logs"
+                            >
+                                <i class="fa fa-external-link" />
+                            </a>
                         </div>
                         <div class="fs-5 fw-bold" t-esc="last_query_str" />
                         <t t-if="company.dfe_last_status">
