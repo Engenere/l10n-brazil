@@ -1,3 +1,7 @@
+.. image:: https://odoo-community.org/readme-banner-image
+   :target: https://odoo-community.org/get-involved?utm_source=readme
+   :alt: Odoo Community Association
+
 ==========================
 Boletos e CNAB de cobrança
 ==========================
@@ -13,7 +17,7 @@ Boletos e CNAB de cobrança
 .. |badge1| image:: https://img.shields.io/badge/maturity-Beta-yellow.png
     :target: https://odoo-community.org/page/development-status
     :alt: Beta
-.. |badge2| image:: https://img.shields.io/badge/licence-AGPL--3-blue.png
+.. |badge2| image:: https://img.shields.io/badge/license-AGPL--3-blue.png
     :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
     :alt: License: AGPL-3
 .. |badge3| image:: https://img.shields.io/badge/github-OCA%2Fl10n--brazil-lightgray.png?logo=github
@@ -44,8 +48,8 @@ Installation
 
 O modulo depende do:
 
--  l10n_br_account_payment_order
--  account_move_base_import
+- l10n_br_account_payment_order
+- account_move_base_import
 
 Configuration
 =============
@@ -58,14 +62,14 @@ Rodar a biblioteca **BRCobranca** como um micro-serviço
 Informar a variável de ambiente **BRCOBRANCA_API_URL**, existem três
 opções:
 
--  No arquivo de configuração do **Docker Compose File** na seção
-   **enviroment**, por exemplo
-   `https://github.com/akretion/docky-odoo-brasil/blob/12.0/docker-compose.yml#L3 <https://github.com/akretion/docky-odoo-brasil/blob/12.0/docker-compose.yml#L3>`__
-   , incluir: **BRCOBRANCA_API_URL=http://boleto_cnab_api:9292**
--  No arquivo de Configuração do Odoo, incluir:
-   **brcobranca_api_url=http://boleto_cnab_api:9292**
--  No Odoo crie um Parâmetro de Sistema como:
-   **brcobranca_api_url=http://boleto_cnab_api:9292**
+- No arquivo de configuração do **Docker Compose File** na seção
+  **enviroment**, por exemplo
+  https://github.com/akretion/docky-odoo-brasil/blob/12.0/docker-compose.yml#L3
+  , incluir: **BRCOBRANCA_API_URL=http://boleto_cnab_api:9292**
+- No arquivo de Configuração do Odoo, incluir:
+  **brcobranca_api_url=http://boleto_cnab_api:9292**
+- No Odoo crie um Parâmetro de Sistema como:
+  **brcobranca_api_url=http://boleto_cnab_api:9292**
 
 Verifique se os Códigos do CNAB do Banco que será usado existem em:
 
@@ -130,7 +134,7 @@ fatura** para não ser preciso fazer manualmente.
 Caso o CNAB e Banco escolhidos possua um campo específico que seja
 preciso implementar considere fazer um PR no módulo
 **l10n_br_account_payment_order** aqui
-`https://github.com/OCA/l10n-brazil/blob/16.0/l10n_br_account_payment_order/models/l10n_br_cnab_boleto_fields.py#L307 <https://github.com/OCA/l10n-brazil/blob/16.0/l10n_br_account_payment_order/models/l10n_br_cnab_boleto_fields.py#L307>`__
+https://github.com/OCA/l10n-brazil/blob/16.0/l10n_br_account_payment_order/models/l10n_br_cnab_boleto_fields.py#L307
 .
 
 Configure as permissões de acesso dos usuários, as opções são CNAB
@@ -199,8 +203,8 @@ feito manualmente.
 Known issues / Roadmap
 ======================
 
--  Verificar a posssibilidade de Imprimir o **Boleto** pelo menu
-   **Imprimir** da Fatura, na v16 em diante.
+- Verificar a posssibilidade de Imprimir o **Boleto** pelo menu
+  **Imprimir** da Fatura, na v16 em diante.
 
 Changelog
 =========
@@ -208,106 +212,80 @@ Changelog
 16.0.4.0.0 (2025-03-06)
 -----------------------
 
--  [REF] Alterado o Código de Protesto de Char para
-   Objeto/l10n_br_cnab.code
-
-.. _section-1:
+- [REF] Alterado o Código de Protesto de Char para
+  Objeto/l10n_br_cnab.code
 
 16.0.3.0.0 (2024-12-16)
 -----------------------
 
--  [REF] "Foward Port" Separando as Configurações do CNAB do Modo de
-   Pagamento.
-
-.. _section-2:
+- [REF] "Foward Port" Separando as Configurações do CNAB do Modo de
+  Pagamento.
 
 16.0.2.0.0 (2024-12-02)
 -----------------------
 
--  [REF] "Foward Port" Unindo os Códigos CNAB em um mesmo objeto.
-
-.. _section-3:
+- [REF] "Foward Port" Unindo os Códigos CNAB em um mesmo objeto.
 
 16.0.1.0.0 (2024-08-22)
 -----------------------
 
--  [MIG] Migração para a versão 16.0
-
-.. _section-4:
+- [MIG] Migração para a versão 16.0
 
 14.0.9.0.0 (2024-09-19)
 -----------------------
 
--  [REM] Removendo Campos, Visões e Objetos obsoletos.
-
-.. _section-5:
+- [REM] Removendo Campos, Visões e Objetos obsoletos.
 
 14.0.8.0.0 (2024-09-18)
 -----------------------
 
--  [IMP] Possibilidade de informar Códigos de Desconto além do 0 e 1.
-
-.. _section-6:
+- [IMP] Possibilidade de informar Códigos de Desconto além do 0 e 1.
 
 14.0.7.0.0 (2024-09-13)
 -----------------------
 
--  [REF] Separando as Configurações do CNAB do Modo de Pagamento.
-
-.. _section-7:
+- [REF] Separando as Configurações do CNAB do Modo de Pagamento.
 
 14.0.6.0.0 (2024-09-10)
 -----------------------
 
--  [REF] Unindo os Códigos CNAB em um mesmo objeto.
-
-.. _section-8:
+- [REF] Unindo os Códigos CNAB em um mesmo objeto.
 
 14.0.1.0.0 (2022-05-26)
 -----------------------
 
--  [MIG] Migration
-
-.. _section-9:
+- [MIG] Migration
 
 12.0.1.0.0 (2021-05-07)
 -----------------------
 
--  [MIG] Finish migration
--  [IMP] Integrate with module account_move_base_import used to import
-   CNAB file
--  [IMP] Make possible automatic reconciliation and register the values
-   of Fees, Tariff Bank, Rebate in configured accounts.
-
-.. _section-10:
+- [MIG] Finish migration
+- [IMP] Integrate with module account_move_base_import used to import
+  CNAB file
+- [IMP] Make possible automatic reconciliation and register the values
+  of Fees, Tariff Bank, Rebate in configured accounts.
 
 12.0.1.0.0 (2020-06-12)
 -----------------------
 
--  [MIG] Start Migration
-
-.. _section-11:
+- [MIG] Start Migration
 
 10.0.1.0.0 (2019-05-30)
 -----------------------
 
--  [MIG] Migration
-
-.. _section-12:
+- [MIG] Migration
 
 8.0.1.0.0 (2018-01-29)
 ----------------------
 
--  [REF] Maked functional to print Boleto, create CNAB file and import
-   CNAB as Extrat Bank the user should be resolved manully the
-   divergences between the values( Fee, Tariff Bank, Rebate, etc).
-
-.. _section-13:
+- [REF] Maked functional to print Boleto, create CNAB file and import
+  CNAB as Extrat Bank the user should be resolved manully the
+  divergences between the values( Fee, Tariff Bank, Rebate, etc).
 
 8.0.1.0.0 (2017-07-01)
 ----------------------
 
--  [NEW] First version
+- [NEW] First version
 
 Bug Tracker
 ===========
@@ -330,22 +308,21 @@ Authors
 Contributors
 ------------
 
--  `Akretion <https://akretion.com/pt-BR>`__:
+- `Akretion <https://akretion.com/pt-BR>`__:
 
-   -  Raphaël Valyi <raphael.valyi@akretion.com.br>
-   -  Magno Costa <magno.costa@akretion.com.br>
+  - Raphaël Valyi <raphael.valyi@akretion.com.br>
+  - Magno Costa <magno.costa@akretion.com.br>
 
--  `Engenere <https://engenere.one>`__:
+- `Engenere <https://engenere.one>`__:
 
-   -  Antônio S. Pereira Neto <neto@engenere.one>
+  - Antônio S. Pereira Neto <neto@engenere.one>
 
 Other credits
 -------------
 
 The development of this module has been financially supported by:
 
--  AKRETION LTDA -
-   `https://akretion.com/pt-BR <https://akretion.com/pt-BR>`__
+- AKRETION LTDA - https://akretion.com/pt-BR
 
 Maintainers
 -----------
