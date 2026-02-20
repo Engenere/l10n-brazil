@@ -94,6 +94,7 @@ class AccountMoveLine(models.Model):
                     "%Y/%m/%d"
                 ),
                 "instrucao1": cnab_config.instructions or "",
+                "modelo": cnab_config.brcobranca_modelo or "",
             }
 
             # Instrução de Juros
