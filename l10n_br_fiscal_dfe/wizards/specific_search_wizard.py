@@ -75,6 +75,6 @@ class DFeSpecificSearchWizard(models.TransientModel):
                 "title": _("Success"),
                 "message": _("Specific search triggered successfully"),
                 "type": "success",
-                "next": {"type": "ir.actions.act_window_close"},
+                "next": {"type": "ir.actions.client", "tag": "reload"},
             },
         }
