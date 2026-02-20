@@ -275,11 +275,3 @@ class L10nBrFiscalDfeDocument(models.Model):
         if complete_dfe_ids:
             return complete_dfe_ids.import_document()
         raise UserError(_("You can only import the NF-e when the DF-e is completed."))
-
-    # ── Tree header actions (delegate to company) ───────────────────────
-
-    def action_search_all_dfe(self):
-        return self.env.company.action_document_distribution()
-
-    def action_search_specific_dfe(self):
-        return self.env.company.action_search_specific()
