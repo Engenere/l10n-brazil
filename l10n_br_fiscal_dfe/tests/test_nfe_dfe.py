@@ -36,12 +36,12 @@ class TestNFeDFe(TransactionCase):
         self.company.dfe_import_documents()
 
         self.assertEqual(len(self.company.dfe_ids), 1)
-        dfe_record = self.company.dfe_ids[0]
-        self.assertTrue(dfe_record.imported_document_id)
-        self.assertEqual(
-            dfe_record.imported_document_id.document_key,
-            "35200159594315000157550010000000012062777161",
+        access_key = "35200159594315000157550010000000012062777161"
+        fiscal_doc = self.env["l10n_br_fiscal.document"].search(
+            [("document_key", "=", access_key)], limit=1
         )
+        self.assertTrue(fiscal_doc, "Fiscal document should be created after import")
+        self.assertEqual(fiscal_doc.document_key, access_key)
         self.assertEqual(_mock_post.call_count, 2)
 
     @mock.patch.object(DefaultTransport, "post")

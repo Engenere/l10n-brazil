@@ -74,11 +74,6 @@ class DFe(models.Model):
 
     xml_pretty = fields.Text(string="XML Pretty", compute="_compute_xml_pretty")
 
-    imported_document_id = fields.Many2one(
-        comodel_name="l10n_br_fiscal.document",
-        string="Fiscal Document",
-    )
-
     event_type_dfe = fields.Char(string="Event Type")
 
     event_type_dfe_label = fields.Char(
@@ -147,15 +142,12 @@ class DFe(models.Model):
         self.ensure_one()
         try:
             document = self.company_id._dfe_download_document(self.access_key)
-            document_id = self.company_id._dfe_parse_xml_document(document)
+            self.company_id._dfe_parse_xml_document(document)
         except Exception as exc:
             self.company_id._dfe_log(
                 _("Error importing document: \n\n %(error)s", error=exc),
                 log_type="error",
             )
-            return
-        if document_id:
-            self.sudo().imported_document_id = document_id
 
     def import_document_multi(self):
         for rec in self:
