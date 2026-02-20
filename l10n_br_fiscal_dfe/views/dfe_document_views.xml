@@ -232,7 +232,7 @@
     </record>
 
     <record model="ir.actions.act_window" id="dfe_document_action">
-        <field name="name">Received NF-es</field>
+        <field name="name">Third-party NF-e</field>
         <field name="res_model">l10n_br_fiscal_dfe.document</field>
         <field name="view_mode">tree,form</field>
         <field name="domain">[('is_own_document', '=', False)]</field>
