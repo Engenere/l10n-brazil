@@ -71,6 +71,9 @@ class DfeDocumentBannerController(http.Controller):
             )
 
         dfe_nsu_action_id = request.env.ref("l10n_br_fiscal_dfe.dfe_action").id
+        dfe_log_action_id = request.env.ref(
+            "l10n_br_fiscal_dfe.dfe_distribution_log_action"
+        ).id
 
         return {
             "html": request.env["ir.qweb"]._render(
@@ -82,6 +85,7 @@ class DfeDocumentBannerController(http.Controller):
                     "pending_import_count": pending_import_count,
                     "today_count": today_count,
                     "dfe_nsu_action_id": dfe_nsu_action_id,
+                    "dfe_log_action_id": dfe_log_action_id,
                     "auto_fetch": company.auto_fetch,
                     "next_query_str": next_query_str,
                     "is_homologation": company.dfe_environment == "2",
