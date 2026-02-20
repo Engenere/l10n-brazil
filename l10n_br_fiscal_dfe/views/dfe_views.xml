@@ -23,7 +23,7 @@
                     </group>
                     <group>
                         <field name="company_id" readonly="1" />
-                        <field name="imported_document_id" readonly="1" />
+                        <field name="dfe_document_id" readonly="1" />
                         <field name="attachment_id" readonly="1" />
                     </group>
                     <label for="xml_pretty" string="XML Attachment" />
