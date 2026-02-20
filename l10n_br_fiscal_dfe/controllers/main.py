@@ -11,16 +11,34 @@ class DfeDocumentBannerController(http.Controller):
     @http.route("/l10n_br_fiscal_dfe/document_banner", auth="user", type="json")
     def document_banner(self):
         company = request.env.company
-        DfeRecord = request.env["l10n_br_fiscal_dfe.dfe"]
         DfeDocument = request.env["l10n_br_fiscal_dfe.document"]
 
-        pending_import_count = DfeRecord.search_count(
+        complete_dfe_docs = DfeDocument.search(
             [
                 ("company_id", "=", company.id),
-                ("dfe_nfe_document_type", "=", "dfe_nfe_complete"),
-                ("imported_document_id", "=", False),
+                ("dfe_ids.dfe_nfe_document_type", "=", "dfe_nfe_complete"),
             ]
         )
+        if complete_dfe_docs:
+            FiscalDoc = request.env["l10n_br_fiscal.document"]
+            imported_keys = set(
+                FiscalDoc.search(
+                    [
+                        (
+                            "document_key",
+                            "in",
+                            complete_dfe_docs.mapped("access_key"),
+                        ),
+                    ]
+                ).mapped("document_key")
+            )
+            pending_import_count = len(
+                complete_dfe_docs.filtered(
+                    lambda doc: doc.access_key not in imported_keys
+                )
+            )
+        else:
+            pending_import_count = 0
 
         today = fields.Date.context_today(DfeDocument)
         today_domain = [
