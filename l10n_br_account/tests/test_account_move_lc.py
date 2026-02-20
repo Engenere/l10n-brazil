@@ -2159,3 +2159,37 @@ class AccountMoveLucroPresumido(AccountMoveBRCommon):
         self.assertEqual(self.move_out_venda.state, "draft")
         document_id.exec_after_SITUACAO_EDOC_DENEGADA("em_digitacao", "denegada")
         self.assertEqual(self.move_out_venda.state, "cancel")
+
+    def test_in_invoice_confirm_from_fiscal_document(self):
+        """
+        Test that confirming an incoming invoice (issuer=partner) from
+        the fiscal document view works correctly without causing a
+        recursive loop error.
+
+        This test was added to prevent regression of a bug where
+        action_document_confirm() called from the fiscal document view
+        would trigger _post() on the invoice, which in turn would call
+        action_document_confirm() again, causing a "transition not allowed:
+        autorizada -> autorizada" error.
+        """
+        fiscal_edi = self.env["ir.module.module"].search(
+            [("name", "=", "l10n_br_fiscal_edi")]
+        )
+        if not (fiscal_edi and fiscal_edi.state == "installed"):
+            return
+
+        move = self.move_in_compra_para_revenda
+        document_id = move.fiscal_document_id
+
+        # Verify initial state
+        self.assertEqual(move.state, "draft")
+        self.assertEqual(document_id.state_edoc, "em_digitacao")
+        self.assertEqual(document_id.issuer, "partner")
+
+        # Confirm from fiscal document view (this used to fail with loop error)
+        document_id.action_document_confirm()
+
+        # Verify final state - document should be authorized (issuer=partner)
+        # and invoice should be posted
+        self.assertEqual(document_id.state_edoc, "autorizada")
+        self.assertEqual(move.state, "posted")
