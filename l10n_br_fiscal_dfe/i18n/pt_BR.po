@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-19 16:55+0000\n"
-"PO-Revision-Date: 2026-02-19 16:55+0000\n"
+"POT-Creation-Date: 2026-02-20 18:13+0000\n"
+"PO-Revision-Date: 2026-02-20 18:13+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: pt_BR\n"
@@ -173,7 +173,6 @@ msgstr "Já existe um DF-e com esta chave de acesso para esta empresa."
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__access_key
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__access_key
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_form
-#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_form
 msgid "Access Key"
 msgstr "Chave de Acesso"
 
@@ -280,6 +279,11 @@ msgstr "Cancelada"
 #. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_document__color_status__muted
 msgid "Cancelada/Denegada"
+msgstr "Cancelada/Denegada"
+
+#. module: l10n_br_fiscal_dfe
+#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_search
+msgid "Cancelled/Denied"
 msgstr "Cancelada/Denegada"
 
 #. module: l10n_br_fiscal_dfe
@@ -404,9 +408,15 @@ msgid "DF-e Notification"
 msgstr "Notificação DF-e"
 
 #. module: l10n_br_fiscal_dfe
+#: model:ir.ui.menu,name:l10n_br_fiscal_dfe.dfe_queries_menu
+msgid "DF-e Queries"
+msgstr "Consultas DF-e"
+
+#. module: l10n_br_fiscal_dfe
 #: model:ir.actions.act_window,name:l10n_br_fiscal_dfe.dfe_action
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_res_company__dfe_ids
 #: model:ir.ui.menu,name:l10n_br_fiscal_dfe.dfe_record_menu
+#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_form
 msgid "DF-e Records"
 msgstr "Registros DF-e"
 
@@ -440,13 +450,6 @@ msgstr "A distribuição DF-e não será consultada antes deste horário."
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__dfe_ids
 msgid "DF-e records"
 msgstr "Registros DF-e"
-
-#. module: l10n_br_fiscal_dfe
-#. odoo-python
-#: code:addons/l10n_br_fiscal_dfe/models/res_company.py:0
-#, python-format
-msgid "DF-e: new documents found for %s"
-msgstr "DF-e: novos documentos encontrados para %s"
 
 #. module: l10n_br_fiscal_dfe
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_distribution_log_form
@@ -504,13 +507,17 @@ msgstr ""
 "maxNSU=%(mx)s)"
 
 #. module: l10n_br_fiscal_dfe
+#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_form
+msgid "Document"
+msgstr "Documento"
+
+#. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__document_emission_date
 msgid "Document Emission Date"
 msgstr "Data de Emissão do Documento"
 
 #. module: l10n_br_fiscal_dfe
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_form
-#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_form
 msgid "Document Info"
 msgstr "Informações do Documento"
 
@@ -553,6 +560,7 @@ msgstr "Data de Emissão"
 #. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__emitter
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__emitter
+#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_form
 msgid "Emitter"
 msgstr "Emitente"
 
@@ -810,6 +818,7 @@ msgid "Manifest"
 msgstr "Manifestar"
 
 #. module: l10n_br_fiscal_dfe
+#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_form
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_tree
 msgid "Manifestation"
 msgstr "Manifestação"
@@ -998,12 +1007,6 @@ msgstr ""
 "Receba notificações na caixa de entrada quando a distribuição DF-e encontrar novos documentos."
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.actions.act_window,name:l10n_br_fiscal_dfe.dfe_document_action
-#: model:ir.ui.menu,name:l10n_br_fiscal_dfe.dfe_document_menu
-msgid "Received NF-es"
-msgstr "NF-es Recebidas"
-
-#. module: l10n_br_fiscal_dfe
 #: model:ir.model,name:l10n_br_fiscal_dfe.model_l10n_br_nfe_md_event
 msgid "Recipient Manifestation"
 msgstr "Manifestação do Destinatário"
@@ -1057,6 +1060,11 @@ msgid "Search"
 msgstr "Pesquisar"
 
 #. module: l10n_br_fiscal_dfe
+#: model:ir.actions.server,name:l10n_br_fiscal_dfe.action_server_search_all_dfe
+msgid "Search All DF-e"
+msgstr "Pesquisar Todos os DF-e"
+
+#. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_dfe_specific_search_wizard__search_type
 msgid "Search Type"
 msgstr "Tipo de Pesquisa"
@@ -1105,6 +1113,11 @@ msgstr "Pesquisa Específica de DF-e"
 #, python-format
 msgid "Specific Document Search"
 msgstr "Pesquisa Específica de Documento"
+
+#. module: l10n_br_fiscal_dfe
+#: model:ir.actions.server,name:l10n_br_fiscal_dfe.action_server_specific_search_dfe
+msgid "Specific Search DF-e"
+msgstr "Pesquisa Específica de DF-e"
 
 #. module: l10n_br_fiscal_dfe
 #. odoo-python
@@ -1159,6 +1172,12 @@ msgstr "Sucesso"
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_search
 msgid "Summary"
 msgstr "Resumo"
+
+#. module: l10n_br_fiscal_dfe
+#: model:ir.actions.act_window,name:l10n_br_fiscal_dfe.dfe_document_action
+#: model:ir.ui.menu,name:l10n_br_fiscal_dfe.dfe_document_menu
+msgid "Third-party NF-e"
+msgstr "NF-e de Terceiros"
 
 #. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__res_users__dfe_notification__third_party
@@ -1249,17 +1268,3 @@ msgstr "XML Formatado"
 #, python-format
 msgid "You can only import the NF-e when the DF-e is completed."
 msgstr "Você só pode importar a NF-e quando o DF-e estiver completo."
-
-#. module: l10n_br_fiscal_dfe
-#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_document_banner
-msgid "own"
-msgstr "próprios"
-
-#. module: l10n_br_fiscal_dfe
-#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_document_banner
-msgid ""
-"third-party\n"
-"                            ·"
-msgstr ""
-"terceiros\n"
-"                            ·"
