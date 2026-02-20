@@ -562,7 +562,7 @@ class TestDFe(TransactionCase):
             [
                 ("message_type", "=", "user_notification"),
                 ("partner_ids", "in", user.partner_id.id),
-                ("subject", "ilike", "DF-e%"),
+                ("body", "ilike", "%DF-e%"),
             ]
         )
         self.assertTrue(
@@ -582,7 +582,7 @@ class TestDFe(TransactionCase):
             [
                 ("message_type", "=", "user_notification"),
                 ("partner_ids", "in", user.partner_id.id),
-                ("subject", "ilike", "DF-e%"),
+                ("body", "ilike", "%DF-e%"),
             ]
         )
         self.assertFalse(
@@ -606,7 +606,7 @@ class TestDFe(TransactionCase):
             [
                 ("message_type", "=", "user_notification"),
                 ("partner_ids", "in", user.partner_id.id),
-                ("subject", "ilike", "DF-e%"),
+                ("body", "ilike", "%DF-e%"),
             ]
         )
         self.assertTrue(
@@ -627,7 +627,7 @@ class TestDFe(TransactionCase):
             [
                 ("message_type", "=", "user_notification"),
                 ("partner_ids", "in", user.partner_id.id),
-                ("subject", "ilike", "DF-e%"),
+                ("body", "ilike", "%DF-e%"),
             ]
         )
         self.assertFalse(
@@ -647,7 +647,7 @@ class TestDFe(TransactionCase):
             [
                 ("message_type", "=", "user_notification"),
                 ("partner_ids", "in", user.partner_id.id),
-                ("subject", "ilike", "DF-e%"),
+                ("body", "ilike", "%DF-e%"),
             ]
         )
         self.assertFalse(
