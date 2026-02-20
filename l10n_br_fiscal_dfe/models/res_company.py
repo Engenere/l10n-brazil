@@ -237,16 +237,28 @@ class ResCompany(models.Model):
             valid = True
 
         if not valid:
-            msg_error = _(
-                "Error validating document distribution: \n\n%(code)s - %(message)s",
-                code=code,
-                message=message,
-            )
-            if raise_message:
-                self._dfe_log(msg_error, log_type="warning", result=result)
-                raise ValidationError(msg_error)
+            if code == CSTAT_NO_DOCS:
+                self._dfe_log(
+                    _(
+                        "No documents found: %(code)s - %(message)s",
+                        code=code,
+                        message=message,
+                    ),
+                    log_type="info",
+                    result=result,
+                )
             else:
-                self._dfe_log(msg_error, log_type="warning", result=result)
+                msg_error = _(
+                    "Error validating document distribution: "
+                    "\n\n%(code)s - %(message)s",
+                    code=code,
+                    message=message,
+                )
+                if raise_message:
+                    self._dfe_log(msg_error, log_type="warning", result=result)
+                    raise ValidationError(msg_error)
+                else:
+                    self._dfe_log(msg_error, log_type="warning", result=result)
         return valid
 
     # ── Distribution actions ────────────────────────────────────────────
@@ -304,6 +316,7 @@ class ResCompany(models.Model):
                 cstat=resp.cStat,
                 motivo=resp.xMotivo,
             ),
+            log_type="success",
             result=result,
         )
         self._dfe_process_distribution(resp)
@@ -367,6 +380,7 @@ class ResCompany(models.Model):
                     ult=last_nsu,
                     mx=max_nsu,
                 ),
+                log_type="success",
                 result=result,
             )
 
@@ -747,6 +761,7 @@ class ResCompany(models.Model):
                 "Document download OK: %(key)s",
                 key=nfe_key,
             ),
+            log_type="success",
             result=result,
         )
         return result.resposta.loteDistDFeInt.docZip[0]
