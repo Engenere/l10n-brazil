@@ -41,3 +41,13 @@ class DfeDistributionLog(models.Model):
         readonly=True,
         help="SOAP envelope received from SEFAZ",
     )
+
+    def name_get(self):
+        result = []
+        for rec in self:
+            date_str = (
+                rec.create_date.strftime("%d/%m/%Y %H:%M") if rec.create_date else ""
+            )
+            log_label = dict(rec._fields["log_type"].selection).get(rec.log_type, "")
+            result.append((rec.id, f"[{log_label}] {date_str}"))
+        return result

@@ -40,9 +40,8 @@
                             />
                         </group>
                     </group>
-                    <group string="Message">
-                        <field name="message" nolabel="1" />
-                    </group>
+                    <separator string="Message" />
+                    <field name="message" nolabel="1" />
                     <notebook>
                         <page
                             string="SOAP Request"

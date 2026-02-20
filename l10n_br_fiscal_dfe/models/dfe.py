@@ -7,27 +7,9 @@ from lxml import etree
 
 from odoo import _, api, fields, models
 
-from ..constants.dfe import OPERATION_TYPE
+from ..constants.dfe import DFE_DESCRIPTION_MAP, EVENT_TYPE_LABELS, OPERATION_TYPE
 
 _logger = logging.getLogger(__name__)
-
-EVENT_TYPE_LABELS = {
-    "210200": "Confirmação da Operação",
-    "210210": "Ciência da Operação",
-    "210220": "Desconhecimento da Operação",
-    "210240": "Operação não Realizada",
-    "110110": "Carta de Correção",
-    "110111": "Cancelamento",
-    "110112": "Cancelamento por Substituição",
-    "110140": "EPEC",
-}
-
-DFE_DESCRIPTION_MAP = {
-    "procNFe": "XML NF-e completo (procNFe) via distribuição DF-e",
-    "resNFe": "Resumo de NF-e (resNFe) via distribuição DF-e",
-    "procEventoNFe": "XML de evento de NF-e (procEventoNFe) via distribuição DF-e",
-    "resEvento": "Resumo de evento de NF-e (resEvento) via distribuição DF-e",
-}
 
 
 class DFe(models.Model):
