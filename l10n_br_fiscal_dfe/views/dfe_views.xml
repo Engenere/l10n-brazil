@@ -2,6 +2,7 @@
 <odoo>
     <!--
         Copyright 2023 KMEE INFORMATICA LTDA
+        Copyright 2026 Engenere (<https://engenere.one>)
         License AGPL-3 or later (http://www.gnu.org/licenses/agpl)
     -->
     <record model="ir.ui.view" id="dfe_form">
@@ -9,9 +10,9 @@
         <field name="model">l10n_br_fiscal_dfe.dfe</field>
         <field name="priority">1</field>
         <field name="arch" type="xml">
-            <form string="DF-e Consult" create="false" edit="false" delete="false">
+            <form string="DF-e" create="false" edit="false" delete="false">
                 <separator string="Access Key" />
-                <field name="access_key" select="1" required="1" readonly="1" />
+                <field name="access_key" readonly="1" />
 
                 <separator string="Document Info" />
                 <group>
