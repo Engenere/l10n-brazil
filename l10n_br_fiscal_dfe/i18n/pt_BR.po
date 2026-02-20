@@ -932,6 +932,13 @@ msgid "No DF-e with 'DF-e complete' type found."
 msgstr "Nenhum DF-e do tipo 'DF-e completo' encontrado."
 
 #. module: l10n_br_fiscal_dfe
+#. odoo-python
+#: code:addons/l10n_br_fiscal_dfe/models/res_company.py:0
+#, python-format
+msgid "No documents found: %(code)s - %(message)s"
+msgstr "Nenhum documento encontrado: %(code)s - %(message)s"
+
+#. module: l10n_br_fiscal_dfe
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_search
 msgid "No Partner"
 msgstr "Sem Parceiro"
@@ -1164,6 +1171,8 @@ msgstr ""
 #. module: l10n_br_fiscal_dfe
 #. odoo-python
 #: code:addons/l10n_br_fiscal_dfe/wizards/specific_search_wizard.py:0
+#: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_distribution_log__log_type__success
+#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_distribution_log_search
 #, python-format
 msgid "Success"
 msgstr "Sucesso"
