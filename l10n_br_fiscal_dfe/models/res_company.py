@@ -177,42 +177,6 @@ class ResCompany(models.Model):
         if earliest and earliest != cron.nextcall:
             cron.sudo().nextcall = earliest
 
-    def _dfe_schedule_next_query(self, status_code, had_exception=False):
-        """Schedule the next DF-e query based on the last response status."""
-        if had_exception:
-            interval = DFE_INTERVAL_ERROR
-        elif status_code == CSTAT_SUCCESS:
-            interval = DFE_INTERVAL_SUCCESS
-        elif status_code == CSTAT_NO_DOCS:
-            interval = DFE_INTERVAL_NO_DOCS
-        elif status_code == CSTAT_CONSUMO_INDEVIDO:
-            interval = DFE_INTERVAL_RATE_LIMITED
-        else:
-            interval = DFE_INTERVAL_NO_DOCS
-        self.dfe_next_query = fields.Datetime.now() + interval
-        self._dfe_sync_cron_nextcall()
-
-    def _dfe_sync_cron_nextcall(self):
-        """Sync cron nextcall to the earliest dfe_next_query across companies."""
-        cron = self.env.ref(
-            "l10n_br_fiscal_dfe.ir_cron_search_dfe_documents",
-            raise_if_not_found=False,
-        )
-        if not cron:
-            return
-        earliest = (
-            self.env["res.company"]
-            .sudo()
-            .search(
-                [("auto_fetch", "=", True), ("dfe_next_query", "!=", False)],
-                order="dfe_next_query asc",
-                limit=1,
-            )
-            .dfe_next_query
-        )
-        if earliest and earliest != cron.nextcall:
-            cron.sudo().nextcall = earliest
-
     def _dfe_get_processor(self):
         self.ensure_one()
         cert = base64.b64decode(self.certificate.file)
@@ -582,7 +546,6 @@ class ResCompany(models.Model):
                 dfe_record = DfeRecord.create(
                     {
                         "nsu": nsu,
-                        "inclusion_datetime": datetime.now(),
                         "company_id": self.id,
                     }
                 )
@@ -600,28 +563,31 @@ class ResCompany(models.Model):
             .sudo()
             .create(
                 {
-                    "document_number": root.NFe.infNFe.ide.nNF,
-                    "emitter": root.NFe.infNFe.emit.xNome,
                     "access_key": nfe_key,
-                    "serie": root.NFe.infNFe.ide.serie,
-                    "operation_type": str(root.NFe.infNFe.ide.tpNF),
-                    "document_amount": root.NFe.infNFe.total.ICMSTot.vNF,
-                    "inclusion_datetime": datetime.now(),
-                    "vat": supplier_cnpj,
-                    "ie": root.NFe.infNFe.emit.IE,
-                    "emission_datetime": datetime.strptime(
-                        str(root.NFe.infNFe.ide.dhEmi)[:19],
-                        "%Y-%m-%dT%H:%M:%S",
-                    ),
                     "nsu": nsu,
                     "company_id": self.id,
                     "dfe_nfe_document_type": "dfe_nfe_complete",
-                    "document_state": "1",
+                    "operation_type": str(root.NFe.infNFe.ide.tpNF),
                 }
             )
         )
 
         dfe_document.sudo().dfe_ids = [(4, dfe_record.id)]
+        dfe_document._update_metadata(
+            {
+                "emitter": str(root.NFe.infNFe.emit.xNome),
+                "vat": supplier_cnpj,
+                "serie": str(root.NFe.infNFe.ide.serie),
+                "document_number": float(root.NFe.infNFe.ide.nNF),
+                "document_amount": float(root.NFe.infNFe.total.ICMSTot.vNF),
+                "document_emission_date": datetime.strptime(
+                    str(root.NFe.infNFe.ide.dhEmi)[:19],
+                    "%Y-%m-%dT%H:%M:%S",
+                ),
+                "document_state": "1",
+            },
+            is_complete=True,
+        )
         return dfe_record
 
     def _dfe_create_from_resNFe(self, root, nsu):
@@ -635,21 +601,26 @@ class ResCompany(models.Model):
             .create(
                 {
                     "access_key": nfe_key,
-                    "emitter": root.xNome,
-                    "operation_type": str(root.tpNF),
-                    "document_amount": root.vNF,
-                    "document_state": str(root.cSitNFe),
-                    "inclusion_datetime": datetime.now(),
-                    "vat": supplier_cnpj,
-                    "ie": root.IE,
-                    "emission_datetime": datetime.strptime(
-                        str(root.dhEmi)[:19], "%Y-%m-%dT%H:%M:%S"
-                    ),
+                    "nsu": nsu,
                     "company_id": self.id,
                     "dfe_nfe_document_type": "dfe_nfe_summary",
-                    "nsu": nsu,
+                    "operation_type": str(root.tpNF),
                 }
             )
+        )
+
+        dfe_document.sudo().dfe_ids = [(4, dfe_record.id)]
+        dfe_document._update_metadata(
+            {
+                "emitter": str(root.xNome),
+                "vat": supplier_cnpj,
+                "document_amount": float(root.vNF),
+                "document_emission_date": datetime.strptime(
+                    str(root.dhEmi)[:19], "%Y-%m-%dT%H:%M:%S"
+                ),
+                "document_state": str(root.cSitNFe),
+            },
+            is_complete=False,
         )
 
         if self.auto_manifest_nfe:
@@ -668,13 +639,11 @@ class ResCompany(models.Model):
                 description=f"Auto-manifest ciência: {nfe_key}",
             ).action_confirm()
 
-        dfe_document.sudo().dfe_ids = [(4, dfe_record.id)]
         return dfe_record
 
     def _dfe_create_from_resEvento(self, root, nsu):
         nfe_key = root.chNFe
         dfe_document = self._dfe_get_or_create_document(nfe_key)
-        supplier_cnpj = utils.mask_cnpj("%014d" % root.CNPJ)
 
         dfe_record = (
             self.env["l10n_br_fiscal_dfe.dfe"]
@@ -682,15 +651,10 @@ class ResCompany(models.Model):
             .create(
                 {
                     "access_key": nfe_key,
-                    "inclusion_datetime": datetime.now(),
-                    "vat": supplier_cnpj,
-                    "emission_datetime": datetime.strptime(
-                        str(root.dhEvento)[:19], "%Y-%m-%dT%H:%M:%S"
-                    ),
-                    "company_id": self.id,
-                    "event_type_dfe": str(root.tpEvento),
-                    "dfe_nfe_document_type": "dfe_nfe_event",
                     "nsu": nsu,
+                    "company_id": self.id,
+                    "dfe_nfe_document_type": "dfe_nfe_event",
+                    "event_type_dfe": str(root.tpEvento),
                 }
             )
         )
@@ -701,7 +665,6 @@ class ResCompany(models.Model):
     def _dfe_create_from_procEventoNFe(self, root, nsu):
         nfe_key = root.evento.infEvento.chNFe
         dfe_document = self._dfe_get_or_create_document(nfe_key)
-        supplier_cnpj = utils.mask_cnpj("%014d" % root.evento.infEvento.CNPJ)
 
         dfe_record = (
             self.env["l10n_br_fiscal_dfe.dfe"]
@@ -709,14 +672,9 @@ class ResCompany(models.Model):
             .create(
                 {
                     "access_key": nfe_key,
-                    "inclusion_datetime": datetime.now(),
-                    "vat": supplier_cnpj,
-                    "emission_datetime": datetime.strptime(
-                        str(root.evento.infEvento.dhEvento)[:19], "%Y-%m-%dT%H:%M:%S"
-                    ),
+                    "nsu": nsu,
                     "company_id": self.id,
                     "dfe_nfe_document_type": "dfe_nfe_event",
-                    "nsu": nsu,
                 }
             )
         )
