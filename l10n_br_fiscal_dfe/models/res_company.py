@@ -323,11 +323,8 @@ class ResCompany(models.Model):
 
         last_query_time = None
         last_result = False
-        existing_doc_ids = set(
-            self.env["l10n_br_fiscal_dfe.document"]
-            .search([("company_id", "=", self.id)])
-            .ids
-        )
+        Document = self.env["l10n_br_fiscal_dfe.document"].sudo()
+        existing_doc_ids = set(Document.search([("company_id", "=", self.id)]).ids)
         while True:
             try:
                 result = self._dfe_consultar_distribuicao(
@@ -379,14 +376,10 @@ class ResCompany(models.Model):
                 break
 
         # Notify opted-in users about newly found documents
-        current_doc_ids = set(
-            self.env["l10n_br_fiscal_dfe.document"]
-            .search([("company_id", "=", self.id)])
-            .ids
-        )
+        current_doc_ids = set(Document.search([("company_id", "=", self.id)]).ids)
         new_doc_ids = current_doc_ids - existing_doc_ids
         if new_doc_ids:
-            new_documents = self.env["l10n_br_fiscal_dfe.document"].browse(new_doc_ids)
+            new_documents = Document.browse(new_doc_ids)
             self._dfe_notify_users(new_documents)
 
         last_resp = last_result.resposta if last_result else False
@@ -434,6 +427,7 @@ class ResCompany(models.Model):
             else "/web#model=l10n_br_fiscal_dfe.document"
         )
 
+        company = self
         for user in users:
             pref = user.dfe_notification
             if pref == "own" and not own_count:
@@ -441,12 +435,19 @@ class ResCompany(models.Model):
             if pref == "third_party" and not third_party_count:
                 continue
 
+            # Rebind self so _() picks up the user's language from
+            # self.env.context (GettextAlias inspects the caller's frame).
+            self = company.with_context(lang=user.lang or "pt_BR")
+
             parts = []
             if pref in ("all", "own") and own_count:
                 parts.append(_("%(count)s own document(s)", count=own_count))
             if pref in ("all", "third_party") and third_party_count:
                 parts.append(
-                    _("%(count)s third-party document(s)", count=third_party_count)
+                    _(
+                        "%(count)s third-party document(s)",
+                        count=third_party_count,
+                    )
                 )
             body_text = ", ".join(parts)
             body = _(
@@ -455,9 +456,8 @@ class ResCompany(models.Model):
                 summary=body_text,
                 url=action_url,
             )
-            self.env["mail.thread"].message_notify(
+            self.env["mail.thread"].sudo().message_notify(
                 partner_ids=user.partner_id.ids,
-                subject=_("DF-e: new documents found for %s", self.name),
                 body=body,
             )
 
