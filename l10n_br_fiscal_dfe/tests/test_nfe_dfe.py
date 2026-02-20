@@ -58,8 +58,6 @@ class TestNFeDFe(TransactionCase):
         self.assertEqual(
             dfe1.access_key, "31201010588201000105550010038421171838422178"
         )
-        self.assertEqual(dfe1.emitter, "ZAP GRAFICA E EDITORA EIRELI")
-        self.assertEqual(dfe1.vat, "10.588.201/0001-05")
         self.assertEqual(dfe1.dfe_nfe_document_type, "dfe_nfe_summary")
         self.assertEqual(dfe1.nsu, "000000000000200")
         self.assertEqual(
@@ -67,6 +65,8 @@ class TestNFeDFe(TransactionCase):
             "31201010588201000105550010038421171838422178 - Resumo da NF-e",
         )
         self.assertEqual(dfe1.dfe_document_id.color_status, "blue")
+        self.assertEqual(dfe1.dfe_document_id.emitter, "ZAP GRAFICA E EDITORA EIRELI")
+        self.assertEqual(dfe1.dfe_document_id.vat, "10.588.201/0001-05")
         self.assertEqual(
             dfe1.dfe_document_id.display_name,
             "31201010588201000105550010038421171838422178",
@@ -80,10 +80,10 @@ class TestNFeDFe(TransactionCase):
         self.assertEqual(
             dfe2.access_key, "35200159594315000157550010000000012062777161"
         )
-        self.assertEqual(dfe2.vat, "59.594.315/0001-57")
         self.assertEqual(dfe2.dfe_nfe_document_type, "dfe_nfe_complete")
-        self.assertEqual(dfe2.emitter, "TESTE - Simples Nacional")
-        self.assertEqual(dfe2.document_amount, 14.0)
+        self.assertEqual(dfe2.dfe_document_id.emitter, "TESTE - Simples Nacional")
+        self.assertEqual(dfe2.dfe_document_id.document_amount, 14.0)
+        self.assertEqual(dfe2.dfe_document_id.vat, "59.594.315/0001-57")
         self.assertEqual(
             dfe2.dfe_document_id.access_key,
             "35200159594315000157550010000000012062777161",
