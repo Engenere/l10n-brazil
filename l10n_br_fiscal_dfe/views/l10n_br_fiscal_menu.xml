@@ -6,13 +6,6 @@
 -->
 <odoo>
     <menuitem
-        id="dfe_distribution_menu"
-        name="DF-e Distribution"
-        parent="l10n_br_nfe.nfe_sub_menu"
-        groups="l10n_br_fiscal.group_user,l10n_br_fiscal.group_manager"
-        sequence="15"
-    />
-    <menuitem
         id="dfe_queries_menu"
         name="DF-e Queries"
         parent="l10n_br_fiscal.fiscal_menu"
@@ -25,19 +18,5 @@
         name="Third-party NF-e"
         parent="dfe_queries_menu"
         sequence="10"
-    />
-    <menuitem
-        id="dfe_record_menu"
-        action="dfe_action"
-        name="DF-e Records"
-        parent="dfe_distribution_menu"
-        sequence="20"
-    />
-    <menuitem
-        id="dfe_distribution_log_menu"
-        action="dfe_distribution_log_action"
-        name="Distribution Log"
-        parent="dfe_distribution_menu"
-        sequence="30"
     />
 </odoo>
