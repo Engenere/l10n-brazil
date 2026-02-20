@@ -1,15 +1,19 @@
 # Copyright (C) 2025-Today - Engenere (<https://engenere.one>).
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 import base64
+import logging
 import re
 from io import BytesIO
 
 from brazilfiscalreport.danfe import Danfe
+from lxml import objectify
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 from ..constants.dfe import SITUACAO_NFE
+
+_logger = logging.getLogger(__name__)
 
 
 class L10nBrFiscalDfeDocument(models.Model):
@@ -33,28 +37,21 @@ class L10nBrFiscalDfeDocument(models.Model):
         string="DF-e records",
     )
 
-    emitter = fields.Char(compute="_compute_dfe_info")
+    emitter = fields.Char(size=60)
 
-    vat = fields.Char(related="dfe_ids.vat")
+    vat = fields.Char(string="CNPJ/CPF", size=18)
 
-    document_amount = fields.Float(
-        string="Document Total Value", digits=(18, 2), compute="_compute_dfe_info"
-    )
+    document_amount = fields.Float(string="Document Total Value", digits=(18, 2))
 
     document_state = fields.Selection(
         selection=SITUACAO_NFE,
-        compute="_compute_document_state",
-        store=True,
     )
 
-    document_number = fields.Float(compute="_compute_dfe_info")
+    document_number = fields.Float(digits=(18, 0))
 
-    document_emission_date = fields.Datetime(
-        compute="_compute_document_emission_date",
-        store=True,
-    )
+    document_emission_date = fields.Datetime(string="Emission Date")
 
-    serie = fields.Char(compute="_compute_dfe_info")
+    serie = fields.Char(size=3)
 
     color_status = fields.Selection(
         [
@@ -138,53 +135,40 @@ class L10nBrFiscalDfeDocument(models.Model):
             else:
                 record.is_own_document = False
 
-    @api.depends("dfe_ids.cfop_ids")
+    @api.depends("dfe_ids.attachment_id")
     def _compute_cfop_ids(self):
+        Cfop = self.env["l10n_br_fiscal.cfop"]
         for record in self:
-            record.cfop_ids = record.dfe_ids.mapped("cfop_ids")
+            record.cfop_ids = Cfop
+            complete_dfe = record.dfe_ids.filtered(
+                lambda dfe: dfe.dfe_nfe_document_type == "dfe_nfe_complete"
+            )
+            if not complete_dfe:
+                continue
+            data = complete_dfe[0].attachment_id.with_context(bin_size=False).datas
+            if not data:
+                continue
+            try:
+                xml_bytes = base64.b64decode(data)
+                root = objectify.fromstring(xml_bytes)
+                cfop_codes = set()
+                for det in root.NFe.infNFe.det:
+                    cfop_codes.add(str(det.prod.CFOP))
+                if cfop_codes:
+                    record.cfop_ids = Cfop.search([("code", "in", list(cfop_codes))])
+            except Exception:
+                _logger.debug("Could not extract CFOPs from document %s XML", record.id)
 
-    def _compute_dfe_info(self):
-        for record in self:
-            dfe = record._get_priority_dfe()
-            if dfe:
-                record.emitter = dfe.emitter
-                record.document_amount = dfe.document_amount
-                record.document_number = dfe.document_number
-                record.serie = dfe.serie
-            else:
-                record.emitter = False
-                record.document_amount = 0.0
-                record.document_number = 0.0
-                record.serie = False
+    def _update_metadata(self, vals, is_complete=False):
+        """Update document metadata from parsed XML data.
 
-    def _get_priority_dfe(self):
-        """Return the best DFe record (complete > summary > first)."""
-        self.ensure_one()
-        dfe_ids = self.dfe_ids
-        complete = dfe_ids.filtered(
-            lambda d: d.dfe_nfe_document_type == "dfe_nfe_complete"
-        )
-        summary = dfe_ids.filtered(
-            lambda d: d.dfe_nfe_document_type == "dfe_nfe_summary"
-        )
-        return (
-            (complete and complete[0])
-            or (summary and summary[0])
-            or (dfe_ids and dfe_ids[0])
-            or False
-        )
-
-    @api.depends("dfe_ids.emission_datetime", "dfe_ids.dfe_nfe_document_type")
-    def _compute_document_emission_date(self):
-        for record in self:
-            dfe = record._get_priority_dfe()
-            record.document_emission_date = dfe.emission_datetime if dfe else False
-
-    @api.depends("dfe_ids.document_state", "dfe_ids.dfe_nfe_document_type")
-    def _compute_document_state(self):
-        for record in self:
-            dfe = record._get_priority_dfe()
-            record.document_state = dfe.document_state if dfe else False
+        procNFe (is_complete=True) always overwrites.
+        resNFe only writes if no complete dfe exists yet.
+        """
+        if is_complete or not self.dfe_ids.filtered(
+            lambda dfe: dfe.dfe_nfe_document_type == "dfe_nfe_complete"
+        ):
+            self.sudo().write(vals)
 
     def _compute_manifestation_status(self):
         for record in self:
