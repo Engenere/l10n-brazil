@@ -675,6 +675,7 @@ class ResCompany(models.Model):
                     "nsu": nsu,
                     "company_id": self.id,
                     "dfe_nfe_document_type": "dfe_nfe_event",
+                    "event_type_dfe": str(root.evento.infEvento.tpEvento),
                 }
             )
         )
@@ -691,12 +692,19 @@ class ResCompany(models.Model):
 
         document = Document.search(domain, limit=1)
         if not document:
-            document = Document.create(
-                {
-                    "access_key": nfe_key,
-                    "company_id": self.id,
-                }
-            )
+            vals = {
+                "access_key": nfe_key,
+                "company_id": self.id,
+            }
+            # Extract baseline metadata from the access key structure:
+            # positions 6-20: CNPJ, 22-25: serie, 25-34: document number
+            key = str(nfe_key)
+            if len(key) == 44:
+                cnpj_digits = key[6:20]
+                vals["vat"] = utils.mask_cnpj(cnpj_digits)
+                vals["serie"] = key[22:25].lstrip("0") or "0"
+                vals["document_number"] = float(key[25:34])
+            document = Document.create(vals)
         return document
 
     def _dfe_download_document(self, nfe_key):
