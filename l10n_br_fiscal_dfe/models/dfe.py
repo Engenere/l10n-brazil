@@ -1,4 +1,4 @@
-# Copyright (C) 2025-Today - Engenere (<https://engenere.one>).
+# Copyright 2026 Engenere (<https://engenere.one>).
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 import base64
 import logging
