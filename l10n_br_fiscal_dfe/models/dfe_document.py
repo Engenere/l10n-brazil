@@ -254,7 +254,6 @@ class L10nBrFiscalDfeDocument(models.Model):
             "target": "self",
         }
 
-    # TODO migrar pro módulo l10n_br_nfe_dfe
     def create_nfe_md_action(self):
         self.ensure_one()
         return {
