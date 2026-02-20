@@ -86,6 +86,7 @@
                             <field name="dfe_ids">
                                 <tree>
                                     <field name="dfe_nfe_document_type" string="DF-e" />
+                                    <field name="event_type_dfe_label" string="Event" />
                                     <field name="nsu" />
                                     <button
                                         string="XML"
