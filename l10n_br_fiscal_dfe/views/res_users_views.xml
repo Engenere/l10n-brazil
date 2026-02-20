@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Copyright 2026 Engenere - Felipe Motter Pereira
-     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
+<!--
+    Copyright 2026 Engenere (<https://engenere.one>)
+    License AGPL-3 or later (http://www.gnu.org/licenses/agpl)
+-->
 <odoo>
     <!-- User preferences (simple form) -->
     <record id="view_users_form_simple_modif_dfe" model="ir.ui.view">
