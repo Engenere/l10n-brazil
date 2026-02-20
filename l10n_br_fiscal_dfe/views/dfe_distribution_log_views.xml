@@ -11,6 +11,8 @@
             <tree
                 create="false"
                 edit="false"
+                decoration-success="log_type == 'success'"
+                decoration-muted="log_type == 'info'"
                 decoration-warning="log_type == 'warning'"
                 decoration-danger="log_type == 'error'"
             >
@@ -69,6 +71,11 @@
             <search>
                 <field name="message" />
                 <field name="company_id" groups="base.group_multi_company" />
+                <filter
+                    name="success"
+                    string="Success"
+                    domain="[('log_type', '=', 'success')]"
+                />
                 <filter
                     name="info"
                     string="Info"
