@@ -60,6 +60,31 @@ class DFeSpecificSearchWizard(models.TransientModel):
         except ValueError as exc:
             raise UserError(str(exc)) from exc
 
+    def _validate_nsu(self, nsu):
+        """Validate NSU value and check if it already exists."""
+        if not nsu or not nsu.strip():
+            raise UserError(_("Please enter an NSU."))
+        digits_only = re.sub(r"[^0-9]", "", nsu)
+        if not digits_only:
+            raise UserError(_("NSU must contain only numbers."))
+        if all(char == "0" for char in digits_only):
+            raise UserError(_("NSU cannot be zero."))
+        existing = self.env["l10n_br_fiscal_dfe.dfe"].search(
+            [
+                ("nsu", "=", digits_only.zfill(15)),
+                ("company_id", "=", self.company_id.id),
+            ],
+            limit=1,
+        )
+        if existing:
+            raise UserError(
+                _(
+                    "NSU %(nsu)s already exists in the database (DF-e #%(dfe_id)s).",
+                    nsu=nsu,
+                    dfe_id=existing.id,
+                )
+            )
+
     def action_confirm_search(self):
         self.ensure_one()
         if self.search_type == "access_key":
@@ -67,6 +92,7 @@ class DFeSpecificSearchWizard(models.TransientModel):
             self._validate_access_key(access_key)
             self.company_id._dfe_search_specific_document(access_key=access_key)
         else:
+            self._validate_nsu(self.nsu)
             self.company_id._dfe_search_specific_document(nsu=self.nsu)
         return {
             "type": "ir.actions.client",
