@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-20 18:13+0000\n"
-"PO-Revision-Date: 2026-02-20 18:13+0000\n"
+"POT-Creation-Date: 2026-02-20 20:54+0000\n"
+"PO-Revision-Date: 2026-02-20 20:54+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: pt_BR\n"
@@ -48,10 +48,10 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_document_banner
 msgid ""
 "<i class=\"fa fa-clock-o text-primary me-2\"/>\n"
-"                            <span class=\"text-muted small fw-bold\">Last Query</span>"
+"                                <span class=\"text-muted small fw-bold\">Last Query</span>"
 msgstr ""
 "<i class=\"fa fa-clock-o text-primary me-2\"/>\n"
-"                            <span class=\"text-muted small fw-bold\">Última Consulta</span>"
+"                                <span class=\"text-muted small fw-bold\">Última Consulta</span>"
 
 #. module: l10n_br_fiscal_dfe
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_document_banner
@@ -182,31 +182,6 @@ msgid "Access Key of the electronic fiscal document to be searched."
 msgstr "Chave de Acesso do documento fiscal eletrônico a ser pesquisado."
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_needaction
-msgid "Action Needed"
-msgstr "Ação Necessária"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_ids
-msgid "Activities"
-msgstr "Atividades"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_exception_decoration
-msgid "Activity Exception Decoration"
-msgstr "Decoração de Exceção de Atividade"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_state
-msgid "Activity State"
-msgstr "Estado da Atividade"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_type_icon
-msgid "Activity Type Icon"
-msgstr "Ícone do Tipo de Atividade"
-
-#. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__res_users__dfe_notification__all
 msgid "All documents"
 msgstr "Todos os documentos"
@@ -221,11 +196,6 @@ msgstr "Valor"
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__attachment_id
 msgid "Attachment"
 msgstr "Anexo"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_attachment_count
-msgid "Attachment Count"
-msgstr "Contagem de Anexos"
 
 #. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_attachment__attachment_ids
@@ -252,26 +222,22 @@ msgstr ""
 "intervenção manual"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_dfe__document_state__1
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_document__document_state__1
 msgid "Autorizada"
 msgstr "Autorizada"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__cfop_ids
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__cfop_ids
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_tree
 msgid "CFOPs"
 msgstr "CFOPs"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__vat
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__vat
 msgid "CNPJ/CPF"
 msgstr "CNPJ/CPF"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_dfe__document_state__3
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_document__document_state__3
 msgid "Cancelada"
 msgstr "Cancelada"
@@ -380,11 +346,6 @@ msgid "DF-e Consult"
 msgstr "Consulta DF-e"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.ui.menu,name:l10n_br_fiscal_dfe.dfe_distribution_menu
-msgid "DF-e Distribution"
-msgstr "Distribuição DF-e"
-
-#. module: l10n_br_fiscal_dfe
 #: model:ir.model,name:l10n_br_fiscal_dfe.model_l10n_br_fiscal_dfe_distribution_log
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_res_company__dfe_log_ids
 msgid "DF-e Distribution Log"
@@ -415,7 +376,6 @@ msgstr "Consultas DF-e"
 #. module: l10n_br_fiscal_dfe
 #: model:ir.actions.act_window,name:l10n_br_fiscal_dfe.dfe_action
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_res_company__dfe_ids
-#: model:ir.ui.menu,name:l10n_br_fiscal_dfe.dfe_record_menu
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_form
 msgid "DF-e Records"
 msgstr "Registros DF-e"
@@ -460,7 +420,6 @@ msgid "Date"
 msgstr "Data"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_dfe__document_state__2
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_document__document_state__2
 msgid "Denegada"
 msgstr "Denegada"
@@ -491,7 +450,6 @@ msgstr "Nome Exibido"
 
 #. module: l10n_br_fiscal_dfe
 #: model:ir.actions.act_window,name:l10n_br_fiscal_dfe.dfe_distribution_log_action
-#: model:ir.ui.menu,name:l10n_br_fiscal_dfe.dfe_distribution_log_menu
 msgid "Distribution Log"
 msgstr "Log de Distribuição"
 
@@ -512,29 +470,21 @@ msgid "Document"
 msgstr "Documento"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__document_emission_date
-msgid "Document Emission Date"
-msgstr "Data de Emissão do Documento"
-
-#. module: l10n_br_fiscal_dfe
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_form
 msgid "Document Info"
 msgstr "Informações do Documento"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__document_number
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__document_number
 msgid "Document Number"
 msgstr "Número do Documento"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__document_state
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__document_state
 msgid "Document State"
 msgstr "Estado do Documento"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__document_amount
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__document_amount
 msgid "Document Total Value"
 msgstr "Valor Total do Documento"
@@ -547,18 +497,12 @@ msgid "Document download OK: %(key)s"
 msgstr "Download do documento OK: %(key)s"
 
 #. module: l10n_br_fiscal_dfe
-#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_tree
-msgid "Emission"
-msgstr "Emissão"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__emission_datetime
+#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__document_emission_date
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_search
 msgid "Emission Date"
 msgstr "Data de Emissão"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__emitter
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__emitter
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_form
 msgid "Emitter"
@@ -614,9 +558,15 @@ msgstr ""
 "%(code)s - %(message)s"
 
 #. module: l10n_br_fiscal_dfe
+#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__event_type_dfe_label
+#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_form
+msgid "Event"
+msgstr "Evento"
+
+#. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__event_type_dfe
-msgid "Event Type Dfe"
-msgstr "Tipo de Evento DF-e"
+msgid "Event Type"
+msgstr "Tipo de Evento"
 
 #. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_dfe__dfe_nfe_document_type__dfe_nfe_event
@@ -629,7 +579,6 @@ msgid "File Name"
 msgstr "Nome do Arquivo"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__imported_document_id
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_nfe_md_event__dfe_document_id
 msgid "Fiscal Document"
 msgstr "Documento Fiscal"
@@ -645,29 +594,9 @@ msgid "Fiscal document from distribution service"
 msgstr "Documento fiscal do serviço de distribuição"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_follower_ids
-msgid "Followers"
-msgstr "Seguidores"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_partner_ids
-msgid "Followers (Partners)"
-msgstr "Seguidores (Parceiros)"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,help:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_type_icon
-msgid "Font awesome icon e.g. fa-tasks"
-msgstr "Ícone do Font Awesome ex. fa-tasks"
-
-#. module: l10n_br_fiscal_dfe
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_search
 msgid "Group By"
 msgstr "Agrupar Por"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__has_message
-msgid "Has Message"
-msgstr "Tem Mensagem"
 
 #. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__res_company__dfe_environment__2
@@ -684,56 +613,16 @@ msgid "ID"
 msgstr "ID"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_exception_icon
-msgid "Icon"
-msgstr "Ícone"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,help:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_exception_icon
-msgid "Icon to indicate an exception activity."
-msgstr "Ícone para indicar uma atividade excepcional."
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,help:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_needaction
-msgid "If checked, new messages require your attention."
-msgstr "Se marcado, novas mensagens solicitarão sua atenção."
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,help:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_has_error
-msgid "If checked, some messages have a delivery error."
-msgstr "Se marcado, algumas mensagens tem erro de entrega."
-
-#. module: l10n_br_fiscal_dfe
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_form
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_tree
 msgid "Import"
 msgstr "Importar"
 
 #. module: l10n_br_fiscal_dfe
-#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_tree
-msgid "Inclusion"
-msgstr "Inclusão"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__inclusion_datetime
-msgid "Inclusion Date"
-msgstr "Data de Inclusão"
-
-#. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_distribution_log__log_type__info
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_distribution_log_search
 msgid "Info"
 msgstr "Informação"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__ie
-msgid "Inscrição estadual"
-msgstr "Inscrição estadual"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_is_follower
-msgid "Is Follower"
-msgstr "É Seguidor"
 
 #. module: l10n_br_fiscal_dfe
 #. odoo-python
@@ -807,11 +696,6 @@ msgid "Log Type"
 msgstr "Tipo de Log"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_main_attachment_id
-msgid "Main Attachment"
-msgstr "Anexo Principal"
-
-#. module: l10n_br_fiscal_dfe
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_form
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_tree
 msgid "Manifest"
@@ -857,21 +741,6 @@ msgid "Message"
 msgstr "Mensagem"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_has_error
-msgid "Message Delivery error"
-msgstr "Erro de Entrega da Mensagem"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_ids
-msgid "Messages"
-msgstr "Mensagens"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__my_activity_date_deadline
-msgid "My Activity Deadline"
-msgstr "Prazo Final das Minhas Atividades"
-
-#. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_dfe__dfe_nfe_document_type__dfe_nfe_complete
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_document__color_status__green
 msgid "NF-e Completa"
@@ -884,6 +753,13 @@ msgid "NSU"
 msgstr "NSU"
 
 #. module: l10n_br_fiscal_dfe
+#. odoo-python
+#: code:addons/l10n_br_fiscal_dfe/wizards/specific_search_wizard.py:0
+#, python-format
+msgid "NSU %(nsu)s already exists in the database (DF-e #%(dfe_id)s)."
+msgstr "NSU %(nsu)s já existe na base de dados (DF-e #%(dfe_id)s)."
+
+#. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields,help:l10n_br_fiscal_dfe.field_dfe_specific_search_wizard__nsu
 msgid ""
 "NSU (Numero Sequencial Unico) is a unique sequential number assigned to each"
@@ -893,24 +769,18 @@ msgstr ""
 " documento no sistema brasileiro de documentos fiscais eletrônicos."
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_calendar_event_id
-msgid "Next Activity Calendar Event"
-msgstr "Próximo Evento do Calendário de Atividades"
+#. odoo-python
+#: code:addons/l10n_br_fiscal_dfe/wizards/specific_search_wizard.py:0
+#, python-format
+msgid "NSU cannot be zero."
+msgstr "O NSU não pode ser zero."
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_date_deadline
-msgid "Next Activity Deadline"
-msgstr "Prazo Final da Próxima Atividade"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_summary
-msgid "Next Activity Summary"
-msgstr "Resumo da Próxima Atividade"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_type_id
-msgid "Next Activity Type"
-msgstr "Tipo da Próxima Atividade"
+#. odoo-python
+#: code:addons/l10n_br_fiscal_dfe/wizards/specific_search_wizard.py:0
+#, python-format
+msgid "NSU must contain only numbers."
+msgstr "O NSU deve conter apenas números."
 
 #. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_res_company__dfe_next_query
@@ -932,36 +802,16 @@ msgid "No DF-e with 'DF-e complete' type found."
 msgstr "Nenhum DF-e do tipo 'DF-e completo' encontrado."
 
 #. module: l10n_br_fiscal_dfe
-#. odoo-python
-#: code:addons/l10n_br_fiscal_dfe/models/res_company.py:0
-#, python-format
-msgid "No documents found: %(code)s - %(message)s"
-msgstr "Nenhum documento encontrado: %(code)s - %(message)s"
-
-#. module: l10n_br_fiscal_dfe
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.l10n_br_fiscal_dfe_document_search
 msgid "No Partner"
 msgstr "Sem Parceiro"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_needaction_counter
-msgid "Number of Actions"
-msgstr "Número de Ações"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_has_error_counter
-msgid "Number of errors"
-msgstr "Número de erros"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,help:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_needaction_counter
-msgid "Number of messages requiring action"
-msgstr "Número de mensagens que exigem ação"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,help:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__message_has_error_counter
-msgid "Number of messages with delivery error"
-msgstr "Número de mensagens com erro de entrega"
+#. odoo-python
+#: code:addons/l10n_br_fiscal_dfe/models/res_company.py:0
+#, python-format
+msgid "No documents found: %(code)s - %(message)s"
+msgstr "Nenhum documento encontrado: %(code)s - %(message)s"
 
 #. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_document__manifestation_status__nao_realizado
@@ -972,6 +822,13 @@ msgstr "Não realizado"
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__operation_type
 msgid "Operation Type"
 msgstr "Tipo de Operação"
+
+#. module: l10n_br_fiscal_dfe
+#. odoo-python
+#: code:addons/l10n_br_fiscal_dfe/models/dfe.py:0
+#, python-format
+msgid "Other (%(code)s)"
+msgstr "Outro (%(code)s)"
 
 #. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__is_own_document
@@ -998,6 +855,13 @@ msgstr "Consulta periodicamente a distribuição DF-e por novos documentos"
 #. odoo-python
 #: code:addons/l10n_br_fiscal_dfe/wizards/specific_search_wizard.py:0
 #, python-format
+msgid "Please enter an NSU."
+msgstr "Por favor, informe um NSU."
+
+#. module: l10n_br_fiscal_dfe
+#. odoo-python
+#: code:addons/l10n_br_fiscal_dfe/wizards/specific_search_wizard.py:0
+#, python-format
 msgid "Please enter an access key."
 msgstr "Por favor, informe uma chave de acesso."
 
@@ -1017,11 +881,6 @@ msgstr ""
 #: model:ir.model,name:l10n_br_fiscal_dfe.model_l10n_br_nfe_md_event
 msgid "Recipient Manifestation"
 msgstr "Manifestação do Destinatário"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_user_id
-msgid "Responsible User"
-msgstr "Usuário Responsável"
 
 #. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_dfe__dfe_nfe_document_type__dfe_nfe_summary
@@ -1092,7 +951,6 @@ msgid "Sem manifestação"
 msgstr "Sem manifestação"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__serie
 #: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_document__serie
 msgid "Serie"
 msgstr "Série"
@@ -1156,19 +1014,6 @@ msgid "Status Code"
 msgstr "Código de Status"
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,help:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_state
-msgid ""
-"Status based on activities\n"
-"Overdue: Due date is already passed\n"
-"Today: Activity date is today\n"
-"Planned: Future activities."
-msgstr ""
-"Status baseado em atividades\n"
-"Atrasado: Data definida já passou\n"
-"Hoje: Data de atividade é hoje\n"
-"Planejado: Atividades futuras."
-
-#. module: l10n_br_fiscal_dfe
 #. odoo-python
 #: code:addons/l10n_br_fiscal_dfe/wizards/specific_search_wizard.py:0
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_distribution_log__log_type__success
@@ -1209,11 +1054,6 @@ msgid "Type of the DF-e document according to the XML schema."
 msgstr "Tipo do documento DF-e de acordo com o schema XML."
 
 #. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,help:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__activity_exception_decoration
-msgid "Type of the exception activity on record."
-msgstr "Tipo da atividade de exceção no registro."
-
-#. module: l10n_br_fiscal_dfe
 #: model:ir.model,name:l10n_br_fiscal_dfe.model_res_users
 msgid "User"
 msgstr "Usuário"
@@ -1224,20 +1064,15 @@ msgid "View NSU records"
 msgstr "Ver registros NSU"
 
 #. module: l10n_br_fiscal_dfe
+#: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_document_banner
+msgid "View query logs"
+msgstr "Ver logs de consulta"
+
+#. module: l10n_br_fiscal_dfe
 #: model:ir.model.fields.selection,name:l10n_br_fiscal_dfe.selection__l10n_br_fiscal_dfe_distribution_log__log_type__warning
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_distribution_log_search
 msgid "Warning"
 msgstr "Aviso"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,field_description:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__website_message_ids
-msgid "Website Messages"
-msgstr "Mensagens do Website"
-
-#. module: l10n_br_fiscal_dfe
-#: model:ir.model.fields,help:l10n_br_fiscal_dfe.field_l10n_br_fiscal_dfe_dfe__website_message_ids
-msgid "Website communication history"
-msgstr "Histórico de comunicação do website"
 
 #. module: l10n_br_fiscal_dfe
 #: model_terms:ir.ui.view,arch_db:l10n_br_fiscal_dfe.dfe_distribution_log_search
