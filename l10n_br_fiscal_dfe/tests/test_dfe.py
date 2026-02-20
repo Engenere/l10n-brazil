@@ -58,7 +58,7 @@ class TestDFe(TransactionCase):
             limit=1,
         )
         self.assertTrue(dfe_record, "procNFe should create a dfe_nfe_complete record")
-        cfop_codes = dfe_record.cfop_ids.mapped("code")
+        cfop_codes = dfe_record.dfe_document_id.cfop_ids.mapped("code")
         self.assertIn("5102", cfop_codes, "CFOP 5102 should be extracted from procNFe")
 
     def test_search_dfe_error_conditions(self):
