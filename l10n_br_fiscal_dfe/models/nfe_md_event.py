@@ -1,3 +1,6 @@
+# Copyright 2026 Engenere (<https://engenere.one>).
+# License AGPL-3 or later (http://www.gnu.org/licenses/agpl)
+
 from odoo import fields, models
 
 from ..constants.dfe import (

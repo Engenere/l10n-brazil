@@ -1,7 +1,6 @@
-#
 # Copyright 2020 KMEE INFORMATICA LTDA
+# Copyright 2026 Engenere (<https://engenere.one>).
 # License AGPL-3 or later (http://www.gnu.org/licenses/agpl)
-#
 
 import logging
 import ntpath

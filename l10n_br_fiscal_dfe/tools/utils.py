@@ -1,4 +1,5 @@
 # Copyright (C) 2023 KMEE Informatica LTDA
+# Copyright 2026 Engenere (<https://engenere.one>).
 # License AGPL-3 or later (http://www.gnu.org/licenses/agpl)
 
 import base64
