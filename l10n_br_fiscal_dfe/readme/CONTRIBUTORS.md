@@ -2,3 +2,7 @@
   - Luis Felipe Miléo \<<mileo@kmee.com.br>\>
   - Gabriel Cardoso \<<gabriel.cardoso@kmee.com.br>\>
   - Felipe Zago \<<felipe.zago@kmee.com.br>\>
+- [Engenere](https://engenere.one):
+  - Antônio Neto \<<neto@engenere.one>\>
+  - Cristiano Mafra Junior
+  - Felipe Motter \<<felipe@engenere.one>\>

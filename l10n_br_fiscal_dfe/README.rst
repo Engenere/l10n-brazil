@@ -1,10 +1,6 @@
-.. image:: https://odoo-community.org/readme-banner-image
-   :target: https://odoo-community.org/get-involved?utm_source=readme
-   :alt: Odoo Community Association
-
-==================
-L10n BR Fiscal Dfe
-==================
+===============
+Monitor de NF-e
+===============
 
 .. 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -17,7 +13,7 @@ L10n BR Fiscal Dfe
 .. |badge1| image:: https://img.shields.io/badge/maturity-Beta-yellow.png
     :target: https://odoo-community.org/page/development-status
     :alt: Beta
-.. |badge2| image:: https://img.shields.io/badge/license-AGPL--3-blue.png
+.. |badge2| image:: https://img.shields.io/badge/licence-AGPL--3-blue.png
     :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
     :alt: License: AGPL-3
 .. |badge3| image:: https://img.shields.io/badge/github-OCA%2Fl10n--brazil-lightgray.png?logo=github
@@ -33,6 +29,68 @@ L10n BR Fiscal Dfe
 |badge1| |badge2| |badge3| |badge4| |badge5|
 
 Distribuição de documentos fiscais
+
+Utiliza ``queue_job`` para executar a consulta de distribuição DF-e de
+forma assíncrona, evitando conflitos de lock no cron.
+
+Configuração do queue_job
+-------------------------
+
+1. Carregar o módulo como server wide module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+O ``queue_job`` precisa ser carregado na inicialização do Odoo. Adicione
+na configuração do servidor ou como variável de ambiente:
+
+.. code:: ini
+
+   [options]
+   server_wide_modules = web,queue_job
+
+Ou via variável de ambiente:
+
+::
+
+   SERVER_WIDE_MODULES=web,queue_job
+
+2. Configurar o canal ``root.dfe``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+O módulo registra os jobs de distribuição DF-e no canal ``root.dfe``. É
+**obrigatório** configurar este canal com capacidade máxima de **1 job
+simultâneo**, caso contrário consultas concorrentes à SEFAZ podem causar
+erro 656 (consumo indevido) e bloqueio temporário do CNPJ.
+
+No arquivo de configuração do Odoo:
+
+.. code:: ini
+
+   [queue_job]
+   channels = root:2,root.dfe:1
+
+Ou via variável de ambiente:
+
+::
+
+   ODOO_QUEUE_JOB_CHANNELS=root:2,root.dfe:1
+
+3. Ambiente de produção
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Em produção, o Odoo deve rodar com ``workers > 0`` para que o jobrunner
+inicie como processo dedicado. Exemplo:
+
+.. code:: ini
+
+   [options]
+   workers = 2
+
+4. Ambiente de desenvolvimento
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Com ``--workers=0`` (modo threaded), o queue_job funciona normalmente —
+ele cria uma thread extra no mesmo processo para processar os jobs. Não
+é necessária nenhuma configuração adicional além dos passos 1 e 2.
 
 **Table of contents**
 
@@ -56,15 +114,22 @@ Authors
 -------
 
 * KMEE
+* Engenere
 
 Contributors
 ------------
 
-- `KMEE <https://www.kmee.com.br>`__:
+-  `KMEE <https://www.kmee.com.br>`__:
 
-  - Luis Felipe Miléo <mileo@kmee.com.br>
-  - Gabriel Cardoso <gabriel.cardoso@kmee.com.br>
-  - Felipe Zago <felipe.zago@kmee.com.br>
+   -  Luis Felipe Miléo <mileo@kmee.com.br>
+   -  Gabriel Cardoso <gabriel.cardoso@kmee.com.br>
+   -  Felipe Zago <felipe.zago@kmee.com.br>
+
+-  `Engenere <https://engenere.one>`__:
+
+   -  Antônio Neto <neto@engenere.one>
+   -  Cristiano Mafra Junior
+   -  Felipe Motter <felipe@engenere.one>
 
 Maintainers
 -----------
@@ -78,6 +143,17 @@ This module is maintained by the OCA.
 OCA, or the Odoo Community Association, is a nonprofit organization whose
 mission is to support the collaborative development of Odoo features and
 promote its widespread use.
+
+.. |maintainer-felipemotter| image:: https://github.com/felipemotter.png?size=40px
+    :target: https://github.com/felipemotter
+    :alt: felipemotter
+.. |maintainer-antoniospneto| image:: https://github.com/antoniospneto.png?size=40px
+    :target: https://github.com/antoniospneto
+    :alt: antoniospneto
+
+Current `maintainers <https://odoo-community.org/page/maintainer-role>`__:
+
+|maintainer-felipemotter| |maintainer-antoniospneto| 
 
 This module is part of the `OCA/l10n-brazil <https://github.com/OCA/l10n-brazil/tree/16.0/l10n_br_fiscal_dfe>`_ project on GitHub.
 
