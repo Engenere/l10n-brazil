@@ -3,16 +3,24 @@
 import base64
 import logging
 
-from lxml import etree, objectify
+from lxml import etree
 
 from odoo import _, api, fields, models
 
-from ..constants.dfe import (
-    OPERATION_TYPE,
-    SITUACAO_NFE,
-)
+from ..constants.dfe import OPERATION_TYPE
 
 _logger = logging.getLogger(__name__)
+
+EVENT_TYPE_LABELS = {
+    "210200": "Confirmação da Operação",
+    "210210": "Ciência da Operação",
+    "210220": "Desconhecimento da Operação",
+    "210240": "Operação não Realizada",
+    "110110": "Carta de Correção",
+    "110111": "Cancelamento",
+    "110112": "Cancelamento por Substituição",
+    "110140": "EPEC",
+}
 
 DFE_DESCRIPTION_MAP = {
     "procNFe": "XML NF-e completo (procNFe) via distribuição DF-e",
@@ -25,10 +33,7 @@ DFE_DESCRIPTION_MAP = {
 class DFe(models.Model):
     _name = "l10n_br_fiscal_dfe.dfe"
     _description = "DF-e"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "id desc"
-    _rec_name = "display_name"
-    _mail_post_access = "read"
 
     dfe_document_id = fields.Many2one(
         comodel_name="l10n_br_fiscal_dfe.document", string="DF-e Document"
@@ -36,62 +41,21 @@ class DFe(models.Model):
 
     access_key = fields.Char(size=44)
 
-    serie = fields.Char(size=3, index=True)
-
-    document_number = fields.Float(index=True, digits=(18, 0))
-
-    emitter = fields.Char(size=60)
-
-    vat = fields.Char(string="CNPJ/CPF", size=18)
-
     nsu = fields.Char(string="NSU", size=25, index=True)
 
     schema_type = fields.Char(
         help="Type of the DF-e document according to the XML schema.",
     )
 
-    # Saida ou Entrada
     operation_type = fields.Selection(
         selection=OPERATION_TYPE,
     )
-
-    document_amount = fields.Float(
-        string="Document Total Value",
-        readonly=True,
-        digits=(18, 2),
-    )
-
-    ie = fields.Char(string="Inscrição estadual", size=18)
 
     company_id = fields.Many2one(
         comodel_name="res.company",
         string="Company",
         default=lambda self: self.env.company,
         readonly=True,
-    )
-
-    emission_datetime = fields.Datetime(
-        string="Emission Date",
-        index=True,
-        default=fields.Datetime.now,
-    )
-
-    inclusion_datetime = fields.Datetime(
-        string="Inclusion Date",
-        index=True,
-        default=fields.Datetime.now,
-    )
-
-    document_state = fields.Selection(
-        selection=SITUACAO_NFE,
-        index=True,
-    )
-
-    cfop_ids = fields.Many2many(
-        comodel_name="l10n_br_fiscal.cfop",
-        string="CFOPs",
-        compute="_compute_cfop_ids",
-        store=True,
     )
 
     dfe_nfe_document_type = fields.Selection(
@@ -115,7 +79,23 @@ class DFe(models.Model):
         string="Fiscal Document",
     )
 
-    event_type_dfe = fields.Char()
+    event_type_dfe = fields.Char(string="Event Type")
+
+    event_type_dfe_label = fields.Char(
+        string="Event",
+        compute="_compute_event_type_dfe_label",
+    )
+
+    @api.depends("event_type_dfe")
+    def _compute_event_type_dfe_label(self):
+        for rec in self:
+            code = rec.event_type_dfe
+            if not code:
+                rec.event_type_dfe_label = False
+            elif code in EVENT_TYPE_LABELS:
+                rec.event_type_dfe_label = EVENT_TYPE_LABELS[code]
+            else:
+                rec.event_type_dfe_label = _("Other (%(code)s)", code=code)
 
     def name_get(self):
         result = []
@@ -169,8 +149,9 @@ class DFe(models.Model):
             document = self.company_id._dfe_download_document(self.access_key)
             document_id = self.company_id._dfe_parse_xml_document(document)
         except Exception as exc:
-            self.message_post(
-                body=_("Error importing document: \n\n %(error)s", error=exc)
+            self.company_id._dfe_log(
+                _("Error importing document: \n\n %(error)s", error=exc),
+                log_type="error",
             )
             return
         if document_id:
@@ -179,27 +160,6 @@ class DFe(models.Model):
     def import_document_multi(self):
         for rec in self:
             rec.import_document()
-
-    @api.depends("attachment_id")
-    def _compute_cfop_ids(self):
-        Cfop = self.env["l10n_br_fiscal.cfop"]
-        for rec in self:
-            rec.cfop_ids = Cfop
-            if rec.dfe_nfe_document_type != "dfe_nfe_complete":
-                continue
-            data = rec.attachment_id.with_context(bin_size=False).datas
-            if not data:
-                continue
-            try:
-                xml_bytes = base64.b64decode(data)
-                root = objectify.fromstring(xml_bytes)
-                cfop_codes = set()
-                for det in root.NFe.infNFe.det:
-                    cfop_codes.add(str(det.prod.CFOP))
-                if cfop_codes:
-                    rec.cfop_ids = Cfop.search([("code", "in", list(cfop_codes))])
-            except Exception:
-                _logger.debug("Could not extract CFOPs from DFe %s XML", rec.id)
 
     @api.depends("attachment_id")
     def _compute_xml_pretty(self):
