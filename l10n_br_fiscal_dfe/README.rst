@@ -28,19 +28,59 @@ Monitor de NF-e
 
 |badge1| |badge2| |badge3| |badge4| |badge5|
 
-Distribuição de documentos fiscais
+Módulo para monitoramento de NF-e recebidas via o web service de
+Distribuição de DF-e da SEFAZ (NFeDistribuicaoDFe — Ambiente Nacional).
 
-Utiliza ``queue_job`` para executar a consulta de distribuição DF-e de
-forma assíncrona, evitando conflitos de lock no cron.
+Permite que empresas consultem automaticamente todos os documentos
+fiscais eletrônicos emitidos contra seu CNPJ, sem necessidade de receber
+o XML diretamente do emissor.
 
-Configuração do queue_job
--------------------------
+Principais funcionalidades:
 
-1. Carregar o módulo como server wide module
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-  **Consulta automática** via cron com ``queue_job`` — paginação de
+   NSUs, agendamento inteligente baseado na resposta da SEFAZ (138, 137,
+   656)
+-  **Consulta manual** — busca geral ou específica (por chave de acesso
+   ou NSU)
+-  **Processamento de 4 schemas XML**: ``procNFe`` (NF-e completa),
+   ``resNFe`` (resumo), ``resEvento`` e ``procEventoNFe``
+-  **Importação de NF-e** — cria ``l10n_br_fiscal.document`` a partir do
+   XML completo
+-  **Geração de DANFE** em PDF via ``brazilfiscalreport``
+-  **Download de XMLs** — individual ou em lote (zip)
+-  **Manifestação automática** do destinatário (ciência da operação)
+-  **Dashboard** com status da distribuição, progresso de NSU, alertas
+   de inatividade e documentos pendentes de importação
+-  **Notificações no Inbox** — configurável por usuário (todos,
+   terceiros, próprios)
+-  **Matching automático de parceiro** pelo CNPJ da chave de acesso
+-  **Suporte multi-empresa** com record rules e configuração por empresa
+-  **Log de distribuição** com request/response SOAP para depuração
+
+**Table of contents**
+
+.. contents::
+   :local:
+
+Installation
+============
+
+Dependências Python
+-------------------
+
+Este módulo requer as seguintes bibliotecas:
+
+-  ``nfelib`` — cliente SOAP para o web service NFeDistribuicaoDFe da
+   SEFAZ
+-  ``brazilfiscalreport`` — geração de DANFE em PDF
+-  ``erpbrasil.base`` — validação de chave de acesso (dígito
+   verificador)
+
+queue_job como server wide module
+---------------------------------
 
 O ``queue_job`` precisa ser carregado na inicialização do Odoo. Adicione
-na configuração do servidor ou como variável de ambiente:
+na configuração do servidor:
 
 .. code:: ini
 
@@ -53,8 +93,17 @@ Ou via variável de ambiente:
 
    SERVER_WIDE_MODULES=web,queue_job
 
-2. Configurar o canal ``root.dfe``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Em produção, o Odoo deve rodar com ``workers > 0`` para que o jobrunner
+inicie como processo dedicado.
+
+Com ``--workers=0`` (modo threaded / desenvolvimento), o queue_job
+funciona normalmente — ele cria uma thread extra no mesmo processo.
+
+Configuration
+=============
+
+Canal queue_job
+---------------
 
 O módulo registra os jobs de distribuição DF-e no canal ``root.dfe``. É
 **obrigatório** configurar este canal com capacidade máxima de **1 job
@@ -74,28 +123,92 @@ Ou via variável de ambiente:
 
    ODOO_QUEUE_JOB_CHANNELS=root:2,root.dfe:1
 
-3. Ambiente de produção
-~~~~~~~~~~~~~~~~~~~~~~~
+Configuração da empresa
+-----------------------
 
-Em produção, o Odoo deve rodar com ``workers > 0`` para que o jobrunner
-inicie como processo dedicado. Exemplo:
+Em **Faturamento > Configuração > Empresas**, na aba **Fiscal > DF-e**:
 
-.. code:: ini
+-  **Versão DF-e**: versão do serviço (padrão: 1.01)
+-  **Ambiente DF-e**: Produção ou Homologação
+-  **Auto-fetch DF-e**: habilita a consulta automática via cron
+-  **Manifestação automática (NF-e)**: envia ciência da operação
+   automaticamente para cada resumo de NF-e recebido
 
-   [options]
-   workers = 2
+A empresa precisa ter um **certificado digital A1** configurado no
+módulo ``l10n_br_fiscal_certificate``.
 
-4. Ambiente de desenvolvimento
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Preferência de notificação (por usuário)
+----------------------------------------
 
-Com ``--workers=0`` (modo threaded), o queue_job funciona normalmente —
-ele cria uma thread extra no mesmo processo para processar os jobs. Não
-é necessária nenhuma configuração adicional além dos passos 1 e 2.
+Em **Preferências do Usuário**, o campo **DF-e Notification** permite
+escolher quais documentos geram notificação no Inbox:
 
-**Table of contents**
+-  **All documents**: todos os novos documentos
+-  **Third-party only**: apenas documentos de terceiros (emissor ≠
+   empresa)
+-  **Own only**: apenas documentos próprios (emissor = empresa)
+-  Vazio: sem notificação
 
-.. contents::
-   :local:
+Usage
+=====
+
+Dashboard
+---------
+
+O menu **Faturamento > DF-e Queries > Third-party NF-e** exibe a lista
+de documentos recebidos. No topo da tela, um banner mostra:
+
+-  **Last Query**: data e status da última consulta à SEFAZ
+-  **Next Query**: próxima consulta agendada e status do auto-fetch
+-  **NSU**: progresso de sincronização (último NSU / máximo NSU)
+-  **Documents Today**: documentos de terceiros recebidos hoje
+-  **Pending Import**: NF-e completas ainda não importadas como
+   documento fiscal
+
+O banner também exibe alertas quando o ambiente está em homologação ou
+quando há inatividade superior a 30 dias (após 60 dias sem consulta, a
+SEFAZ para de gerar NSUs para o CNPJ).
+
+Consulta manual
+---------------
+
+-  **Search All**: busca todos os documentos a partir do último NSU.
+   Respeita o cooldown — se houver consulta agendada no futuro, exibe
+   notificação com o tempo restante.
+-  **Specific Search**: abre wizard para buscar por chave de acesso (com
+   validação do dígito verificador) ou por NSU específico.
+
+Documentos recebidos
+--------------------
+
+Cada documento na lista mostra: status (completa/resumo/cancelada),
+chave de acesso, emissor, CNPJ, valor, CFOPs, status de manifestação.
+Ações disponíveis:
+
+-  **XML**: download do XML da NF-e completa
+-  **DANFE**: gera e baixa o DANFE em PDF
+-  **Import**: importa a NF-e como ``l10n_br_fiscal.document``
+-  **Manifest**: abre wizard de manifestação do destinatário
+
+Download em lote
+----------------
+
+Na tree view, selecione múltiplos documentos e use **Actions > Download
+XMLs (zip)** para baixar todos os XMLs completos em um arquivo zip.
+
+Manifestação automática
+-----------------------
+
+Com a opção **Manifestação automática** habilitada na empresa, o módulo
+envia automaticamente uma ciência da operação para cada resumo de NF-e
+recebido. O envio é feito via ``queue_job`` no canal ``root.dfe``.
+
+Log de distribuição
+-------------------
+
+Acessível via o botão de link no card "Last Query" do banner, o log
+registra cada interação com a SEFAZ incluindo o XML SOAP de request e
+response completos, útil para depuração de problemas.
 
 Bug Tracker
 ===========
