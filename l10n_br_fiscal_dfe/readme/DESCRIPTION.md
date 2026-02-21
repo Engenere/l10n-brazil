@@ -19,8 +19,8 @@ Principais funcionalidades:
 - **Manifestação automática** do destinatário (ciência da operação)
 - **Dashboard** com status da distribuição, progresso de NSU, alertas de
   inatividade e documentos pendentes de importação
-- **Notificações no Inbox** — configurável por usuário (todos, terceiros,
-  próprios)
+- **Notificações no Inbox** — notifica usuários sobre novos documentos de
+  terceiros
 - **Matching automático de parceiro** pelo CNPJ da chave de acesso
 - **Suporte multi-empresa** com record rules e configuração por empresa
 - **Log de distribuição** com request/response SOAP para depuração

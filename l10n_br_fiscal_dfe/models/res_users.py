@@ -7,16 +7,11 @@ from odoo import fields, models
 class ResUsers(models.Model):
     _inherit = "res.users"
 
-    dfe_notification = fields.Selection(
-        selection=[
-            ("all", "All documents"),
-            ("third_party", "Third-party only"),
-            ("own", "Own only"),
-        ],
+    dfe_notification = fields.Boolean(
         string="DF-e Notification",
         help=(
             "Receive Inbox notifications when the DF-e "
-            "distribution finds new documents."
+            "distribution finds new third-party documents."
         ),
     )
 
