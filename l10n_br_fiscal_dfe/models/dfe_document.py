@@ -29,7 +29,7 @@ class L10nBrFiscalDfeDocument(models.Model):
         ),
     ]
 
-    access_key = fields.Char(size=44, required=True)
+    access_key = fields.Char(size=44, required=True, index=True)
 
     dfe_ids = fields.One2many(
         comodel_name="l10n_br_fiscal_dfe.dfe",
@@ -47,7 +47,7 @@ class L10nBrFiscalDfeDocument(models.Model):
         selection=SITUACAO_NFE,
     )
 
-    document_number = fields.Float(digits=(18, 0))
+    document_number = fields.Char(size=18)
 
     document_emission_date = fields.Datetime(string="Emission Date")
 
@@ -232,10 +232,10 @@ class L10nBrFiscalDfeDocument(models.Model):
         nfe_xml = base64.b64decode(attachment.datas)
         danfe = Danfe(xml=nfe_xml)
 
-        tmpDanfe = BytesIO()
-        danfe.output(tmpDanfe)
-        danfe_file = tmpDanfe.getvalue()
-        tmpDanfe.close()
+        tmp_danfe = BytesIO()
+        danfe.output(tmp_danfe)
+        danfe_file = tmp_danfe.getvalue()
+        tmp_danfe.close()
 
         pdf_attachment = self.env["ir.attachment"].create(
             {

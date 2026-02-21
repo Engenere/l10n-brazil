@@ -51,13 +51,21 @@ class DfeDocumentBannerController(http.Controller):
         user_tz = pytz.timezone(request.env.user.tz or "UTC")
         last_query = company.dfe_last_query
         if last_query:
-            last_query_str = last_query.astimezone(user_tz).strftime("%d/%m/%Y %H:%M")
+            last_query_str = (
+                pytz.utc.localize(last_query)
+                .astimezone(user_tz)
+                .strftime("%d/%m/%Y %H:%M")
+            )
         else:
             last_query_str = "-"
 
         next_query = company.dfe_next_query
         if next_query:
-            next_query_str = next_query.astimezone(user_tz).strftime("%d/%m/%Y %H:%M")
+            next_query_str = (
+                pytz.utc.localize(next_query)
+                .astimezone(user_tz)
+                .strftime("%d/%m/%Y %H:%M")
+            )
         else:
             next_query_str = "-"
 

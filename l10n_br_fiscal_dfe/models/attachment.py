@@ -2,10 +2,9 @@
 # Copyright 2026 Engenere (<https://engenere.one>).
 # License AGPL-3 or later (http://www.gnu.org/licenses/agpl)
 
+import base64
+import io
 import logging
-import ntpath
-import os
-import shutil
 import tarfile
 
 from odoo import api, fields, models
@@ -28,62 +27,35 @@ class Attachment(models.TransientModel):
 
     @api.model
     def build_compressed_attachment(self, record_ids=None):
-        """
-        Compacta os anexos recebidos e os retorno como um novo único anexo
-        Outra maneira de utilizar o método é instanciar a classe, relacionando
-        os ir.attachments requeridos com o campo attachment_ids, chamando o
-        método sem a necessidade de nenhum parâmetro
-        :param record_ids: Pode ser uma lista de quaisquer records contendo
-        anexos ou uma lista de ir.attachments.
-        Pode ser também um recordset com várias records quaiquer contendo
-        anexos ou ir.attachments
-        No caso de uma lista de records que não sejam do tipo ir.attachment,
-        o método retornará TODOS os anexos dessas records compactadas em um
-        arquivo.
-        :return:
-        Um record do tipo ir.attachment contendo todos os anexos recebidos
-        compactados em um único arquivo.
-        """
+        """Compress received attachments and return them as a single attachment.
 
-        attachment_obj = self.env["ir.attachment"]
-        file_name = "attachments"
-
+        :param record_ids: A recordset of ir.attachment records, or any records
+            whose related ir.attachments should be compressed.
+        :return: A single ir.attachment containing all received attachments
+            compressed in a tar.gz file.
+        """
         self.attachment_ids = self._records_to_attachments(record_ids)
 
-        filestore_path = os.path.join(attachment_obj._filestore(), "")
-        attachment_dir = filestore_path + "attachments"
-
-        if os.path.exists(attachment_dir):
-            shutil.rmtree(attachment_dir)
-        os.makedirs(attachment_dir)
-
-        original_dir = os.getcwd()
-
-        for attachment in self.attachment_ids:
-            full_path = attachment_obj._full_path(attachment.store_fname)
-            new_file = os.path.join(attachment_dir, attachment.store_fname)
-
-            shutil.copy2(full_path, new_file)
-            head, tail = ntpath.split(new_file)
-            os.chdir(head)
-
-            tFile = tarfile.open(os.path.join(attachment_dir, file_name), "w:gz")
-            try:
-                tFile.add(tail)
-            except Exception:
-                _logger.error("No such file was found : %s" % tail)
-
-            tFile.close()
-
-        os.chdir(original_dir)
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+            for attachment in self.attachment_ids:
+                data = base64.b64decode(
+                    attachment.with_context(bin_size=False).datas or b""
+                )
+                if not data:
+                    _logger.warning("Empty attachment skipped: %s", attachment.name)
+                    continue
+                info = tarfile.TarInfo(name=attachment.name or "unknown")
+                info.size = len(data)
+                tar.addfile(info, io.BytesIO(data))
 
         return self.env["ir.attachment"].create(
             {
-                "name": file_name + ".tar.gz",
+                "name": "attachments.tar.gz",
+                "type": "binary",
+                "datas": base64.b64encode(buf.getvalue()),
                 "res_model": "l10n_br_fiscal.attachment",
                 "res_id": self.id,
-                "type": "binary",
-                "store_fname": "attachments/attachments",
             }
         )
 

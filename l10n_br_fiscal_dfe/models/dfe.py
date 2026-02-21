@@ -21,7 +21,7 @@ class DFe(models.Model):
         comodel_name="l10n_br_fiscal_dfe.document", string="DF-e Document"
     )
 
-    access_key = fields.Char(size=44)
+    access_key = fields.Char(size=44, index=True)
 
     nsu = fields.Char(string="NSU", size=25, index=True)
 
@@ -142,10 +142,13 @@ class DFe(models.Model):
             data = rec.attachment_id.with_context(bin_size=False).datas
             if not data:
                 continue
-            xml_file = base64.b64decode(data)
-            root = etree.fromstring(xml_file)
-            rec.xml_pretty = etree.tostring(
-                root,
-                pretty_print=True,
-                encoding="unicode",
-            )
+            try:
+                xml_file = base64.b64decode(data)
+                root = etree.fromstring(xml_file)
+                rec.xml_pretty = etree.tostring(
+                    root,
+                    pretty_print=True,
+                    encoding="unicode",
+                )
+            except Exception:
+                _logger.debug("Could not parse XML for DFe %s", rec.id)
