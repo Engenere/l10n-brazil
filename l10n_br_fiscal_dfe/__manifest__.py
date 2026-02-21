@@ -8,7 +8,7 @@
     """,
     "version": "16.0.1.2.0",
     "license": "AGPL-3",
-    "author": "KMEE,Engenere,Odoo Community Association (OCA)",
+    "author": "Engenere,KMEE,Odoo Community Association (OCA)",
     "maintainers": ["felipemotter", "antoniospneto"],
     "website": "https://github.com/OCA/l10n-brazil",
     "depends": ["l10n_br_nfe", "queue_job"],
@@ -33,6 +33,7 @@
     ],
     "external_dependencies": {
         "python": [
+            "brazil_fiscal_client",
             "nfelib",
         ],
     },
