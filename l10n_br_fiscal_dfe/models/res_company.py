@@ -353,17 +353,18 @@ class ResCompany(models.Model):
         )
 
     def _dfe_notify_users(self, new_documents):
-        """Send Inbox notifications to opted-in users about new DF-e documents."""
+        """Notify opted-in users about new third-party documents."""
         self.ensure_one()
-        own_count = len(new_documents.filtered("is_own_document"))
-        third_party_count = len(new_documents) - own_count
+        third_party_docs = new_documents.filtered(lambda d: not d.is_own_document)
+        if not third_party_docs:
+            return
 
         users = (
             self.env["res.users"]
             .sudo()
             .search(
                 [
-                    ("dfe_notification", "!=", False),
+                    ("dfe_notification", "=", True),
                     ("company_ids", "in", self.id),
                 ]
             )
@@ -380,33 +381,14 @@ class ResCompany(models.Model):
             else "/web#model=l10n_br_fiscal_dfe.document"
         )
 
+        count = len(third_party_docs)
         company = self
         for user in users:
-            pref = user.dfe_notification
-            if pref == "own" and not own_count:
-                continue
-            if pref == "third_party" and not third_party_count:
-                continue
-
-            # Rebind self so _() picks up the user's language from
-            # self.env.context (GettextAlias inspects the caller's frame).
             self = company.with_context(lang=user.lang or "pt_BR")
-
-            parts = []
-            if pref in ("all", "own") and own_count:
-                parts.append(_("%(count)s own document(s)", count=own_count))
-            if pref in ("all", "third_party") and third_party_count:
-                parts.append(
-                    _(
-                        "%(count)s third-party document(s)",
-                        count=third_party_count,
-                    )
-                )
-            body_text = ", ".join(parts)
             body = _(
-                "<p>New DF-e documents found: %(summary)s.</p>"
+                "<p>%(count)s new third-party DF-e document(s) found.</p>"
                 '<p><a href="%(url)s">View documents</a></p>',
-                summary=body_text,
+                count=count,
                 url=action_url,
             )
             self.env["mail.thread"].sudo().message_notify(

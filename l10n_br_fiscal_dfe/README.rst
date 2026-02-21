@@ -51,8 +51,8 @@ Principais funcionalidades:
 -  **Manifestação automática** do destinatário (ciência da operação)
 -  **Dashboard** com status da distribuição, progresso de NSU, alertas
    de inatividade e documentos pendentes de importação
--  **Notificações no Inbox** — configurável por usuário (todos,
-   terceiros, próprios)
+-  **Notificações no Inbox** — notifica usuários sobre novos documentos
+   de terceiros
 -  **Matching automático de parceiro** pelo CNPJ da chave de acesso
 -  **Suporte multi-empresa** com record rules e configuração por empresa
 -  **Log de distribuição** com request/response SOAP para depuração
@@ -137,17 +137,12 @@ Em **Faturamento > Configuração > Empresas**, na aba **Fiscal > DF-e**:
 A empresa precisa ter um **certificado digital A1** configurado no
 módulo ``l10n_br_fiscal_certificate``.
 
-Preferência de notificação (por usuário)
-----------------------------------------
+Notificação de documentos (por usuário)
+---------------------------------------
 
-Em **Preferências do Usuário**, o campo **DF-e Notification** permite
-escolher quais documentos geram notificação no Inbox:
-
--  **All documents**: todos os novos documentos
--  **Third-party only**: apenas documentos de terceiros (emissor ≠
-   empresa)
--  **Own only**: apenas documentos próprios (emissor = empresa)
--  Vazio: sem notificação
+Em **Preferências do Usuário**, o campo **DF-e Notification** habilita o
+recebimento de notificações no Inbox quando novos documentos de
+terceiros são encontrados pela distribuição DF-e.
 
 Usage
 =====

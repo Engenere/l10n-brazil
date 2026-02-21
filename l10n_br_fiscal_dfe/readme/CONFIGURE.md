@@ -31,12 +31,8 @@ Em **Faturamento > Configuração > Empresas**, na aba **Fiscal > DF-e**:
 A empresa precisa ter um **certificado digital A1** configurado no módulo
 `l10n_br_fiscal_certificate`.
 
-## Preferência de notificação (por usuário)
+## Notificação de documentos (por usuário)
 
-Em **Preferências do Usuário**, o campo **DF-e Notification** permite
-escolher quais documentos geram notificação no Inbox:
-
-- **All documents**: todos os novos documentos
-- **Third-party only**: apenas documentos de terceiros (emissor ≠ empresa)
-- **Own only**: apenas documentos próprios (emissor = empresa)
-- Vazio: sem notificação
+Em **Preferências do Usuário**, o campo **DF-e Notification** habilita o
+recebimento de notificações no Inbox quando novos documentos de terceiros
+são encontrados pela distribuição DF-e.

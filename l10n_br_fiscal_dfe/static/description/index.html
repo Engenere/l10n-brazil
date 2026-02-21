@@ -391,8 +391,8 @@ XML completo</li>
 <li><strong>Manifestação automática</strong> do destinatário (ciência da operação)</li>
 <li><strong>Dashboard</strong> com status da distribuição, progresso de NSU, alertas
 de inatividade e documentos pendentes de importação</li>
-<li><strong>Notificações no Inbox</strong> — configurável por usuário (todos,
-terceiros, próprios)</li>
+<li><strong>Notificações no Inbox</strong> — notifica usuários sobre novos documentos
+de terceiros</li>
 <li><strong>Matching automático de parceiro</strong> pelo CNPJ da chave de acesso</li>
 <li><strong>Suporte multi-empresa</strong> com record rules e configuração por empresa</li>
 <li><strong>Log de distribuição</strong> com request/response SOAP para depuração</li>
@@ -408,7 +408,7 @@ terceiros, próprios)</li>
 <li><a class="reference internal" href="#configuration" id="toc-entry-4">Configuration</a><ul>
 <li><a class="reference internal" href="#canal-queue-job" id="toc-entry-5">Canal queue_job</a></li>
 <li><a class="reference internal" href="#configuracao-da-empresa" id="toc-entry-6">Configuração da empresa</a></li>
-<li><a class="reference internal" href="#preferencia-de-notificacao-por-usuario" id="toc-entry-7">Preferência de notificação (por usuário)</a></li>
+<li><a class="reference internal" href="#notificacao-de-documentos-por-usuario" id="toc-entry-7">Notificação de documentos (por usuário)</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#usage" id="toc-entry-8">Usage</a><ul>
@@ -491,17 +491,11 @@ automaticamente para cada resumo de NF-e recebido</li>
 <p>A empresa precisa ter um <strong>certificado digital A1</strong> configurado no
 módulo <tt class="docutils literal">l10n_br_fiscal_certificate</tt>.</p>
 </div>
-<div class="section" id="preferencia-de-notificacao-por-usuario">
-<h2><a class="toc-backref" href="#toc-entry-7">Preferência de notificação (por usuário)</a></h2>
-<p>Em <strong>Preferências do Usuário</strong>, o campo <strong>DF-e Notification</strong> permite
-escolher quais documentos geram notificação no Inbox:</p>
-<ul class="simple">
-<li><strong>All documents</strong>: todos os novos documentos</li>
-<li><strong>Third-party only</strong>: apenas documentos de terceiros (emissor ≠
-empresa)</li>
-<li><strong>Own only</strong>: apenas documentos próprios (emissor = empresa)</li>
-<li>Vazio: sem notificação</li>
-</ul>
+<div class="section" id="notificacao-de-documentos-por-usuario">
+<h2><a class="toc-backref" href="#toc-entry-7">Notificação de documentos (por usuário)</a></h2>
+<p>Em <strong>Preferências do Usuário</strong>, o campo <strong>DF-e Notification</strong> habilita o
+recebimento de notificações no Inbox quando novos documentos de
+terceiros são encontrados pela distribuição DF-e.</p>
 </div>
 </div>
 <div class="section" id="usage">
