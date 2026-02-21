@@ -3,6 +3,7 @@
 import base64
 import logging
 import re
+import zipfile
 from io import BytesIO
 
 from brazilfiscalreport.danfe import Danfe
@@ -210,14 +211,51 @@ class L10nBrFiscalDfeDocument(models.Model):
         return [(record.id, record.access_key) for record in self]
 
     def action_download_xml(self):
-        complete_dfe_ids = self.dfe_ids.filtered(
-            lambda dfe: dfe.dfe_nfe_document_type == "dfe_nfe_complete"
+        self.ensure_one()
+        complete_dfe = self.dfe_ids.filtered(
+            lambda d: d.dfe_nfe_document_type == "dfe_nfe_complete"
+        )[:1]
+        if not complete_dfe:
+            raise UserError(
+                _("It is only possible to download XML when DF-e is completed.")
+            )
+        return complete_dfe.action_download_xml()
+
+    def action_download_xmls_zip(self):
+        """Download complete NF-e XMLs of selected documents as a zip file."""
+        attachments = self.env["ir.attachment"]
+        for doc in self:
+            complete_dfe = doc.dfe_ids.filtered(
+                lambda d: d.dfe_nfe_document_type == "dfe_nfe_complete"
+            )[:1]
+            if complete_dfe and complete_dfe.attachment_id:
+                attachments |= complete_dfe.attachment_id
+        if not attachments:
+            raise UserError(_("No complete NF-e XML found in the selected documents."))
+
+        buf = BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for att in attachments:
+                data = base64.b64decode(att.with_context(bin_size=False).datas or b"")
+                if data:
+                    zf.writestr(att.name or "unknown.xml", data)
+
+        zip_attachment = self.env["ir.attachment"].create(
+            {
+                "name": "nfe_xmls.zip",
+                "type": "binary",
+                "datas": base64.b64encode(buf.getvalue()),
+                "mimetype": "application/zip",
+            }
         )
-        if complete_dfe_ids:
-            return complete_dfe_ids.action_download_xml()
-        raise UserError(
-            _("It is only possible to download XML when DF-e is completed.")
-        )
+        return {
+            "type": "ir.actions.act_url",
+            "url": (
+                f"/web/content/{zip_attachment.id}"
+                f"/{zip_attachment.name}?download=true"
+            ),
+            "target": "self",
+        }
 
     def make_pdf(self):
         complete_dfe_ids = self.dfe_ids.filtered(
