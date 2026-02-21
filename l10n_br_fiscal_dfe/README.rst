@@ -235,17 +235,17 @@ Credits
 Authors
 -------
 
-* KMEE
 * Engenere
+* KMEE
 
 Contributors
 ------------
 
 -  `Engenere <https://engenere.one>`__:
 
+   -  Felipe Motter <felipe@engenere.one>
    -  Antônio Neto <neto@engenere.one>
    -  Cristiano Mafra Junior
-   -  Felipe Motter <felipe@engenere.one>
 
 -  `KMEE <https://www.kmee.com.br>`__:
 
