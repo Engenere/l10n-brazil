@@ -173,37 +173,32 @@ class ResCompany(models.Model):
 
     def _dfe_validate_distribution_response(self, result, raise_message=False):
         resp = result.resposta
-        valid = False
-        message = getattr(resp, "xMotivo", "")
-        if resp.cStat != CSTAT_SUCCESS:
-            code = resp.cStat
-        else:
-            valid = True
+        if resp.cStat == CSTAT_SUCCESS:
+            return True
 
-        if not valid:
-            if code == CSTAT_NO_DOCS:
-                self._dfe_log(
-                    _(
-                        "No documents found: %(code)s - %(message)s",
-                        code=code,
-                        message=message,
-                    ),
-                    log_type="info",
-                    result=result,
-                )
-            else:
-                msg_error = _(
-                    "Error validating document distribution: "
-                    "\n\n%(code)s - %(message)s",
+        code = resp.cStat
+        message = getattr(resp, "xMotivo", "")
+
+        if code == CSTAT_NO_DOCS:
+            self._dfe_log(
+                _(
+                    "No documents found: %(code)s - %(message)s",
                     code=code,
                     message=message,
-                )
-                if raise_message:
-                    self._dfe_log(msg_error, log_type="warning", result=result)
-                    raise ValidationError(msg_error)
-                else:
-                    self._dfe_log(msg_error, log_type="warning", result=result)
-        return valid
+                ),
+                log_type="info",
+                result=result,
+            )
+        else:
+            msg_error = _(
+                "Error validating document distribution: " "\n\n%(code)s - %(message)s",
+                code=code,
+                message=message,
+            )
+            self._dfe_log(msg_error, log_type="warning", result=result)
+            if raise_message:
+                raise ValidationError(msg_error)
+        return False
 
     # ── Distribution actions ────────────────────────────────────────────
 
@@ -465,9 +460,7 @@ class ResCompany(models.Model):
                 continue
 
             if isinstance(payload, bytes):
-                from base64 import b64encode
-
-                b64_payload = b64encode(payload).decode()
+                b64_payload = base64.b64encode(payload).decode()
             else:
                 b64_payload = payload
 
@@ -558,7 +551,7 @@ class ResCompany(models.Model):
                 "emitter": str(root.NFe.infNFe.emit.xNome),
                 "vat": supplier_cnpj,
                 "serie": str(root.NFe.infNFe.ide.serie),
-                "document_number": float(root.NFe.infNFe.ide.nNF),
+                "document_number": str(int(root.NFe.infNFe.ide.nNF)),
                 "document_amount": float(root.NFe.infNFe.total.ICMSTot.vNF),
                 "document_emission_date": datetime.strptime(
                     str(root.NFe.infNFe.ide.dhEmi)[:19],
@@ -683,7 +676,7 @@ class ResCompany(models.Model):
                 cnpj_digits = key[6:20]
                 vals["vat"] = utils.mask_cnpj(cnpj_digits)
                 vals["serie"] = key[22:25].lstrip("0") or "0"
-                vals["document_number"] = float(key[25:34])
+                vals["document_number"] = key[25:34].lstrip("0") or "0"
             document = Document.create(vals)
         return document
 
@@ -732,8 +725,15 @@ class ResCompany(models.Model):
         return parse_method(xml_stream)
 
     def dfe_import_documents(self):
+        DfeRecord = self.env["l10n_br_fiscal_dfe.dfe"]
         for record in self:
-            record.dfe_ids.import_document_multi()
+            dfe_records = DfeRecord.search(
+                [
+                    ("company_id", "=", record.id),
+                    ("dfe_nfe_document_type", "=", "dfe_nfe_complete"),
+                ]
+            )
+            dfe_records.import_document_multi()
 
     @api.model
     def parse_procNFe(self, xml):
