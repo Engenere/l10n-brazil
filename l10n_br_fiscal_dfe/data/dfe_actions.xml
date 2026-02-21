@@ -23,4 +23,13 @@ action = result or {"type": "ir.actions.client", "tag": "reload"}
 action = env.company.action_search_specific()
         </field>
     </record>
+
+    <record id="action_server_download_xmls_zip" model="ir.actions.server">
+        <field name="name">Download XMLs (zip)</field>
+        <field name="model_id" ref="model_l10n_br_fiscal_dfe_document" />
+        <field name="binding_model_id" ref="model_l10n_br_fiscal_dfe_document" />
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_download_xmls_zip()</field>
+    </record>
 </odoo>

@@ -1,4 +1,3 @@
-from . import attachment
 from . import dfe
 from . import dfe_distribution_log
 from . import dfe_document

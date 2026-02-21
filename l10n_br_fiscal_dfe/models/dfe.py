@@ -100,22 +100,12 @@ class DFe(models.Model):
         )
 
     def action_download_xml(self):
-        if len(self) == 1:
-            return self.download_attachment(self.attachment_id)
-
-        compressed_attachment_id = (
-            self.env["l10n_br_fiscal.attachment"]
-            .create([])
-            .build_compressed_attachment(self.mapped("attachment_id"))
-        )
-        return self.download_attachment(compressed_attachment_id)
-
-    def download_attachment(self, attachment_id):
+        self.ensure_one()
         return {
             "type": "ir.actions.act_url",
             "url": (
-                f"/web/content/{attachment_id.id}"
-                f"/{attachment_id.name}?download=true"
+                f"/web/content/{self.attachment_id.id}"
+                f"/{self.attachment_id.name}?download=true"
             ),
             "target": "self",
         }
