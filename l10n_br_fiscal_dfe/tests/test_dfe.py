@@ -677,3 +677,213 @@ class TestDFe(TransactionCase):
             partner,
             "action_match_partner should find the newly created partner",
         )
+
+    # ── DFe record compute/display tests ──────────────────────────────────
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_event_type_dfe_label(self, mock_post):
+        """event_type_dfe_label should resolve known codes and handle unknowns."""
+        mock_post.return_value = response_sucesso_multiplos.encode("utf-8")
+        self.company.dfe_search_documents()
+
+        DfeRecord = self.env["l10n_br_fiscal_dfe.dfe"]
+        dfe = DfeRecord.search([("company_id", "=", self.company.id)], limit=1)
+        # Known event type
+        dfe.event_type_dfe = "110111"
+        self.assertTrue(dfe.event_type_dfe_label)
+
+        # Unknown event type
+        dfe.event_type_dfe = "999999"
+        self.assertIn("999999", dfe.event_type_dfe_label)
+
+        # Empty event type
+        dfe.event_type_dfe = False
+        self.assertFalse(dfe.event_type_dfe_label)
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_xml_pretty_computed(self, mock_post):
+        """xml_pretty should format valid XML and handle missing/invalid data."""
+        mock_post.return_value = response_sucesso_multiplos.encode("utf-8")
+        self.company.dfe_search_documents()
+
+        dfe = self.env["l10n_br_fiscal_dfe.dfe"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("attachment_id", "!=", False),
+            ],
+            limit=1,
+        )
+        self.assertTrue(dfe.xml_pretty, "Valid XML should produce pretty output")
+
+        # DFe without attachment
+        dfe_no_attach = self.env["l10n_br_fiscal_dfe.dfe"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("attachment_id", "=", False),
+            ],
+            limit=1,
+        )
+        if dfe_no_attach:
+            self.assertFalse(dfe_no_attach.xml_pretty)
+
+    def test_dfe_import_document_error(self):
+        """import_document should log errors without raising."""
+        dfe_doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": "35200159594315000157550010000000012062777161",
+                "company_id": self.company.id,
+            }
+        )
+        dfe = self.env["l10n_br_fiscal_dfe.dfe"].create(
+            {
+                "access_key": dfe_doc.access_key,
+                "company_id": self.company.id,
+                "dfe_document_id": dfe_doc.id,
+                "dfe_nfe_document_type": "dfe_nfe_complete",
+                "schema_type": "procNFe",
+            }
+        )
+        # import_document calls _dfe_download_document which will fail
+        # because there's no real SEFAZ connection — error should be logged
+        with mock.patch.object(
+            type(self.company),
+            "_dfe_download_document",
+            side_effect=Exception("Mock download error"),
+        ):
+            dfe.import_document()
+
+        log = self.env["l10n_br_fiscal_dfe.distribution_log"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("log_type", "=", "error"),
+            ],
+            limit=1,
+        )
+        self.assertTrue(log, "Error should be logged in distribution log")
+
+    # ── Distribution log tests ────────────────────────────────────────────
+
+    def test_distribution_log_name_get(self):
+        """Distribution log name_get should show [type] date format."""
+        log = self.env["l10n_br_fiscal_dfe.distribution_log"].create(
+            {
+                "company_id": self.company.id,
+                "log_type": "success",
+                "message": "Test log",
+            }
+        )
+        name = log.name_get()[0][1]
+        self.assertIn("Success", name)
+
+    # ── DFe document compute tests ────────────────────────────────────────
+
+    def test_document_color_status(self):
+        """color_status should reflect document state and DFe types."""
+        dfe_doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": "35200199999999999999550010000000019999999991",
+                "company_id": self.company.id,
+            }
+        )
+        # No DFe records → False
+        self.assertFalse(dfe_doc.color_status)
+
+        # Cancelled document
+        dfe_doc.document_state = "2"
+        dfe_doc._compute_color_status()
+        self.assertEqual(dfe_doc.color_status, "muted")
+
+    def test_document_manifestation_status(self):
+        """manifestation_status should reflect latest MDE state."""
+        dfe_doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": "35200199999999999999550010000000019999999991",
+                "company_id": self.company.id,
+            }
+        )
+        # No manifestation → sem_manifestacao
+        self.assertEqual(dfe_doc.manifestation_status, "sem_manifestacao")
+
+    def test_document_manifestations_ids(self):
+        """manifestations_ids should find MDE records for same access_key."""
+        key = "35200159594315000157550010000000012062777161"
+        dfe_doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": key,
+                "company_id": self.company.id,
+            }
+        )
+        mde = self.env["l10n_br_nfe.md_event"].create(
+            {
+                "access_key": key,
+                "event_type": "ciente",
+                "company_id": self.company.id,
+                "document_type": "nfe",
+                "state": "draft",
+            }
+        )
+        self.assertIn(mde, dfe_doc.manifestations_ids)
+
+    def test_document_create_nfe_md_action(self):
+        """create_nfe_md_action should return wizard action."""
+        dfe_doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": "35200199999999999999550010000000019999999991",
+                "company_id": self.company.id,
+            }
+        )
+        action = dfe_doc.create_nfe_md_action()
+        self.assertEqual(
+            action["res_model"], "nfe_recipient_manifestation_event.wizard"
+        )
+        self.assertEqual(action["context"]["default_access_key"], dfe_doc.access_key)
+
+    def test_document_import_no_complete(self):
+        """import_document on document without complete DFe should raise."""
+        dfe_doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": "35200199999999999999550010000000019999999991",
+                "company_id": self.company.id,
+            }
+        )
+        with self.assertRaises(UserError):
+            dfe_doc.import_document()
+
+    # ── Wizard NSU validation tests ───────────────────────────────────────
+
+    def test_wizard_nsu_empty_raises(self):
+        """Empty NSU should raise UserError."""
+        wizard = self._create_wizard(search_type="nsu", nsu="")
+        with self.assertRaises(UserError):
+            wizard.action_confirm_search()
+
+    def test_wizard_nsu_non_numeric_raises(self):
+        """Non-numeric NSU should raise UserError."""
+        wizard = self._create_wizard(search_type="nsu", nsu="abc")
+        with self.assertRaises(UserError):
+            wizard.action_confirm_search()
+
+    def test_wizard_nsu_zero_raises(self):
+        """Zero NSU should raise UserError."""
+        wizard = self._create_wizard(search_type="nsu", nsu="0")
+        with self.assertRaises(UserError):
+            wizard.action_confirm_search()
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_wizard_nsu_duplicate_raises(self, mock_post):
+        """Already-existing NSU should raise UserError."""
+        mock_post.return_value = response_sucesso_multiplos.encode("utf-8")
+        self.company.dfe_search_documents()
+
+        # NSU 201 was created by the search
+        wizard = self._create_wizard(search_type="nsu", nsu="201")
+        with self.assertRaises(UserError):
+            wizard.action_confirm_search()
+
+    def test_wizard_onchange_access_key_strips(self):
+        """_onchange_access_key should strip non-digit characters."""
+        wizard = self._create_wizard(
+            access_key="3520 0159 5943",
+        )
+        wizard._onchange_access_key()
+        self.assertEqual(wizard.access_key, "352001595943")
