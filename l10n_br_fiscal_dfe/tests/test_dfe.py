@@ -1149,3 +1149,143 @@ class TestDFe(TransactionCase):
         with mock.patch.object(DefaultTransport, "post") as mock_post:
             self.company._dfe_document_distribution()
             mock_post.assert_not_called()
+
+    # ── dfe_document: short key, cfop, make_pdf, import ─────────────────
+
+    def test_short_access_key_partner_and_own(self):
+        """Short access key sets partner_id=False and is_own_document=False."""
+        doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": "123",
+                "company_id": self.company.id,
+            }
+        )
+        self.assertFalse(doc.partner_id)
+        self.assertFalse(doc.is_own_document)
+
+    def test_cfop_ids_without_complete_dfe(self):
+        """cfop_ids is empty when document has no complete DFe."""
+        doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": "35200199999999999999550010000000019999999991",
+                "company_id": self.company.id,
+            }
+        )
+        self.assertFalse(doc.cfop_ids)
+
+    def test_cfop_ids_with_invalid_xml(self):
+        """cfop_ids handles corrupt XML in complete DFe gracefully."""
+        doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": "35200199999999999999550010000000019999999991",
+                "company_id": self.company.id,
+            }
+        )
+        dfe = self.env["l10n_br_fiscal_dfe.dfe"].create(
+            {
+                "access_key": doc.access_key,
+                "company_id": self.company.id,
+                "dfe_document_id": doc.id,
+                "dfe_nfe_document_type": "dfe_nfe_complete",
+                "schema_type": "procNFe",
+            }
+        )
+        # Attach invalid XML
+        dfe.attachment_id = self.env["ir.attachment"].create(
+            {
+                "name": "bad.xml",
+                "datas": base64.b64encode(b"not xml at all"),
+                "res_model": "l10n_br_fiscal_dfe.dfe",
+                "res_id": dfe.id,
+            }
+        )
+        doc.invalidate_cache(["cfop_ids"])
+        self.assertFalse(doc.cfop_ids)
+
+    def test_cfop_ids_complete_dfe_without_attachment(self):
+        """cfop_ids handles complete DFe without attachment data."""
+        doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": "35200199999999999999550010000000019999999991",
+                "company_id": self.company.id,
+            }
+        )
+        self.env["l10n_br_fiscal_dfe.dfe"].create(
+            {
+                "access_key": doc.access_key,
+                "company_id": self.company.id,
+                "dfe_document_id": doc.id,
+                "dfe_nfe_document_type": "dfe_nfe_complete",
+                "schema_type": "procNFe",
+            }
+        )
+        doc.invalidate_cache(["cfop_ids"])
+        self.assertFalse(doc.cfop_ids)
+
+    def test_make_pdf_without_complete_dfe(self):
+        """make_pdf raises UserError when no complete DFe exists."""
+        doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": "35200199999999999999550010000000019999999991",
+                "company_id": self.company.id,
+            }
+        )
+        with self.assertRaises(UserError):
+            doc.make_pdf()
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_document_import_delegates_to_dfe(self, mock_post):
+        """import_document on document delegates to DFe record."""
+        mock_post.return_value = response_sucesso_multiplos.encode("utf-8")
+        self.company.dfe_search_documents()
+
+        doc = self.env["l10n_br_fiscal_dfe.document"].search(
+            [
+                ("company_id", "=", self.company.id),
+                (
+                    "dfe_ids.dfe_nfe_document_type",
+                    "=",
+                    "dfe_nfe_complete",
+                ),
+            ],
+            limit=1,
+        )
+        self.assertTrue(doc)
+        # Mock the DFe record's import_document to avoid real download
+        with mock.patch.object(
+            type(doc.dfe_ids[:1]),
+            "import_document",
+            return_value=None,
+        ):
+            doc.import_document()
+
+    # ── dfe.py: xml_pretty with corrupt attachment ──────────────────────
+
+    def test_xml_pretty_with_corrupt_attachment(self):
+        """xml_pretty returns False when attachment has invalid XML."""
+        dfe = self.env["l10n_br_fiscal_dfe.dfe"].create(
+            {
+                "access_key": "35200199999999999999550010000000019999999991",
+                "company_id": self.company.id,
+                "dfe_nfe_document_type": "dfe_nfe_complete",
+                "schema_type": "procNFe",
+            }
+        )
+        dfe.attachment_id = self.env["ir.attachment"].create(
+            {
+                "name": "corrupt.xml",
+                "datas": base64.b64encode(b"<<<not valid xml>>>"),
+                "res_model": "l10n_br_fiscal_dfe.dfe",
+                "res_id": dfe.id,
+            }
+        )
+        self.assertFalse(dfe.xml_pretty)
+
+    # ── res_users: SELF_WRITEABLE_FIELDS ────────────────────────────────
+
+    def test_user_can_write_dfe_notification(self):
+        """User can write dfe_notification on their own record."""
+        user = self._create_dfe_notification_user("dfe_write", dfe_notification=False)
+        user_self = user.with_user(user)
+        user_self.write({"dfe_notification": True})
+        self.assertTrue(user.dfe_notification)
