@@ -3,7 +3,10 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 # pylint: disable=line-too-long
 
+import base64
+import gzip
 from datetime import timedelta
+from io import BytesIO
 from unittest import mock
 
 from requests.exceptions import RequestException
@@ -31,6 +34,93 @@ response_rejeicao = """<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmln
 response_137 = """<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><nfeDistDFeInteresseResponse xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe"><nfeDistDFeInteresseResult><retDistDFeInt xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.01"><tpAmb>1</tpAmb><verAplic>1.4.0</verAplic><cStat>137</cStat><xMotivo>Nenhum documento localizado para o Contribuinte</xMotivo><dhResp>2022-04-04T11:54:49-03:00</dhResp><ultNSU>000000000000200</ultNSU><maxNSU>000000000000200</maxNSU></retDistDFeInt></nfeDistDFeInteresseResult></nfeDistDFeInteresseResponse></soap:Body></soap:Envelope>"""  # noqa: E501
 
 response_656_with_nsu = """<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><nfeDistDFeInteresseResponse xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeDistribuicaoDFe"><nfeDistDFeInteresseResult><retDistDFeInt xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.01"><tpAmb>1</tpAmb><verAplic>1.4.0</verAplic><cStat>656</cStat><xMotivo>Consumo Indevido</xMotivo><dhResp>2022-04-04T11:54:49-03:00</dhResp><ultNSU>000000000000300</ultNSU><maxNSU>000000000000300</maxNSU></retDistDFeInt></nfeDistDFeInteresseResult></nfeDistDFeInteresseResponse></soap:Body></soap:Envelope>"""  # noqa: E501
+
+
+def _gzip_base64(xml_str):
+    """Gzip and base64-encode an XML string (like SEFAZ docZip)."""
+    buf = BytesIO()
+    with gzip.GzipFile(fileobj=buf, mode="wb") as gz:
+        gz.write(xml_str.encode("utf-8"))
+    return base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+def _build_dfe_response(
+    doczip_list,
+    ult_nsu="000000000000300",
+    max_nsu="000000000000300",
+):
+    """Build a SEFAZ cStat=138 response with custom docZip entries.
+
+    doczip_list: list of (nsu_str, schema_str, xml_content) tuples.
+    """
+    parts = []
+    for nsu, schema, xml_content in doczip_list:
+        encoded = _gzip_base64(xml_content)
+        parts.append(f'<docZip NSU="{nsu}" schema="{schema}">' f"{encoded}</docZip>")
+    doczip_xml = "".join(parts)
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<soap:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema"'
+        ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+        ' xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
+        "<soap:Body><nfeDistDFeInteresseResponse"
+        ' xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/'
+        'NFeDistribuicaoDFe"><nfeDistDFeInteresseResult>'
+        '<retDistDFeInt xmlns:xsd="http://www.w3.org/2001/XMLSchema"'
+        ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+        ' xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.01">'
+        "<tpAmb>1</tpAmb><verAplic>1.4.0</verAplic>"
+        "<cStat>138</cStat>"
+        "<xMotivo>Documento(s) localizado(s)</xMotivo>"
+        "<dhResp>2022-04-04T11:54:49-03:00</dhResp>"
+        f"<ultNSU>{ult_nsu}</ultNSU>"
+        f"<maxNSU>{max_nsu}</maxNSU>"
+        f"<loteDistDFeInt>{doczip_xml}</loteDistDFeInt>"
+        "</retDistDFeInt></nfeDistDFeInteresseResult>"
+        "</nfeDistDFeInteresseResponse></soap:Body>"
+        "</soap:Envelope>"
+    )
+
+
+_RESEVENTO_XML = (
+    '<resEvento xmlns="http://www.portalfiscal.inf.br/nfe">'
+    "<cOrgao>91</cOrgao>"
+    "<CNPJ>59594315000157</CNPJ>"
+    "<chNFe>35200159594315000157550010000000012062777161</chNFe>"
+    "<dhEvento>2022-04-04T11:54:49-03:00</dhEvento>"
+    "<tpEvento>210210</tpEvento>"
+    "<nSeqEvento>1</nSeqEvento>"
+    "<xEvento>Ciencia da Operacao</xEvento>"
+    "<dhRecbto>2022-04-04T11:54:49-03:00</dhRecbto>"
+    "</resEvento>"
+)
+
+_PROCEVENTONFE_XML = (
+    '<procEventoNFe xmlns="http://www.portalfiscal.inf.br/nfe"'
+    ' versao="1.00">'
+    '<evento versao="1.00">'
+    '<infEvento Id="ID210210352001">'
+    "<cOrgao>91</cOrgao><tpAmb>1</tpAmb>"
+    "<CNPJ>59594315000157</CNPJ>"
+    "<chNFe>35200159594315000157550010000000012062777161</chNFe>"
+    "<dhEvento>2022-04-04T11:54:49-03:00</dhEvento>"
+    "<tpEvento>210210</tpEvento>"
+    "<nSeqEvento>1</nSeqEvento>"
+    "<verEvento>1.00</verEvento>"
+    '<detEvento versao="1.00">'
+    "<descEvento>Ciencia da Operacao</descEvento>"
+    "</detEvento>"
+    "</infEvento></evento>"
+    '<retEvento versao="1.00"><infEvento>'
+    "<tpAmb>1</tpAmb><verAplic>1.4.0</verAplic>"
+    "<cOrgao>91</cOrgao><cStat>135</cStat>"
+    "<xMotivo>Evento registrado</xMotivo>"
+    "<chNFe>35200159594315000157550010000000012062777161</chNFe>"
+    "<dhRegEvento>2022-04-04T11:54:49-03:00</dhRegEvento>"
+    "<nProt>891220000000001</nProt>"
+    "</infEvento></retEvento>"
+    "</procEventoNFe>"
+)
 
 
 class TestDFe(TransactionCase):
@@ -834,7 +924,8 @@ class TestDFe(TransactionCase):
         )
         action = dfe_doc.create_nfe_md_action()
         self.assertEqual(
-            action["res_model"], "nfe_recipient_manifestation_event.wizard"
+            action["res_model"],
+            "nfe_recipient_manifestation_event.wizard",
         )
         self.assertEqual(action["context"]["default_access_key"], dfe_doc.access_key)
 
@@ -887,3 +978,174 @@ class TestDFe(TransactionCase):
         )
         wizard._onchange_access_key()
         self.assertEqual(wizard.access_key, "352001595943")
+
+    # ── res_company coverage: event schemas ─────────────────────────────
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_create_from_resEvento(self, mock_post):
+        """resEvento schema creates DFe record with event type."""
+        response = _build_dfe_response(
+            [("000000000000300", "resEvento_v1.00.xsd", _RESEVENTO_XML)],
+            ult_nsu="000000000000300",
+            max_nsu="000000000000300",
+        )
+        mock_post.return_value = response.encode("utf-8")
+        self.company.dfe_search_documents()
+
+        dfe_record = self.env["l10n_br_fiscal_dfe.dfe"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("schema_type", "=", "resEvento"),
+            ]
+        )
+        self.assertEqual(len(dfe_record), 1)
+        self.assertEqual(dfe_record.dfe_nfe_document_type, "dfe_nfe_event")
+        self.assertEqual(dfe_record.event_type_dfe, "210210")
+        self.assertTrue(dfe_record.dfe_document_id)
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_create_from_procEventoNFe(self, mock_post):
+        """procEventoNFe schema creates DFe record linked to document."""
+        response = _build_dfe_response(
+            [
+                (
+                    "000000000000301",
+                    "procEventoNFe_v1.00.xsd",
+                    _PROCEVENTONFE_XML,
+                )
+            ],
+            ult_nsu="000000000000301",
+            max_nsu="000000000000301",
+        )
+        mock_post.return_value = response.encode("utf-8")
+        self.company.dfe_search_documents()
+
+        dfe_record = self.env["l10n_br_fiscal_dfe.dfe"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("schema_type", "=", "procEventoNFe"),
+            ]
+        )
+        self.assertEqual(len(dfe_record), 1)
+        self.assertEqual(dfe_record.dfe_nfe_document_type, "dfe_nfe_event")
+        self.assertEqual(dfe_record.event_type_dfe, "210210")
+        self.assertTrue(dfe_record.dfe_document_id)
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_create_from_unknown_schema(self, mock_post):
+        """Unknown schema creates a minimal DFe record."""
+        unknown_xml = (
+            '<unknownDoc xmlns="http://example.com">' "<id>1</id></unknownDoc>"
+        )
+        response = _build_dfe_response(
+            [("000000000000302", "unknownDoc_v1.00.xsd", unknown_xml)],
+            ult_nsu="000000000000302",
+            max_nsu="000000000000302",
+        )
+        mock_post.return_value = response.encode("utf-8")
+        self.company.dfe_search_documents()
+
+        dfe_record = self.env["l10n_br_fiscal_dfe.dfe"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("schema_type", "=", "unknownDoc"),
+            ]
+        )
+        self.assertEqual(len(dfe_record), 1)
+
+    # ── res_company coverage: banner actions ────────────────────────────
+
+    def test_action_banner_search_all(self):
+        """action_banner_search_all delegates to current company."""
+        self.company.dfe_next_query = False
+        with mock.patch.object(
+            type(self.company),
+            "_dfe_document_distribution",
+            return_value=None,
+        ):
+            ResCompany = self.env["res.company"].with_company(self.company)
+            result = ResCompany.action_banner_search_all()
+        self.assertEqual(result["tag"], "reload")
+
+    def test_action_banner_specific_search(self):
+        """action_banner_specific_search returns wizard action."""
+        ResCompany = self.env["res.company"].with_company(self.company)
+        result = ResCompany.action_banner_specific_search()
+        self.assertEqual(result["res_model"], "dfe_specific_search_wizard")
+        self.assertEqual(result["target"], "new")
+
+    # ── res_company coverage: specific search paths ─────────────────────
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_specific_search_no_docs(self, mock_post):
+        """Specific search with cStat=137 returns without error."""
+        mock_post.return_value = response_137.encode("utf-8")
+        key = "35200159594315000157550010000000012062777161"
+        # Should not raise — 137 means "no documents found"
+        self.company._dfe_search_specific_document(access_key=key)
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_specific_search_error_raises(self, mock_post):
+        """Specific search with SEFAZ error raises ValidationError."""
+        mock_post.return_value = response_rejeicao.encode("utf-8")
+        key = "35200159594315000157550010000000012062777161"
+        with self.assertRaises(ValidationError):
+            self.company._dfe_search_specific_document(access_key=key)
+
+    # ── res_company coverage: download & parse ──────────────────────────
+
+    def test_download_document_exception(self):
+        """_dfe_download_document logs error on exception."""
+        with mock.patch.object(
+            type(self.company),
+            "_dfe_consultar_distribuicao",
+            side_effect=Exception("Connection error"),
+        ):
+            result = self.company._dfe_download_document("fake_key")
+        self.assertIsNone(result)
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_download_document_validation_fails(self, mock_post):
+        """_dfe_download_document returns None on SEFAZ rejection."""
+        mock_post.return_value = response_rejeicao.encode("utf-8")
+        result = self.company._dfe_download_document("fake_key")
+        self.assertIsNone(result)
+
+    def test_parse_xml_unknown_schema(self):
+        """_dfe_parse_xml_document returns None for unknown schema."""
+        doc = mock.Mock()
+        doc.schema_value = "unknownType_v1.00.xsd"
+        result = self.company._dfe_parse_xml_document(doc)
+        self.assertIsNone(result)
+
+    # ── res_company coverage: notification & cooldown ───────────────────
+
+    def test_notify_own_documents_skipped(self):
+        """_dfe_notify_users returns early when all docs are own company."""
+        self._create_dfe_notification_user("dfe_own", dfe_notification=True)
+        # Build access key with company's own CNPJ at positions 6-20
+        cnpj = "".join(c for c in (self.company.vat or "") if c.isdigit())
+        own_key = ("352001" + cnpj).ljust(44, "0")[:44]
+        doc = self.env["l10n_br_fiscal_dfe.document"].create(
+            {
+                "access_key": own_key,
+                "company_id": self.company.id,
+            }
+        )
+        self.assertTrue(doc.is_own_document)
+        self.company._dfe_notify_users(doc)
+
+        notifications = self.env["mail.message"].search(
+            [
+                ("message_type", "=", "user_notification"),
+                ("body", "ilike", "%DF-e%"),
+            ]
+        )
+        self.assertFalse(notifications)
+
+    def test_distribution_skips_during_cooldown(self):
+        """_dfe_document_distribution returns early during cooldown."""
+        self.company.dfe_next_query = fields.Datetime.now() + timedelta(hours=2)
+        with mock.patch.object(DefaultTransport, "post") as mock_post:
+            self.company._dfe_document_distribution()
+            mock_post.assert_not_called()
