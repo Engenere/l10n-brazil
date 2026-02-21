@@ -2,6 +2,9 @@
 # Copyright 2026 Engenere (<https://engenere.one>).
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
+import base64
+import zipfile
+from io import BytesIO
 from unittest import mock
 
 from xsdata.formats.dataclass.transports import DefaultTransport
@@ -124,7 +127,9 @@ class TestNFeDFe(TransactionCase):
         dfe_sorted = self._search_dfe().sorted(lambda record: record.nsu or "")
         dfe1, dfe2 = dfe_sorted
 
-        attachment_2 = self.env["ir.attachment"].search([("res_id", "=", dfe2.id)])
+        attachment_2 = self.env["ir.attachment"].search(
+            [("res_id", "=", dfe2.id), ("res_model", "=", "l10n_br_fiscal_dfe.dfe")]
+        )
         self.assertTrue(attachment_2)
 
         result_dfe1 = dfe1.action_download_xml()
@@ -143,3 +148,55 @@ class TestNFeDFe(TransactionCase):
     def _get_attachment_from_result(self, result):
         _, _, _, att_id, _ = result["url"].split("/")
         return self.env["ir.attachment"].browse(int(att_id))
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_download_xmls_zip_success(self, _mock_post):
+        """Zip download with complete NF-e documents should return a valid zip."""
+        _mock_post.return_value = _bytes(response_sucesso_multiplos)
+        self.company.dfe_search_documents()
+
+        dfe_docs = self.env["l10n_br_fiscal_dfe.document"].search(
+            [("company_id", "=", self.company.id)]
+        )
+        # Filter only documents that have a complete DFe
+        docs_with_complete = dfe_docs.filtered(
+            lambda d: any(
+                r.dfe_nfe_document_type == "dfe_nfe_complete" for r in d.dfe_ids
+            )
+        )
+        self.assertTrue(docs_with_complete)
+
+        result = docs_with_complete.action_download_xmls_zip()
+
+        self.assertEqual(result["type"], "ir.actions.act_url")
+        self.assertIn("download=true", result["url"])
+        self.assertIn("nfe_xmls.zip", result["url"])
+
+        # Verify zip content
+        att_id = int(result["url"].split("/")[3])
+        attachment = self.env["ir.attachment"].browse(att_id)
+        zip_data = base64.b64decode(attachment.with_context(bin_size=False).datas)
+        with zipfile.ZipFile(BytesIO(zip_data), "r") as zf:
+            self.assertTrue(zf.namelist(), "Zip should contain at least one file")
+            for name in zf.namelist():
+                self.assertTrue(name.endswith(".xml"))
+
+    @mock.patch.object(DefaultTransport, "post")
+    def test_download_xmls_zip_no_complete(self, _mock_post):
+        """Zip download with only summary documents should raise UserError."""
+        _mock_post.return_value = _bytes(response_sucesso_multiplos)
+        self.company.dfe_search_documents()
+
+        dfe_docs = self.env["l10n_br_fiscal_dfe.document"].search(
+            [("company_id", "=", self.company.id)]
+        )
+        # Keep only documents without complete DFe
+        docs_summary_only = dfe_docs.filtered(
+            lambda d: not any(
+                r.dfe_nfe_document_type == "dfe_nfe_complete" for r in d.dfe_ids
+            )
+        )
+        self.assertTrue(docs_summary_only, "Should have at least one summary-only doc")
+
+        with self.assertRaises(UserError):
+            docs_summary_only.action_download_xmls_zip()
