@@ -30,6 +30,12 @@ class DocumentLine(models.Model):
         ondelete="cascade",
     )
 
+    ind_final = fields.Selection(
+        related="document_id.ind_final",
+        store=True,
+        readonly=False,
+    )
+
     name = fields.Char(
         compute="_compute_name",
         store=True,
