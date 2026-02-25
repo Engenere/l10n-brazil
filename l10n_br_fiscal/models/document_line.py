@@ -95,6 +95,13 @@ class DocumentLine(models.Model):
         related="document_id.edoc_purpose",
     )
 
+    ind_final = fields.Selection(
+        related="document_id.ind_final",
+        store=True,
+        precompute=True,
+        readonly=True,
+    )
+
     additional_data = fields.Text()
 
     @api.depends("product_id")
