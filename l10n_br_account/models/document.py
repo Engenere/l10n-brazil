@@ -82,6 +82,14 @@ class FiscalDocument(models.Model):
         readonly=False,
     )
 
+    @api.depends("proxy_partner_id")
+    def _compute_ind_final(self):
+        """Extend dependency: the mixin depends on partner_id, but in
+        l10n_br_account partner_id is a related to proxy_partner_id.
+        The ORM does not always chain the recompute through the related,
+        so we add proxy_partner_id as an explicit trigger."""
+        return super()._compute_ind_final()
+
     @api.onchange("company_id")
     def _inverse_company_id(self):
         for doc in self:
