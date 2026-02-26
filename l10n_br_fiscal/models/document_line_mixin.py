@@ -971,7 +971,17 @@ class FiscalDocumentLineMixin(models.AbstractModel):
     ind_final = fields.Selection(
         selection=FINAL_CUSTOMER,
         string="Consumidor final",
+        compute="_compute_ind_final",
+        store=True,
+        precompute=True,
+        readonly=False,
     )
+
+    def _compute_ind_final(self):
+        for line in self:
+            doc = line._get_document()
+            if line.ind_final != doc.ind_final:
+                line.ind_final = doc.ind_final
 
     partner_company_type = fields.Selection(related="partner_id.company_type")
 
