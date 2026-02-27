@@ -620,6 +620,31 @@ class TestMoveEdition(TransactionCase):
         self.assertEqual(move.ind_final, "0")
         self.assertEqual(fiscal_line.ind_final, "0")
 
+    def test_ind_final_propagation_on_partner_change(self):
+        """Changing partner_id on a saved invoice must propagate ind_final
+        to the fiscal document lines when the new partner differs."""
+        self._setup_fiscal_user()
+        partner_final = self.env.ref("l10n_br_base.res_partner_cliente1_sp")
+        partner_final.ind_final = "1"
+        partner_not_final = self.env.ref("l10n_br_base.res_partner_cliente5_pe")
+        partner_not_final.ind_final = "0"
+
+        move_form = self._create_fiscal_invoice_form(partner_final)
+        with move_form.invoice_line_ids.new() as line_form:
+            line_form.product_id = self.product_id
+            line_form.price_unit = 100.0
+            line_form.quantity = 1.0
+
+        move = move_form.save()
+        fiscal_line = move.fiscal_line_ids[0]
+        self.assertEqual(move.ind_final, "1")
+        self.assertEqual(fiscal_line.ind_final, "1")
+
+        # Change to a partner with ind_final="0"
+        move.write({"partner_id": partner_not_final.id})
+        self.assertEqual(move.ind_final, "0")
+        self.assertEqual(fiscal_line.ind_final, "0")
+
     def test_ind_final_propagation_on_form_partner_change(self):
         """Changing partner_id on an unsaved invoice form must propagate
         ind_final to existing lines both in the form and after saving."""

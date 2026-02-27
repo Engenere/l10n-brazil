@@ -119,7 +119,10 @@ class AccountMove(models.Model):
 
     def write(self, vals):
         self._sync_proxy_fields_vals(vals)
-        return super().write(vals)
+        res = super().write(vals)
+        if "partner_id" in vals:
+            self._onchange_ind_final()
+        return res
 
     @api.constrains("fiscal_document_id", "document_type_id")
     def _check_fiscal_document_type(self):
