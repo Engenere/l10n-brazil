@@ -44,8 +44,6 @@ class DocumentImportWizard(models.TransientModel):
         domain="[('fiscal_operation_type', '=', fiscal_operation_type)]",
     )
 
-    document_type = fields.Char()
-
     fiscal_operation_type = fields.Selection(
         selection=FISCAL_IN_OUT,
         compute="_compute_fiscal_operation_type",
@@ -203,12 +201,6 @@ class DocumentImportWizard(models.TransientModel):
         else:
             self.issuer_type_in_out = FISCAL_IN
             self.destination_type_in_out = FISCAL_OUT
-
-    def _find_document_type(self, code):
-        return self.env["l10n_br_fiscal.document.type"].search(
-            [("code", "=", code)],
-            limit=1,
-        )
 
     def _find_fiscal_operation(self, cfop, nat_op, fiscal_operation_type):
         """try to find a matching fiscal operation via an operation line"""
