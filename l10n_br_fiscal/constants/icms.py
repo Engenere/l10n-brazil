@@ -94,9 +94,6 @@ ICMS_SN_CST = ["101", "102", "103", "201", "202", "203", "300", "400", "500", "9
 ICMS_SN_CST_WITH_CREDIT = ["101", "201"]
 
 
-ICMS_SN_CST_WITHOUT_CREDIT = ["102", "103", "202", "203", "300", "400", "500", "900"]
-
-
 ICMS_DIFAL_PARTITION = {
     2016: {"difal_origin_perc": 60.00, "difal_dest_perc": 40.00},
     2017: {"difal_origin_perc": 40.00, "difal_dest_perc": 60.00},

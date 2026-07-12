@@ -119,7 +119,6 @@ class Operation(models.Model):
         return {
             "name": _("Create invoice/bill"),
             "type": "ir.actions.act_window",
-            "view_type": "form",
             "view_mode": "form",
             "res_model": model,
             "view_id": self.env.ref("l10n_br_fiscal.document_form").id,

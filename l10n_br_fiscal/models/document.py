@@ -407,10 +407,6 @@ class Document(models.Model):
         for r in self:
             r.name = r._compute_document_name()
 
-    @api.model
-    def _get_fiscal_lines_field_name(self):
-        return "fiscal_line_ids"
-
     def unlink(self):
         forbidden_states_unlink = [
             SITUACAO_EDOC_AUTORIZADA,
