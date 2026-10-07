@@ -31,6 +31,7 @@ class DataAbstract(models.AbstractModel):
 
     _name = "l10n_br_fiscal.data.abstract"
     _description = "Fiscal Data Abstract"
+    _inherit = "l10n_br_fiscal.data.natural.key.mixin"
     _order = "code"
 
     code = fields.Char(required=True, index=True)
@@ -64,6 +65,12 @@ class DataAbstract(models.AbstractModel):
         if not self.env.user.has_group("l10n_br_fiscal.group_manager"):
             raise AccessError(_("You don't have permission to unarchive records."))
         return super().action_unarchive()
+
+    def _natural_key_value(self, field_name, value):
+        # "0101.21.00" and "01012100" are the same code
+        if field_name == "code" and value:
+            return misc.punctuation_rm(value)
+        return super()._natural_key_value(field_name, value)
 
     @api.depends("code")
     def _compute_code_unmasked(self):
