@@ -42,7 +42,7 @@ class TestDataNaturalKey(TransactionCase):
             }
         )
 
-    def _load_ncm(self, name, values, update=True):
+    def _load_ncm(self, name, values, update=True, noupdate=True):
         """Load one NCM row the way CSV/XML data files do."""
         values = dict(values, name=values.get("name", "From data file"))
         return self.ncm_model._load_records(
@@ -50,11 +50,16 @@ class TestDataNaturalKey(TransactionCase):
                 {
                     "xml_id": f"l10n_br_fiscal.{name}",
                     "values": values,
-                    "noupdate": True,
+                    "noupdate": noupdate,
                 }
             ],
             update=update,
         )
+
+    def _xmlid_noupdate(self, name):
+        return self.imd_model.search(
+            [("module", "=", "l10n_br_fiscal"), ("name", "=", name)]
+        ).noupdate
 
     def _ncm_count(self, code, exception=False):
         return self.ncm_model.with_context(active_test=False).search_count(
@@ -110,16 +115,34 @@ class TestDataNaturalKey(TransactionCase):
                 "name": "ncm_99999901",
                 "model": "l10n_br_fiscal.ncm",
                 "res_id": self.ncm_model.search([], order="id desc", limit=1).id + 1,
+                "noupdate": False,
             }
         )
         record = self._load_ncm("ncm_99999901", {"code": "9999.99.01"})
         self.assertEqual(record, self.manual_ncm)
         self.assertEqual(self.env.ref("l10n_br_fiscal.ncm_99999901"), self.manual_ncm)
+        self.assertTrue(self._xmlid_noupdate("ncm_99999901"))
 
-    def test_install_writes_data_file_values(self):
+    def test_install_keeps_record_values(self):
         record = self._load_ncm("ncm_99999901", {"code": "9999.99.01"}, update=False)
         self.assertEqual(record, self.manual_ncm)
-        self.assertEqual(self.manual_ncm.name, "From data file")
+        self.assertEqual(self.manual_ncm.name, "Created by hand")
+
+    def test_adopted_record_is_noupdate_in_updatable_data(self):
+        record = self._load_ncm("ncm_99999901", {"code": "9999.99.01"}, noupdate=False)
+        self.assertEqual(record, self.manual_ncm)
+        self.assertTrue(self._xmlid_noupdate("ncm_99999901"))
+        self.assertEqual(self.manual_ncm.name, "Created by hand")
+
+    def test_warn_values_kept_from_data_file(self):
+        with self.assertLogs(MIXIN_LOGGER, level="WARNING") as logs:
+            self._load_ncm("ncm_99999901", {"code": "9999.99.01"})
+        self.assertIn("keeps its own values for name", logs.output[0])
+
+    def test_no_warning_when_values_match(self):
+        self.ncm_model.create({"code": "9999.99.07", "name": "From data file"})
+        with self.assertNoLogs(MIXIN_LOGGER, level="WARNING"):
+            self._load_ncm("ncm_99999907", {"code": "9999.99.07"})
 
     def test_ambiguous_key_adopts_oldest_record(self):
         newer_ncm = self.ncm_model.create(
