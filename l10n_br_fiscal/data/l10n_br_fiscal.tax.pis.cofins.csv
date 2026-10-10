@@ -91,7 +91,7 @@ tax_piscofins_4312_102,102,Cigarrilhas,24021000,,,product,tax_pis_st0_65,,tax_co
 tax_piscofins_4312_201,201,"Motocicletas (incluídos os ciclomotores) e outros ciclos equipados com motor auxiliar, mesmo com carro lateral; carros laterais",8711,,,product,tax_pis_st0_65,,tax_cofins_st3_00,,4.3.12,2011-01-01,
 tax_piscofins_4312_301,301,"Semeadores, plantadores e transplantadores dos códigos 8432.30 da TIPI",843230,,,product,tax_pis_st0_65,,tax_cofins_st3_00,,4.3.12,2011-01-01,
 tax_piscofins_4313_101,101,"Adubos ou fertilizantes classificados no Capítulo 31, exceto os produtos de uso veterinário, da TIPI, e suas matérias-primas",,,,product,tax_pis_0,,tax_cofins_0,,4.3.13,2011-01-01,
-tax_piscofins_4313_102,102,Defensivos agropecuários classificados na posição 38.08 da TIPI e suas matérias-primas,3808,,,product,tax_pis_0,,tax_cofins_0,,4.3.13,2011-01-01,
+tax_piscofins_4313_102,102,Defensivos agropecuários classificados na posição 38.08 da TIPI e suas matérias-primas,,,,product,tax_pis_0,,tax_cofins_0,,4.3.13,2011-01-01,
 tax_piscofins_4313_103,103,"Sementes e mudas destinadas à semeadura e plantio, em conformidade com o disposto na Lei no 10.711/03, e produtos de natureza biológica utilizados em sua produção",,,,product,tax_pis_0,,tax_cofins_0,,4.3.13,2011-01-01,
 tax_piscofins_4313_104,104,Corretivo de solo de origem mineral classificado no Capítulo 25 da TIPI,,,,product,tax_pis_0,,tax_cofins_0,,4.3.13,2011-01-01,
 tax_piscofins_4313_105,105,"Legumes de vagem, secos, em grão, mesmo pelados ou partidos; arroz; farinhas e sêmolas","07133319,07133329,07133399,100620,100630,110620",,,product,tax_pis_0,,tax_cofins_0,,4.3.13,2011-01-01,
