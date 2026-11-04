@@ -15,6 +15,7 @@ class Ncm(models.Model):
         "mail.activity.mixin",
     ]
     _description = "NCM"
+    _natural_key = ("code", "exception")
 
     code = fields.Char(size=10, unaccent=False)
 
